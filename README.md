@@ -2,9 +2,9 @@
 
 Open source mobile app for conversational companionship with an AI avatar.
 
-Marlîx is designed for people facing social isolation who need accessible emotional support. It keeps them company without fostering dependency: it encourages users to connect with the people in their lives.
+marlix is designed for people facing social isolation who need accessible emotional support. It keeps them company without fostering dependency: it encourages users to connect with the people in their lives.
 
-> **Marlîx is not therapy and does not replace professional mental health care.**
+> **marlix is not therapy and does not replace professional mental health care.**
 > In Costa Rica, call **9-1-1** (free, 24/7) for psychological support.
 
 ## Status
@@ -24,10 +24,12 @@ Marlîx is designed for people facing social isolation who need accessible emoti
 
 ## Repository structure
 
+~~~
 marlix/
 ├── app/   # Flutter app
 ├── api/   # Node + TypeScript backend
 └── docs/  # Project documentation
+~~~
 
 ## Getting started
 
