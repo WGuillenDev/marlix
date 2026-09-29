@@ -1,5 +1,14 @@
 # Contributing to marlix
 
+## Non-negotiable rules
+
+1. **The Flutter app never calls the LLM.** Only the backend holds the API key.
+2. **Every table has RLS enabled** with its policy.
+3. **Chat content never goes to logs.**
+4. **The crisis filter runs before the model.** A message with a clear risk signal never leaves the backend; an ambiguous one only goes to an isolated classification (no history, no memory), never to the conversation. When in doubt, trigger the crisis protocol.
+
+The repository is public: no secrets or real user data in it, ever.
+
 ## Workflow
 
 1. Every change starts from an issue. The issue title begins with the card ID (e.g. `S1-5 POST /chat endpoint`).
@@ -33,6 +42,11 @@ chore: install express and typescript
 ~~~
 
 The commit type describes that specific change, not the whole task. If a commit message needs the word "and", it is probably two commits.
+
+## Language and naming
+
+- Everything in the repository is in English: code, docs, commits, branches, issues. Only in-app copy is in Spanish.
+- The project name is always written `marlix` (lowercase, no accent).
 
 ## Definition of Done
 
