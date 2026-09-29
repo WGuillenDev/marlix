@@ -57,7 +57,7 @@ The diagram is a `.drawio.svg` file: GitHub renders it as an image, and it can b
 
 ## Crisis flow
 
-The crisis flow is modeled as system use cases (UC-14 and UC-15) because it runs on every message, without the user asking for it. It is included by both chat and voice, so there is no path to the model that skips it. See the non-negotiable rules in [CLAUDE.md](../CLAUDE.md).
+The crisis flow is modeled as system use cases (UC-14 and UC-15) because it runs on every message, without the user asking for it. It is included by both chat and voice, so there is no path to the model that skips it. See the non-negotiable rules in [CONTRIBUTING.md](../CONTRIBUTING.md#non-negotiable-rules).
 
 ## Not modeled as use cases
 
