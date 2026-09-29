@@ -16,10 +16,20 @@ coverage/
 build/
 *.iml
 
-# Android signing
+# Android signing and local config
 *.jks
 *.keystore
+*.pem
 key.properties
+local.properties
+
+# Firebase config (push notifications)
+google-services.json
+GoogleService-Info.plist
+
+# Local AI assistant context
+CLAUDE.md
+.claude/settings.local.json
 
 # Editors and OS
 .idea/
