@@ -23,7 +23,7 @@ build/
 key.properties
 local.properties
 
-# Firebase config (push notifications)
+# Firebase config files (not used: reminders are local notifications)
 google-services.json
 GoogleService-Info.plist
 
