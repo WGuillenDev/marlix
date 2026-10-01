@@ -168,11 +168,11 @@ Anonymous users (`anon`) have no access. Column-level grants stop a user from ch
 
 ## Out of scope
 
-- Creating the real Supabase project (S4-1) and the local Docker environment (S0-13).
+- Creating the real Supabase project (S4-1).
 - Deleting messages older than 90 days: the scheduled job is S4-10; `messages_created_at_idx` is ready for it.
 - Crisis activation log without content: S2-5.
 - Scheduling inactivity reminders: they are local notifications on the phone (S5-3). The database only stores the opt-in (`reminders_enabled`).
 
 ## How to test
 
-Run [`schema.sql`](schema.sql) on a clean Supabase project running locally in Docker Desktop and check it finishes without errors.
+Start the local database with Docker (see [Local database](../README.md#local-database) in the README). On the first start it applies [`schema.sql`](schema.sql) to a clean database; check the seven tables exist.
