@@ -1,6 +1,6 @@
 # Sequence diagram — sending a message
 
-What happens from the moment the user sends a chat message until they see the reply (`POST /chat`, S1-5). Voice mode uses the same path: the phone turns speech into text before sending and speaks the reply after receiving it.
+What happens from the moment the user sends a chat message until they see the reply ([`POST /v1/chat`](../api-contract.md#post-v1chat), S1-5). Voice mode uses the same path: the phone turns speech into text before sending and speaks the reply after receiving it.
 
 See also the [architecture](../architecture.md), the [ERD](../erd.md) and the non-negotiable rules in [CONTRIBUTING.md](../../CONTRIBUTING.md#non-negotiable-rules).
 
@@ -18,7 +18,7 @@ sequenceDiagram
 
     U->>A: Types a message and taps send
     A->>A: Show "thinking" state
-    A->>B: POST /chat (session token, text)
+    A->>B: POST /v1/chat (session token, text)
 
     Note over B: 1. Auth
     B->>B: Verify the Supabase session token
