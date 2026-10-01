@@ -1,0 +1,53 @@
+# Local database for development (S0-13). Production runs on Supabase cloud.
+#
+#   docker compose up -d     start the database and pgAdmin
+#   docker compose down      stop them (data is kept)
+#   docker compose down -v   stop them and delete the data (fresh start)
+#
+# Values come from .env (copy .env.example). See README → Local database.
+
+name: marlix
+
+services:
+  db:
+    # Supabase's own Postgres image: same as production, with the `auth`
+    # schema (auth.users, auth.uid()) and the anon/authenticated/service_role
+    # roles that docs/schema.sql needs. A plain `postgres` image lacks them.
+    image: public.ecr.aws/supabase/postgres:17.11.0.002
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    ports:
+      # Only reachable from this computer.
+      - "127.0.0.1:${DB_PORT:-54322}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      # Runs once, on the first start with an empty volume, after the image's
+      # own setup scripts (files run in alphabetical order).
+      - ./docs/schema.sql:/docker-entrypoint-initdb.d/zz-marlix-schema.sql:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  pgadmin:
+    image: dpage/pgadmin4:9
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:?Set PGADMIN_EMAIL in .env}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:?Set PGADMIN_PASSWORD in .env}
+      PGADMIN_CONFIG_UPGRADE_CHECK_ENABLED: "False"
+    ports:
+      - "127.0.0.1:${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      # Registers the marlix database in pgAdmin on first start.
+      - ./infra/pgadmin/servers.json:/pgadmin4/servers.json:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db-data:
+  pgadmin-data:
