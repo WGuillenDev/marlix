@@ -90,7 +90,7 @@ The crisis filter runs inside the backend, **after** the session and limit check
 - **Ambiguous:** only that message is sent to Groq for an isolated classification, with no history or memory. If it says risk, fails or times out, the crisis protocol is triggered.
 - **Normal:** the message continues to the conversation with the model.
 
-It lives in code, not in the system prompt, because a model can be wrong or manipulated and a rule in code cannot. The detailed order of every step is in the chat sequence diagram (S0-8).
+It lives in code, not in the system prompt, because a model can be wrong or manipulated and a rule in code cannot. The detailed order of every step is in the [chat sequence diagram](diagrams/chat-sequence.md).
 
 ## Ready to change providers
 

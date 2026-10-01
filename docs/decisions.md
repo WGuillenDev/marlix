@@ -4,6 +4,20 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-09-30 — Chat flow: crisis filter before the daily cap, crisis messages kept in history (S0-8)
+
+**Decision 1: the crisis filter runs even when the daily cap is reached.** The backend reads the usage before the filter, but only applies a reached cap to messages without risk. Crisis replies do not count against the cap.
+
+- *Discarded:* rejecting every message once the cap is reached. A person in crisis would get "limit reached" instead of the 9-1-1 reply.
+
+**Decision 2: crisis messages are saved in the user's own history,** together with the fixed reply. They are protected by RLS and the 90-day retention, and never go to Groq or to the logs. The activation log (S2-5) still has no content.
+
+- *Discarded:* not saving them. It is slightly more private, but the user would come back to a chat without what they wrote or the help they got.
+
+Full flow: [chat sequence diagram](diagrams/chat-sequence.md).
+
+---
+
 ## 2026-09-30 — LLM provider: Groq free plan with `openai/gpt-oss-120b` (S0-11)
 
 **Decision:** the conversation runs on Groq's free plan with the model `openai/gpt-oss-120b`, called with low reasoning effort. The model name lives in the `GROQ_MODEL` environment variable, never in code.
