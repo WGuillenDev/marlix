@@ -4,6 +4,23 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-09-30 — Local database: Docker Compose with Supabase's Postgres image (S0-13)
+
+**Decision:** the local database runs with `docker compose` from [`docker-compose.yml`](../docker-compose.yml): the `public.ecr.aws/supabase/postgres` image plus pgAdmin. On the first start it applies `docs/schema.sql` automatically.
+
+Supabase's own Postgres image already includes the `auth` schema (`auth.users`, `auth.uid()`) and the `anon`, `authenticated` and `service_role` roles, so the schema runs as it does in production. Production stays on Supabase cloud.
+
+| Option | Result |
+|---|---|
+| Docker Compose with `supabase/postgres` + pgAdmin | **Chosen.** A short, readable `docker-compose.yml`, the standard Docker workflow, and the same database image as production. |
+| Supabase CLI (`supabase start`) | Discarded. It runs the full stack in Docker, but it is configured with `config.toml`, not a compose file, and hides the containers behind the CLI. |
+| Supabase self-hosted `docker-compose.yml` | Discarded. About a dozen services and secrets to generate and maintain; meant for self-hosting in production. |
+| Plain `postgres` image + pgAdmin | Discarded. It lacks the `auth` schema and roles; they would have to be faked. |
+
+**Known difference:** the image ships the base version of `auth.uid()`, which reads the user from the `request.jwt.claim.sub` setting. On Supabase cloud, the Auth service also reads it from `request.jwt.claims`. Policies behave the same; only the way a manual test impersonates a user changes. The Auth service (sign-up and sign-in) is not part of the local environment yet; it can be added to the compose file when the backend needs it (S4-3).
+
+---
+
 ## 2026-09-30 — Chat flow: crisis filter before the daily cap, crisis messages kept in history (S0-8)
 
 **Decision 1: the crisis filter runs even when the daily cap is reached.** The backend reads the usage before the filter, but only applies a reached cap to messages without risk. Crisis replies do not count against the cap.
