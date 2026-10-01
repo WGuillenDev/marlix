@@ -75,7 +75,10 @@ Test call from the terminal (Git Bash), reading the key and model from `api/.env
 
 ~~~bash
 set -a && . api/.env && set +a
-curl -s https://api.groq.com/openai/v1/chat/completions   -H "Authorization: Bearer $GROQ_API_KEY"   -H "Content-Type: application/json"   -d "{\"model\": \"$GROQ_MODEL\", \"reasoning_effort\": \"low\",
+curl -s https://api.groq.com/openai/v1/chat/completions \
+  -H "Authorization: Bearer $GROQ_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{\"model\": \"$GROQ_MODEL\", \"reasoning_effort\": \"low\",
        \"messages\": [{\"role\": \"user\", \"content\": \"Saludame en una frase corta, en español de Costa Rica.\"}]}"
 ~~~
 

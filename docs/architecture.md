@@ -80,7 +80,7 @@ The app never holds a secret. That is why **the Flutter app never calls the LLM 
 
 ## Voice runs on the phone
 
-Voice mode reuses the same backend path as text chat. The phone turns speech into text, sends it to `POST /chat` like any message, and speaks the reply with the on-device voice. There is no voice endpoint and no audio leaves the phone, so voice costs nothing and the crisis filter applies exactly as in text chat.
+Voice mode reuses the same backend path as text chat. The phone turns speech into text, sends it to [`POST /v1/chat`](api-contract.md#post-v1chat) like any message, and speaks the reply with the on-device voice. There is no voice endpoint and no audio leaves the phone, so voice costs nothing and the crisis filter applies exactly as in text chat.
 
 ## The crisis filter comes first
 
