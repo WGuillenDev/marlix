@@ -9,7 +9,7 @@ marlix is designed for people facing social isolation who need accessible emotio
 
 ## Status
 
-🚧 Early development (Sprint 0 — Design). Nothing runs yet.
+🚧 Early development. Design is finished (Sprint 0, see the [changelog](CHANGELOG.md)); next is Sprint 1, the backend. The app does not run yet; the [local database](#local-database) does.
 
 ## Stack
 
@@ -67,6 +67,24 @@ In pgAdmin the server **marlix (local)** is already registered; it asks for `POS
 | `docker compose logs db` | Shows the database logs. |
 
 Both services only listen on `127.0.0.1`, and the data lives in Docker volumes outside the repository.
+
+## Documentation
+
+Design documents for v1, in the order they are usually read:
+
+| Document | What it contains |
+|---|---|
+| [User stories](docs/user-stories.md) | What v1 does, as user stories with acceptance criteria and their backlog cards. |
+| [Use cases](docs/use-cases.md) | UML use case diagram: actors, use cases and how they relate. |
+| [Wireframes and visual style](docs/diagrams/wireframes/README.md) | Screens, navigation flow, color palette, typography and the avatar. |
+| [Architecture](docs/architecture.md) | How the app, backend, Supabase, Groq and on-device voice fit together, and where the keys live. |
+| [Entity-relationship diagram](docs/erd.md) | Data model, relationships, access rules and RLS. The SQL is in [`schema.sql`](docs/schema.sql). |
+| [Chat sequence](docs/diagrams/chat-sequence.md) | Every step of sending a message, including the crisis filter and the daily limit. |
+| [API contract](docs/api-contract.md) | Every v1 endpoint with its request, response, errors and examples. |
+| [System prompt](docs/system-prompt.md) | marlix's personality, how memory is injected and the test conversations. |
+| [Technical decisions](docs/decisions.md) | Each choice between technical options, what was discarded and why. |
+
+Rules every change must follow are in [CONTRIBUTING.md](CONTRIBUTING.md); security reporting is in [SECURITY.md](SECURITY.md).
 
 ## Contributing
 
