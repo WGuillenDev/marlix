@@ -9,7 +9,7 @@ marlix is designed for people facing social isolation who need accessible emotio
 
 ## Status
 
-🚧 Early development. Design is finished (Sprint 0, see the [changelog](CHANGELOG.md)); next is Sprint 1, the backend. The app does not run yet; the [local database](#local-database) does.
+🚧 Early development. Design is finished (Sprint 0, see the [changelog](CHANGELOG.md)); Sprint 1, the backend, is in progress. The [backend](#backend) starts and answers its health check, and the [local database](#local-database) runs; the app does not run yet.
 
 ## Stack
 
@@ -35,7 +35,40 @@ marlix/
 
 ## Getting started
 
-Setup instructions for the backend (`api/`) and the app (`app/`) will be added when they are initialized.
+Setup instructions for the app (`app/`) will be added when it is initialized.
+
+### Backend
+
+Requirements: [Node.js](https://nodejs.org/) 24 or later.
+
+1. Install the dependencies and copy the example environment file:
+   ~~~bash
+   cd api
+   npm install
+   cp .env.example .env
+   ~~~
+2. Start the server with automatic reload:
+   ~~~bash
+   npm run dev
+   ~~~
+3. Check that it answers:
+   ~~~bash
+   curl http://localhost:3000/health
+   # {"status":"ok"}
+   ~~~
+
+| Variable | Required | Default | What it is |
+|---|---|---|---|
+| `PORT` | No | `3000` | Port the API listens on. |
+| `GROQ_API_KEY` | Yes | — | Groq API key, from [console.groq.com/keys](https://console.groq.com/keys). Only the backend holds it. |
+| `GROQ_MODEL` | Yes | `openai/gpt-oss-120b` | Model used for the conversation. Groq retires models: change it here, not in code. |
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Starts the server and restarts it on every change. |
+| `npm run typecheck` | Checks the types in strict mode without emitting files. |
+| `npm run build` | Compiles TypeScript to `dist/`. |
+| `npm start` | Runs the compiled server from `dist/`. |
 
 ### Local database
 
