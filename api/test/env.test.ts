@@ -13,6 +13,7 @@ describe('parseEnv', () => {
     const env = parseEnv(validEnv);
 
     assert.equal(env.PORT, 3000);
+    assert.equal(env.LLM_PROVIDER, 'groq');
     assert.equal(env.GROQ_MODEL, 'test-model');
   });
 
@@ -35,6 +36,10 @@ describe('parseEnv', () => {
       (error: unknown) =>
         error instanceof EnvValidationError && error.invalidVariables.join(',') === 'GROQ_API_KEY',
     );
+  });
+
+  it('rejects an unknown LLM provider', () => {
+    assert.throws(() => parseEnv({ ...validEnv, LLM_PROVIDER: 'unknown' }), EnvValidationError);
   });
 
   it('rejects an invalid port', () => {

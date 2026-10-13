@@ -95,3 +95,25 @@ It lives in code, not in the system prompt, because a model can be wrong or mani
 ## Ready to change providers
 
 The backend talks to the LLM through its own abstraction layer (S1-3), and voice is behind an on-device abstraction. Groq, the voice engine or the hosting can be replaced without changing the app.
+
+### The LLM layer
+
+Everything about the LLM lives in `api/src/services/llm/`. The rest of the backend imports only from `services/llm/index.ts` and never from a provider SDK; a test (`api/test/llm-boundary.test.ts`) fails if any file outside the folder imports one.
+
+| File | What it holds |
+|---|---|
+| `types.ts` | The `LlmProvider` interface: one method, `complete(request)`, that takes the conversation (system prompt first) and returns the reply text. |
+| `errors.ts` | `LlmError` and its kinds: `rate_limited`, `timeout`, `unavailable`, `authentication`, `invalid_request` and `empty_response`. Adapters translate every provider failure into one of them, so the backend decides what to do without knowing which provider failed. |
+| `index.ts` | The public entry point. |
+| One file per provider | The adapter that implements `LlmProvider` with that provider's SDK. Groq is the first one (S1-4). |
+
+The provider is chosen with the `LLM_PROVIDER` environment variable, and each provider reads its own key and model from variables named after it (`GROQ_API_KEY`, `GROQ_MODEL`). Changing the model is a change of variable, not of code.
+
+### Adding an LLM provider
+
+1. Add the provider name to `LLM_PROVIDER` and its variables (key, model) to the schema in `api/src/config/env.ts`, to `api/.env.example` and to the README table.
+2. Create `api/src/services/llm/<provider>-provider.ts` with a class that implements `LlmProvider`. Its SDK is imported only there. Translate every error into an `LlmError` of the right kind; a quota error must carry the wait time the provider asks for.
+3. Register it in the provider factory in `api/src/services/llm/index.ts`, under its `LLM_PROVIDER` name.
+4. Review the provider's data policy before sending it real conversations, and record the decision in [decisions.md](decisions.md), as was done for Groq.
+
+Providers compatible with the OpenAI API (Groq, DeepSeek and others) can reuse the OpenAI SDK with a different base URL.
