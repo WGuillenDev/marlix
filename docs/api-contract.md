@@ -47,9 +47,9 @@ For `VALIDATION_ERROR`, `details.fields` lists every invalid field. `field` is t
 
 | HTTP | `code` | When | What the app does |
 |---|---|---|---|
-| 400 | `VALIDATION_ERROR` | The body or a parameter is invalid. `details.fields` lists each invalid field. | Fix the input. |
+| 400 | `VALIDATION_ERROR` | The body or a parameter is invalid. `details.fields` lists each invalid field. Malformed JSON or a body over 16 KB answers the same code without `details`. | Fix the input. |
 | 401 | `UNAUTHORIZED` | Missing, invalid or expired token. | Refresh the session or ask to sign in again. |
-| 404 | `NOT_FOUND` | The resource does not exist or belongs to another user. | Refresh the list. |
+| 404 | `NOT_FOUND` | The resource or route does not exist, or belongs to another user. | Refresh the list. |
 | 409 | `ONBOARDING_ALREADY_COMPLETED` | `POST /v1/onboarding` was already called. | Go to the chat. |
 | 429 | `DAILY_LIMIT_REACHED` | The user used today's interactions. `details.resetsAt` is the next midnight in Costa Rica. | Friendly message with the reset time; the help screen stays available. |
 | 429 | `RATE_LIMITED` | Too many requests in a short time. Sent with a `Retry-After` header in seconds. | Wait and retry. |

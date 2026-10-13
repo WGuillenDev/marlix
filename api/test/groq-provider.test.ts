@@ -99,6 +99,34 @@ describe('GroqProvider', () => {
     assert.ok(error.isTransient);
   });
 
+  it('gives up with a timeout error when Groq does not answer in time', async () => {
+    const provider = new GroqProvider({
+      apiKey: API_KEY,
+      model: 'test-model',
+      timeoutMs: 50,
+      // Never answers; only rejects when the SDK aborts the request.
+      fetch: (_input, init) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () =>
+            reject(new DOMException('The operation was aborted.', 'AbortError')),
+          );
+        }),
+    });
+
+    const error = await rejectsWith(provider.complete({ messages }), 'timeout');
+    assert.ok(error.isTransient);
+  });
+
+  it('returns a controlled error when the URL is unreachable', async () => {
+    // Port 9 (discard) refuses connections on a normal machine.
+    const provider = new GroqProvider({
+      apiKey: API_KEY,
+      model: 'test-model',
+      baseUrl: 'http://127.0.0.1:9/v1',
+    });
+    await rejectsWith(provider.complete({ messages }), 'unavailable');
+  });
+
   it('does not copy the provider message into the error', async () => {
     const { provider } = createProvider(() =>
       jsonResponse(400, { error: { message: 'bad request near "Hola"' } }),

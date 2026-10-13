@@ -70,6 +70,7 @@ The server validates these variables when it starts. If a required one is missin
 |---|---|---|---|
 | `PORT` | No | `3000` | Port the API listens on. |
 | `LLM_PROVIDER` | No | `groq` | LLM provider that answers the chat. Only `groq` exists for now; see [how to add one](docs/architecture.md#adding-an-llm-provider). |
+| `LLM_TIMEOUT_MS` | No | `15000` | Milliseconds to wait for one LLM call. Timeouts, network errors and 5xx are retried once; quota and key errors are not. |
 | `GROQ_API_KEY` | Yes | — | Groq API key, from [console.groq.com/keys](https://console.groq.com/keys). Only the backend holds it. |
 | `GROQ_MODEL` | Yes | `openai/gpt-oss-120b` | Model used for the conversation. Groq retires models: change it here, not in code. |
 | `GROQ_BASE_URL` | No | `https://api.groq.com/openai/v1` | Groq's OpenAI-compatible endpoint. Only changed for tests. |

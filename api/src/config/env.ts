@@ -8,6 +8,9 @@ const envSchema = z.object({
   // Which LLM provider answers the chat (services/llm/). Each provider has its
   // own variables below; adding one is described in docs/architecture.md.
   LLM_PROVIDER: z.enum(['groq']).default('groq'),
+  // Longest wait for one LLM call before it counts as failed (transient errors
+  // are retried once, so a request can wait up to about twice this).
+  LLM_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120_000).default(15_000),
   GROQ_API_KEY: z.string().trim().min(1),
   GROQ_MODEL: z.string().trim().min(1),
   GROQ_BASE_URL: z.url().default('https://api.groq.com/openai/v1'),

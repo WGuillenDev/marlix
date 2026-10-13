@@ -2,6 +2,7 @@
 // imports from here, never from a provider adapter or SDK.
 import type { Env } from '../../config/env.js';
 import { GroqProvider } from './groq-provider.js';
+import { withRetry } from './retry.js';
 import type { LlmProvider } from './types.js';
 
 export { LlmError, type LlmErrorKind } from './errors.js';
@@ -14,14 +15,22 @@ export type {
   LlmUsage,
 } from './types.js';
 
-/** Creates the provider chosen by LLM_PROVIDER, configured from the environment. */
+/**
+ * Creates the provider chosen by LLM_PROVIDER, configured from the
+ * environment, with one retry for transient failures.
+ */
 export function createLlmProvider(env: Env): LlmProvider {
+  return withRetry(createBaseProvider(env));
+}
+
+function createBaseProvider(env: Env): LlmProvider {
   switch (env.LLM_PROVIDER) {
     case 'groq':
       return new GroqProvider({
         apiKey: env.GROQ_API_KEY,
         model: env.GROQ_MODEL,
         baseUrl: env.GROQ_BASE_URL,
+        timeoutMs: env.LLM_TIMEOUT_MS,
         ...(env.GROQ_REASONING_EFFORT !== 'none'
           ? { reasoningEffort: env.GROQ_REASONING_EFFORT }
           : {}),
