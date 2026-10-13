@@ -131,6 +131,7 @@ In pgAdmin the server **marlix (local)** is already registered; it asks for `POS
 | `docker compose down` | Stops everything. The data is kept. |
 | `docker compose down -v` | Stops everything and deletes the data. The next start applies the schema again from scratch. |
 | `docker compose logs db` | Shows the database logs. |
+| `docker compose exec -T db psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f - < docs/schema-test.sql` | Runs the privilege and RLS tests. Prints `All database tests passed.` and changes nothing. |
 
 Both services only listen on `127.0.0.1`, and the data lives in Docker volumes outside the repository.
 
