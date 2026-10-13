@@ -1,0 +1,34 @@
+# Render Blueprint for the marlix backend (S1-7).
+# Docs: https://render.com/docs/blueprint-spec
+# Secrets are not here: Render asks for the `sync: false` values when the
+# Blueprint is created, and generates DEV_ACCESS_TOKEN itself.
+services:
+  - type: web
+    name: marlix-api
+    runtime: node
+    plan: free
+    # Closest region to Costa Rica.
+    region: virginia
+    # Monorepo: only api/ is built, and only changes in api/ trigger a deploy.
+    rootDir: api
+    # Dev dependencies (TypeScript) are needed to build, even with NODE_ENV=production.
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    # Every push to main deploys.
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: NODE_ENV
+        value: production
+      - key: DEV_ACCESS_TOKEN
+        generateValue: true
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
+      - key: GROQ_REASONING_EFFORT
+        value: low
+      - key: LLM_TIMEOUT_MS
+        value: "15000"
