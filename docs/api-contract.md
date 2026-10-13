@@ -290,7 +290,7 @@ Checks that happen before the model (auth, validation, daily limit) still answer
 
 | Part | Until | Meanwhile |
 |---|---|---|
-| Auth with the Supabase token | S4-3 | No user session. |
+| Auth with the Supabase token | S4-3 | No user session. Every `/v1` request needs `Authorization: Bearer <DEV_ACCESS_TOKEN>`, a development token only the developer has (S1-7); without it the answer is `401 UNAUTHORIZED`. |
 | Stored messages | S4-4 | `userMessage.id` and `reply.id` are generated per request and not stored. `interruptedMessageId` is validated but not checked against the history, so it never answers `404`. |
 | `usage` | S2-6 | Not returned. |
 | Crisis filter and `type: "crisis"` | S2-1, S2-3 | Not active. |

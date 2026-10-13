@@ -47,6 +47,7 @@ Requirements: [Node.js](https://nodejs.org/) 24 or later.
    npm install
    cp .env.example .env
    ~~~
+   Then fill in `GROQ_API_KEY` and a `DEV_ACCESS_TOKEN` of your own (the command to generate one is in `.env.example`).
 2. Start the server with automatic reload:
    ~~~bash
    npm run dev
@@ -56,10 +57,11 @@ Requirements: [Node.js](https://nodejs.org/) 24 or later.
    curl http://localhost:3000/health
    # {"status":"ok"}
    ~~~
-4. Send a message to marlix (it needs a valid `GROQ_API_KEY`):
+4. Send a message to marlix, with the token from your `.env`:
    ~~~bash
    curl -X POST http://localhost:3000/v1/chat \
      -H "Content-Type: application/json" \
+     -H "Authorization: Bearer <DEV_ACCESS_TOKEN>" \
      -d '{"message": "Hola, hoy tuve un buen día"}'
    ~~~
    The response follows the [API contract](docs/api-contract.md#post-v1chat).
@@ -69,6 +71,7 @@ The server validates these variables when it starts. If a required one is missin
 | Variable | Required | Default | What it is |
 |---|---|---|---|
 | `PORT` | No | `3000` | Port the API listens on. |
+| `DEV_ACCESS_TOKEN` | Yes | — | Token every `/v1` request must send as `Authorization: Bearer <token>`, at least 32 characters. Temporary: it keeps the chat private until the crisis filter exists, and is replaced by real accounts in S4-3. Never share it. |
 | `LLM_PROVIDER` | No | `groq` | LLM provider that answers the chat. Only `groq` exists for now; see [how to add one](docs/architecture.md#adding-an-llm-provider). |
 | `LLM_TIMEOUT_MS` | No | `15000` | Milliseconds to wait for one LLM call. Timeouts, network errors and 5xx are retried once; quota and key errors are not. |
 | `GROQ_API_KEY` | Yes | — | Groq API key, from [console.groq.com/keys](https://console.groq.com/keys). Only the backend holds it. |
@@ -84,6 +87,21 @@ The server validates these variables when it starts. If a required one is missin
 | `npm run llm:smoke` | Sends one real message to the configured LLM and prints the reply. `-- --burst 6` sends several at once to check that a quota error (429) is handled. Spends real quota. |
 | `npm run build` | Compiles TypeScript to `dist/`. |
 | `npm start` | Runs the compiled server from `dist/`. |
+
+### Deployment
+
+The backend runs on [Render](https://render.com) (free plan), defined in [`render.yaml`](render.yaml). Every push to `main` that changes `api/` deploys automatically.
+
+**Production URL:** https://marlix-api.onrender.com
+
+| Endpoint | Access |
+|---|---|
+| `GET /health` | Public. Used by the uptime monitor. |
+| `/v1/*` | Only with `Authorization: Bearer <DEV_ACCESS_TOKEN>`; anything else gets `401`. Until the crisis filter is finished (S2-1, S2-3), only the developer has the token. |
+
+The free plan sleeps the service after about 15 minutes without traffic, so the first request after a pause can take up to a minute.
+
+To create the service the first time: in the Render dashboard, **New → Blueprint**, pick this repository and confirm. Render asks for `GROQ_API_KEY` (use a production key, not your local one) and generates `DEV_ACCESS_TOKEN`; read it in the service's **Environment** tab.
 
 ### Local database
 
