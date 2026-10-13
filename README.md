@@ -9,7 +9,7 @@ marlix is designed for people facing social isolation who need accessible emotio
 
 ## Status
 
-🚧 Early development. Design is finished (Sprint 0, see the [changelog](CHANGELOG.md)); Sprint 1, the backend, is in progress. The [backend](#backend) answers chat messages locally (without accounts, memory or the crisis filter yet), and the [local database](#local-database) runs; the app does not run yet.
+🚧 Early development. Design (Sprint 0) and the backend base (Sprint 1) are finished; see the [changelog](CHANGELOG.md). The [backend](#backend) is [deployed](#deployment) and answers chat messages, but stays private until the crisis filter of Sprint 2 is ready. It has no accounts or memory yet, and the app does not run yet. The [local database](#local-database) runs.
 
 ## Stack
 

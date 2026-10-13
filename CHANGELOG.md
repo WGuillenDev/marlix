@@ -4,7 +4,30 @@ Notable changes to marlix, one entry per sprint. The format follows [Keep a Chan
 
 ## [Unreleased]
 
-Sprint 1 — Backend base: the avatar answers.
+Sprint 2 — Security: nobody in crisis is left without help.
+
+## Sprint 1 — Backend base (2026-10-03 to 2026-10-13)
+
+The avatar answers: the backend runs on Render, private behind a development token until the crisis filter exists.
+
+### Added
+
+- Backend in `api/` with Node, TypeScript and Express, and the public `GET /health` endpoint ([#30](https://github.com/WGuillenDev/marlix/pull/30)).
+- Environment variables validated with zod at startup; the server does not start with a missing variable ([#38](https://github.com/WGuillenDev/marlix/pull/38)).
+- LLM provider abstraction layer, so Groq can be replaced without rewriting the backend ([#39](https://github.com/WGuillenDev/marlix/pull/39)).
+- Groq adapter on the OpenAI SDK, which waits the time Groq asks for after a quota error ([#40](https://github.com/WGuillenDev/marlix/pull/40)).
+- `POST /v1/chat` with the personality system prompt ([#41](https://github.com/WGuillenDev/marlix/pull/41)).
+- Central error handling, a configurable LLM timeout and one retry for transient errors ([#42](https://github.com/WGuillenDev/marlix/pull/42)).
+- Deployment on Render from a Blueprint (`render.yaml`), with automatic deploys from `main` ([#43](https://github.com/WGuillenDev/marlix/pull/43)).
+- Automated tests for the backend (`npm test`) and for database privileges and RLS (`docs/schema-test.sql`) ([#38](https://github.com/WGuillenDev/marlix/pull/38) to [#44](https://github.com/WGuillenDev/marlix/pull/44)).
+
+### Security
+
+- `/v1` requires a development token until the crisis filter is ready ([#43](https://github.com/WGuillenDev/marlix/pull/43)).
+- Least privilege for the `anon` and `authenticated` database roles, and functions no longer executable by them ([#44](https://github.com/WGuillenDev/marlix/pull/44)).
+- Account deletion requires a recent sign-in in the API contract ([#44](https://github.com/WGuillenDev/marlix/pull/44)).
+- pgAdmin image pinned to an exact version ([#44](https://github.com/WGuillenDev/marlix/pull/44)).
+- Groq API keys rotated, with separate keys for development and production.
 
 ## Sprint 0 — Design (2026-09-26 to 2026-09-30)
 
