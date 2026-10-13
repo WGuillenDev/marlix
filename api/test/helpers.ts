@@ -1,6 +1,6 @@
 import type { AddressInfo } from 'node:net';
 
-import { createApp, type AppDependencies } from '../src/app.js';
+import { createApp } from '../src/app.js';
 import { LlmError } from '../src/services/llm/index.js';
 import type { LlmCompletionRequest, LlmProvider } from '../src/services/llm/index.js';
 
@@ -28,9 +28,15 @@ export function failingLlm(error: LlmError): LlmProvider {
   };
 }
 
-/** Starts the app on a free port and returns a fetch bound to it. */
-export async function startApp(dependencies: AppDependencies) {
-  const server = createApp(dependencies).listen(0);
+export const DEV_TOKEN = 'test-dev-token-0123456789abcdefghij';
+const AUTH_HEADER = { authorization: `Bearer ${DEV_TOKEN}` };
+
+/**
+ * Starts the app on a free port. `postJson` sends the development token
+ * unless the test passes its own authorization header.
+ */
+export async function startApp({ llm }: { llm: LlmProvider }) {
+  const server = createApp({ llm, devAccessToken: DEV_TOKEN }).listen(0);
   await new Promise<void>((resolve) => server.once('listening', resolve));
   const { port } = server.address() as AddressInfo;
   const baseUrl = `http://127.0.0.1:${port}`;
@@ -40,7 +46,7 @@ export async function startApp(dependencies: AppDependencies) {
     postJson: (path: string, body: unknown, headers: Record<string, string> = {}) =>
       fetch(`${baseUrl}${path}`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json', ...headers },
+        headers: { 'content-type': 'application/json', ...AUTH_HEADER, ...headers },
         body: typeof body === 'string' ? body : JSON.stringify(body),
       }),
     close: () => new Promise<void>((resolve) => server.close(() => resolve())),
