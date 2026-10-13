@@ -10,6 +10,10 @@ const envSchema = z.object({
   LLM_PROVIDER: z.enum(['groq']).default('groq'),
   GROQ_API_KEY: z.string().trim().min(1),
   GROQ_MODEL: z.string().trim().min(1),
+  GROQ_BASE_URL: z.url().default('https://api.groq.com/openai/v1'),
+  // gpt-oss models reason before answering; "low" saves tokens and time.
+  // "none" omits the parameter, for models without reasoning.
+  GROQ_REASONING_EFFORT: z.enum(['low', 'medium', 'high', 'none']).default('low'),
 });
 
 /** The validated configuration. Code reads it from here, never from process.env. */
