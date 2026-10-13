@@ -9,7 +9,7 @@ marlix is designed for people facing social isolation who need accessible emotio
 
 ## Status
 
-🚧 Early development. Design is finished (Sprint 0, see the [changelog](CHANGELOG.md)); Sprint 1, the backend, is in progress. The [backend](#backend) starts and answers its health check, and the [local database](#local-database) runs; the app does not run yet.
+🚧 Early development. Design is finished (Sprint 0, see the [changelog](CHANGELOG.md)); Sprint 1, the backend, is in progress. The [backend](#backend) answers chat messages locally (without accounts, memory or the crisis filter yet), and the [local database](#local-database) runs; the app does not run yet.
 
 ## Stack
 
@@ -56,6 +56,13 @@ Requirements: [Node.js](https://nodejs.org/) 24 or later.
    curl http://localhost:3000/health
    # {"status":"ok"}
    ~~~
+4. Send a message to marlix (it needs a valid `GROQ_API_KEY`):
+   ~~~bash
+   curl -X POST http://localhost:3000/v1/chat \
+     -H "Content-Type: application/json" \
+     -d '{"message": "Hola, hoy tuve un buen día"}'
+   ~~~
+   The response follows the [API contract](docs/api-contract.md#post-v1chat).
 
 The server validates these variables when it starts. If a required one is missing or invalid, it does not start and prints the name of the variable (never its value).
 
