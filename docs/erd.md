@@ -166,6 +166,19 @@ What a signed-in user (`authenticated`) can do, always limited to their own rows
 
 Anonymous users (`anon`) have no access. Column-level grants stop a user from changing their own `plan` or `avatar_id`.
 
+### Least privilege (S1-8)
+
+RLS decides **which rows** a user reaches; table privileges decide **which operations** exist at all. Supabase grants every privilege to `anon` and `authenticated` by default, and some operations, such as `TRUNCATE`, do not go through RLS. So the schema removes those defaults and grants only what the table above lists:
+
+| Role | Privileges in `public` |
+|---|---|
+| `anon` | None. |
+| `authenticated` | `SELECT` on the seven tables; `UPDATE` only on `users (data_consent_at, onboarding_completed_at, reminders_enabled)` and `memories (fact)`; `DELETE` only on `memories`. Never `INSERT`, `TRUNCATE`, `REFERENCES` or `TRIGGER`. |
+| `service_role` (backend) | Unchanged: full access, bypasses RLS. |
+
+- **Functions:** `set_updated_at` and `handle_new_auth_user` run only as triggers, so nobody else can execute them (`public`, `anon` and `authenticated` have no `EXECUTE`). A trigger fires without that privilege.
+- **Future tables:** default privileges for `postgres` in `public` are revoked, so a table added by a later migration starts with no access for the app roles until it is granted on purpose.
+
 ## Out of scope
 
 - Creating the real Supabase project (S4-1).
@@ -176,3 +189,20 @@ Anonymous users (`anon`) have no access. Column-level grants stop a user from ch
 ## How to test
 
 Start the local database with Docker (see [Local database](../README.md#local-database) in the README). On the first start it applies [`schema.sql`](schema.sql) to a clean database; check the seven tables exist.
+
+Then run the privilege and RLS tests in [`schema-test.sql`](schema-test.sql):
+
+~~~bash
+docker compose exec -T db psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f - < docs/schema-test.sql
+~~~
+
+They check the privileges of each role in the catalog, then act as `anon` and as two signed-in users to confirm that each one only reaches their own rows, that `TRUNCATE` and other operations without privilege are refused, and that deleting an account removes all its data. Everything runs in a transaction that is rolled back. It prints `All database tests passed.` or stops at the first failed check, naming it.
+
+To see the current privileges directly:
+
+~~~sql
+select grantee, table_name, privilege_type
+from information_schema.role_table_grants
+where table_schema = 'public' and grantee in ('anon', 'authenticated')
+order by grantee, table_name;
+~~~

@@ -13,9 +13,24 @@
 --     crisis filter and the daily cap cannot be skipped from the app.
 --   * The app, signed in as `authenticated`, can only read its own rows and
 --     manage its own memories (US-08) and onboarding fields.
---   * `anon` gets no access: no policy is granted to it.
+--   * `anon` gets no access: no privilege and no policy.
+--   * Least privilege (S1-8): Supabase grants every table privilege to `anon`
+--     and `authenticated` by default, and RLS does not cover TRUNCATE. So
+--     those defaults are removed and each privilege is granted explicitly in
+--     the "Privileges" section. RLS then limits rows; privileges limit what
+--     can be done at all. Run docs/schema-test.sql to check both.
 
 begin;
+
+-- Tables, sequences and functions created later in `public` (migrations from
+-- the Supabase dashboard run as `postgres`) start with no access for the app
+-- roles, instead of inheriting Supabase's broad defaults.
+alter default privileges for role postgres in schema public
+  revoke all on tables from anon, authenticated;
+alter default privileges for role postgres in schema public
+  revoke all on sequences from anon, authenticated;
+alter default privileges for role postgres in schema public
+  revoke execute on functions from public, anon, authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Shared helpers
@@ -282,12 +297,6 @@ create policy "Users can update their own profile"
   using ((select auth.uid()) = id)
   with check ((select auth.uid()) = id);
 
--- Column-level guard: the app may only set the onboarding and settings fields.
--- plan and avatar_id are changed by the backend only.
-revoke update on public.users from authenticated;
-grant update (data_consent_at, onboarding_completed_at, reminders_enabled)
-  on public.users to authenticated;
-
 -- conversations and messages: read only. The backend writes them after the
 -- crisis filter and the daily cap.
 create policy "Users can read their own conversations"
@@ -317,15 +326,48 @@ create policy "Users can delete their own memories"
   to authenticated
   using ((select auth.uid()) = user_id);
 
--- Column-level guard: when editing a memory, only its text can change.
-revoke update on public.memories from authenticated;
-grant update (fact) on public.memories to authenticated;
-
 -- daily_usage: read only, to show the interactions left today.
 create policy "Users can read their own daily usage"
   on public.daily_usage for select
   to authenticated
   using ((select auth.uid()) = user_id);
+
+-- ---------------------------------------------------------------------------
+-- Privileges (S1-8)
+-- Least privilege for the app roles. `service_role` (the backend) keeps its
+-- privileges and bypasses RLS. Policies above decide which rows; these grants
+-- decide which operations exist at all.
+-- ---------------------------------------------------------------------------
+
+-- Start from nothing: remove Supabase's default grants.
+revoke all on all tables in schema public from anon, authenticated;
+revoke all on all sequences in schema public from anon, authenticated;
+
+-- Functions run only as triggers; nobody calls them directly. A trigger does
+-- not need EXECUTE on its function to fire.
+revoke execute on all functions in schema public from public, anon, authenticated;
+
+-- authenticated: read what the policies allow.
+grant select on
+  public.plan_limits,
+  public.avatars,
+  public.users,
+  public.conversations,
+  public.messages,
+  public.memories,
+  public.daily_usage
+to authenticated;
+
+-- Column-level guard: the app may only set the onboarding and settings fields.
+-- plan and avatar_id are changed by the backend only.
+grant update (data_consent_at, onboarding_completed_at, reminders_enabled)
+  on public.users to authenticated;
+
+-- Column-level guard: when editing a memory, only its text can change.
+grant update (fact) on public.memories to authenticated;
+grant delete on public.memories to authenticated;
+
+-- anon: nothing.
 
 -- ---------------------------------------------------------------------------
 -- Seed data

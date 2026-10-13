@@ -32,7 +32,8 @@ services:
       retries: 30
 
   pgadmin:
-    image: dpage/pgadmin4:9
+    # Exact version, so every machine runs the same pgAdmin. Update on purpose.
+    image: dpage/pgadmin4:9.18.0
     restart: unless-stopped
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:?Set PGADMIN_EMAIL in .env}
