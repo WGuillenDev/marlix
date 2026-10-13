@@ -6,8 +6,14 @@ import { loadEnv } from './config/env.js';
 import { createLlmProvider } from './services/llm/index.js';
 
 const env = loadEnv();
-const app = createApp({ llm: createLlmProvider(env) });
+const app = createApp({ llm: createLlmProvider(env), devAccessToken: env.DEV_ACCESS_TOKEN });
 
-app.listen(env.PORT, () => {
+const server = app.listen(env.PORT, () => {
   console.log(`marlix api listening on http://localhost:${env.PORT}`);
+});
+
+// Render sends SIGTERM before replacing the instance on each deploy: finish
+// the requests in flight instead of cutting them.
+process.on('SIGTERM', () => {
+  server.close(() => process.exit(0));
 });
