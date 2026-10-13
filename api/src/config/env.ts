@@ -5,6 +5,9 @@ import { z } from 'zod';
 // value, so a secret cannot end up in a log.
 const envSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
+  // Which LLM provider answers the chat (services/llm/). Each provider has its
+  // own variables below; adding one is described in docs/architecture.md.
+  LLM_PROVIDER: z.enum(['groq']).default('groq'),
   GROQ_API_KEY: z.string().trim().min(1),
   GROQ_MODEL: z.string().trim().min(1),
 });
