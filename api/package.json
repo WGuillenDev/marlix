@@ -14,11 +14,13 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/server.js",
     "typecheck": "tsc",
-    "test": "tsx --test \"test/**/*.test.ts\""
+    "test": "tsx --test \"test/**/*.test.ts\"",
+    "llm:smoke": "tsx scripts/llm-smoke.ts"
   },
   "dependencies": {
     "dotenv": "^18.0.5",
     "express": "^5.2.1",
+    "openai": "^7.32.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {
