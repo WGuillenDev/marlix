@@ -11,9 +11,10 @@
   },
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "start": "node dist/server.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc",
+    "test": "tsx --test \"test/**/*.test.ts\""
   },
   "dependencies": {
     "dotenv": "^18.0.5",
