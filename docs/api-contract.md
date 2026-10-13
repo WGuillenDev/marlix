@@ -49,6 +49,7 @@ For `VALIDATION_ERROR`, `details.fields` lists every invalid field. `field` is t
 |---|---|---|---|
 | 400 | `VALIDATION_ERROR` | The body or a parameter is invalid. `details.fields` lists each invalid field. Malformed JSON or a body over 16 KB answers the same code without `details`. | Fix the input. |
 | 401 | `UNAUTHORIZED` | Missing, invalid or expired token. | Refresh the session or ask to sign in again. |
+| 401 | `REAUTHENTICATION_REQUIRED` | `DELETE /v1/account` with a token issued more than 5 minutes ago. | Ask for the password again, then retry. |
 | 404 | `NOT_FOUND` | The resource or route does not exist, or belongs to another user. | Refresh the list. |
 | 409 | `ONBOARDING_ALREADY_COMPLETED` | `POST /v1/onboarding` was already called. | Go to the chat. |
 | 429 | `DAILY_LIMIT_REACHED` | The user used today's interactions. `details.resetsAt` is the next midnight in Costa Rica. | Friendly message with the reset time; the help screen stays available. |
@@ -440,7 +441,11 @@ The app reads `voiceConfig` for the on-device voice and `layersPath` for the SVG
 
 Deletes the account and all its data in cascade: profile, sessions, messages, memories and usage (US-09). It runs on the backend because it needs the service key. The app asks for confirmation before calling it and signs out after the response.
 
+**Requires a recent sign-in.** Deleting everything cannot be undone, so a stolen or forgotten-open session must not be enough. The backend checks the `iat` (issued at) claim of the access token: if it was issued more than **5 minutes** ago, it answers `401 REAUTHENTICATION_REQUIRED` and deletes nothing. The app then asks for the password again (a new Supabase sign-in, which issues a fresh token) and retries the call.
+
 **Response `204`**, no body. After it, the user cannot sign in with that account.
+
+**Errors:** `401 UNAUTHORIZED` (missing or invalid token), `401 REAUTHENTICATION_REQUIRED` (the token is older than 5 minutes).
 
 ## Use cases covered
 
