@@ -104,8 +104,8 @@ Everything about the LLM lives in `api/src/services/llm/`. The rest of the backe
 |---|---|
 | `types.ts` | The `LlmProvider` interface: one method, `complete(request)`, that takes the conversation (system prompt first) and returns the reply text. |
 | `errors.ts` | `LlmError` and its kinds: `rate_limited`, `timeout`, `unavailable`, `authentication`, `invalid_request` and `empty_response`. Adapters translate every provider failure into one of them, so the backend decides what to do without knowing which provider failed. |
-| `index.ts` | The public entry point. |
-| One file per provider | The adapter that implements `LlmProvider` with that provider's SDK. Groq is the first one (S1-4). |
+| `index.ts` | The public entry point and `createLlmProvider`, the factory that builds the provider chosen by `LLM_PROVIDER`. |
+| `groq-provider.ts` | The Groq adapter (S1-4), on the OpenAI SDK with Groq's base URL. After a `429` it does not call Groq again until the wait time Groq asked for has passed. |
 
 The provider is chosen with the `LLM_PROVIDER` environment variable, and each provider reads its own key and model from variables named after it (`GROQ_API_KEY`, `GROQ_MODEL`). Changing the model is a change of variable, not of code.
 
