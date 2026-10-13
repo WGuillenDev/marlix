@@ -33,6 +33,18 @@ Every error uses the same body:
 
 `code` is stable and the app decides what to show from it. `message` is for developers, not for the user. `details` is optional.
 
+For `VALIDATION_ERROR`, `details.fields` lists every invalid field. `field` is the field's path, or `body` when the problem is the body as a whole (not an object, unknown field):
+
+~~~json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "The request body is invalid.",
+    "details": { "fields": [{ "field": "message", "message": "Must be at most 2000 characters" }] }
+  }
+}
+~~~
+
 | HTTP | `code` | When | What the app does |
 |---|---|---|---|
 | 400 | `VALIDATION_ERROR` | The body or a parameter is invalid. `details.fields` lists each invalid field. | Fix the input. |
@@ -272,7 +284,17 @@ data: {"type":"reply","userMessage":{…},"reply":{…},"usage":{…}}
 
 Checks that happen before the model (auth, validation, daily limit) still answer with a normal JSON error and HTTP status, not with a stream. If a sentence fails the review, the stream sends an `error` or a safe fallback instead of that sentence; it never sends text that failed the review.
 
-**Errors:** `400 VALIDATION_ERROR`, `401 UNAUTHORIZED`, `404 NOT_FOUND` (unknown `interruptedMessageId`), `429 DAILY_LIMIT_REACHED`, `429 RATE_LIMITED`, `503 LLM_UNAVAILABLE`.
+**Errors:** `400 VALIDATION_ERROR`, `401 UNAUTHORIZED`, `404 NOT_FOUND` (unknown `interruptedMessageId`), `429 DAILY_LIMIT_REACHED`, `429 RATE_LIMITED`, `503 LLM_UNAVAILABLE`. A `503` caused by Groq's quota comes with a `Retry-After` header in seconds.
+
+**Implementation status.** The endpoint is built in steps; until each card is done, it differs from the full contract like this:
+
+| Part | Until | Meanwhile |
+|---|---|---|
+| Auth with the Supabase token | S4-3 | No user session. |
+| Stored messages | S4-4 | `userMessage.id` and `reply.id` are generated per request and not stored. `interruptedMessageId` is validated but not checked against the history, so it never answers `404`. |
+| `usage` | S2-6 | Not returned. |
+| Crisis filter and `type: "crisis"` | S2-1, S2-3 | Not active. |
+| Streaming | S6-10 | Only the JSON reply. |
 
 ---
 
