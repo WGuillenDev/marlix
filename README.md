@@ -57,6 +57,8 @@ Requirements: [Node.js](https://nodejs.org/) 24 or later.
    # {"status":"ok"}
    ~~~
 
+The server validates these variables when it starts. If a required one is missing or invalid, it does not start and prints the name of the variable (never its value).
+
 | Variable | Required | Default | What it is |
 |---|---|---|---|
 | `PORT` | No | `3000` | Port the API listens on. |
@@ -67,6 +69,7 @@ Requirements: [Node.js](https://nodejs.org/) 24 or later.
 |---|---|
 | `npm run dev` | Starts the server and restarts it on every change. |
 | `npm run typecheck` | Checks the types in strict mode without emitting files. |
+| `npm test` | Runs the automated tests. |
 | `npm run build` | Compiles TypeScript to `dist/`. |
 | `npm start` | Runs the compiled server from `dist/`. |
 
