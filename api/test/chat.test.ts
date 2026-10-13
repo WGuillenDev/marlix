@@ -93,7 +93,75 @@ describe('POST /v1/chat', () => {
   });
 });
 
+describe('central error handling', () => {
+  it('answers unknown routes with 404 NOT_FOUND', async () => {
+    const app = await startApp({ llm: createFakeLlm().llm });
+    try {
+      const response = await app.request('/v1/nothing-here');
+      assert.equal(response.status, 404);
+      assert.deepEqual(await response.json(), {
+        error: { code: 'NOT_FOUND', message: 'Route not found.' },
+      });
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('rejects a body that is too large with 400 VALIDATION_ERROR', async () => {
+    const app = await startApp({ llm: createFakeLlm().llm });
+    try {
+      const response = await app.postJson('/v1/chat', { message: 'a'.repeat(20_000) });
+      assert.equal(response.status, 400);
+      assert.equal(((await response.json()) as any).error.code, 'VALIDATION_ERROR');
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('turns an unexpected error into 500 INTERNAL_ERROR without internal details', async () => {
+    const app = await startApp({
+      llm: createFakeLlm(() => {
+        throw new TypeError('cannot read "mi diario personal"');
+      }).llm,
+    });
+    try {
+      const { result: response, output } = await captureConsole(() =>
+        app.postJson('/v1/chat', { message: 'Hola' }),
+      );
+      const text = await response.text();
+
+      assert.equal(response.status, 500);
+      assert.deepEqual(JSON.parse(text), {
+        error: { code: 'INTERNAL_ERROR', message: 'Unexpected error.' },
+      });
+      assert.ok(!output.includes('mi diario personal'), 'the error message is not logged');
+      assert.match(output, /TypeError/);
+    } finally {
+      await app.close();
+    }
+  });
+});
+
 describe('POST /v1/chat when the LLM fails', () => {
+  it('answers 503 LLM_UNAVAILABLE with a fixed message for any provider failure', async () => {
+    const app = await startApp({
+      llm: failingLlm(new LlmError('authentication', 'Groq responded 401 (invalid_api_key)')),
+    });
+    try {
+      const { result: response } = await captureConsole(() =>
+        app.postJson('/v1/chat', { message: 'Hola' }),
+      );
+
+      assert.equal(response.status, 503);
+      assert.equal(response.headers.get('retry-after'), null);
+      assert.deepEqual(await response.json(), {
+        error: { code: 'LLM_UNAVAILABLE', message: 'The model is not available right now.' },
+      });
+    } finally {
+      await app.close();
+    }
+  });
+
   it('answers 503 LLM_UNAVAILABLE with Retry-After on a quota error', async () => {
     const app = await startApp({
       llm: failingLlm(new LlmError('rate_limited', 'quota', { retryAfterSeconds: 7 })),
