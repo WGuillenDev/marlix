@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { after, before, describe, it } from 'node:test';
 
 import { LlmError } from '../src/services/llm/index.js';
-import { captureConsole, createFakeLlm, failingLlm, startApp } from './helpers.js';
+import { captureConsole, createFakeLlm, DEV_TOKEN, failingLlm, startApp } from './helpers.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -97,11 +97,17 @@ describe('central error handling', () => {
   it('answers unknown routes with 404 NOT_FOUND', async () => {
     const app = await startApp({ llm: createFakeLlm().llm });
     try {
-      const response = await app.request('/v1/nothing-here');
-      assert.equal(response.status, 404);
-      assert.deepEqual(await response.json(), {
-        error: { code: 'NOT_FOUND', message: 'Route not found.' },
-      });
+      for (const response of [
+        await app.request('/nothing-here'),
+        await app.request('/v1/nothing-here', {
+          headers: { authorization: `Bearer ${DEV_TOKEN}` },
+        }),
+      ]) {
+        assert.equal(response.status, 404);
+        assert.deepEqual(await response.json(), {
+          error: { code: 'NOT_FOUND', message: 'Route not found.' },
+        });
+      }
     } finally {
       await app.close();
     }

@@ -5,6 +5,9 @@ import { z } from 'zod';
 // value, so a secret cannot end up in a log.
 const envSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
+  // Required on every /v1 request until real auth exists (S1-7, removed in
+  // S4-3). Long and random: it is the only thing protecting the chat.
+  DEV_ACCESS_TOKEN: z.string().trim().min(32),
   // Which LLM provider answers the chat (services/llm/). Each provider has its
   // own variables below; adding one is described in docs/architecture.md.
   LLM_PROVIDER: z.enum(['groq']).default('groq'),
