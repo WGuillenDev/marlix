@@ -16,7 +16,7 @@ export const GROQ_DEFAULT_BASE_URL = 'https://api.groq.com/openai/v1';
 const DEFAULT_RETRY_AFTER_SECONDS = 10;
 // A longer wait is treated as a misread header, not a real limit.
 const MAX_RETRY_AFTER_SECONDS = 3600;
-const DEFAULT_TIMEOUT_MS = 30_000;
+const DEFAULT_TIMEOUT_MS = 15_000;
 
 export type GroqReasoningEffort = 'low' | 'medium' | 'high';
 
