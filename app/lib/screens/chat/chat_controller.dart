@@ -1,26 +1,87 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/chat.dart';
+import '../../models/help_resource.dart';
 import '../../models/usage.dart';
+import '../../services/api_exception.dart';
 import '../../services/marlix_api.dart';
 
+/// One row of the chat.
+sealed class ChatEntry {
+  const ChatEntry(this.id);
+
+  final String id;
+}
+
+enum SendStatus { sending, sent, failed }
+
+/// Why a message was not sent; each one gets its own copy on screen.
+enum SendFailure { network, timeout, unavailable, tooFast, dailyLimit, unexpected }
+
+class UserEntry extends ChatEntry {
+  const UserEntry(
+    super.id, {
+    required this.text,
+    required this.status,
+    this.failure,
+    this.retryAfter,
+  });
+
+  final String text;
+  final SendStatus status;
+  final SendFailure? failure;
+
+  /// For [SendFailure.tooFast]: how long the backend asked to wait.
+  final Duration? retryAfter;
+
+  /// A message that hit the daily limit cannot be retried until it resets.
+  bool get canRetry => status == SendStatus.failed && failure != SendFailure.dailyLimit;
+}
+
+class MarlixEntry extends ChatEntry {
+  MarlixEntry(this.message) : super(message.id);
+
+  final ChatMessage message;
+}
+
+/// The crisis filter answered: shown prominently, never with a retry.
+class CrisisEntry extends ChatEntry {
+  CrisisEntry(this.message, this.resources) : super(message.id);
+
+  final ChatMessage message;
+  final List<HelpResource> resources;
+}
+
 class ChatState {
-  const ChatState({this.messages = const [], this.sending = false, this.usage});
+  const ChatState({this.entries = const [], this.usage, this.limitResetsAt});
 
   /// Oldest first. Only this session's messages until the history exists (S4-4).
-  final List<ChatMessage> messages;
-
-  /// marlix is replying; the screen shows the typing indicator.
-  final bool sending;
+  final List<ChatEntry> entries;
 
   /// Unknown until `GET /v1/usage` or the first reply answers.
   final Usage? usage;
 
-  ChatState copyWith({List<ChatMessage>? messages, bool? sending, Usage? usage}) => ChatState(
-    messages: messages ?? this.messages,
-    sending: sending ?? this.sending,
-    usage: usage ?? this.usage,
-  );
+  /// Set when the backend answered `DAILY_LIMIT_REACHED`.
+  final DateTime? limitResetsAt;
+
+  /// marlix is replying; the screen shows the typing indicator.
+  bool get sending =>
+      entries.any((entry) => entry is UserEntry && entry.status == SendStatus.sending);
+
+  /// Lifts by itself after the reset, even if the app stays open past midnight.
+  bool get limitReached {
+    final now = DateTime.now();
+    if (limitResetsAt case final resetsAt? when now.isBefore(resetsAt)) return true;
+    final usage = this.usage;
+    return usage != null && usage.remaining == 0 && now.isBefore(usage.resetsAt);
+  }
+
+  ChatState copyWith({List<ChatEntry>? entries, Usage? usage, DateTime? limitResetsAt}) =>
+      ChatState(
+        entries: entries ?? this.entries,
+        usage: usage ?? this.usage,
+        limitResetsAt: limitResetsAt ?? this.limitResetsAt,
+      );
 }
 
 class ChatController extends Notifier<ChatState> {
@@ -36,51 +97,86 @@ class ChatController extends Notifier<ChatState> {
     try {
       final usage = await _api.usage();
       if (ref.mounted) state = state.copyWith(usage: usage);
-    } on Exception {
+    } on ApiException {
       // The next reply carries the usage too.
     }
   }
 
   /// Shows the message right away and adds marlix's reply when it arrives.
-  /// On failure the message is taken back and the error is rethrown, so the
-  /// screen can put the text back in the field.
+  /// If sending fails, the message stays in the chat marked as failed, so
+  /// the text is never lost.
   Future<void> send(String text) async {
     final message = text.trim();
-    if (message.isEmpty || state.sending) return;
-
-    final pending = ChatMessage(
-      id: 'local-${_localIds++}',
-      role: MessageRole.user,
-      content: message,
-      createdAt: DateTime.now().toUtc(),
+    if (message.isEmpty || state.sending || state.limitReached) return;
+    final id = 'local-${_localIds++}';
+    state = state.copyWith(
+      entries: [
+        ...state.entries,
+        UserEntry(id, text: message, status: SendStatus.sending),
+      ],
     );
-    state = state.copyWith(messages: [...state.messages, pending], sending: true);
+    await _deliver(id, message);
+  }
 
+  /// Sends a failed message again, in the same place in the chat.
+  Future<void> retry(String id) async {
+    final entry = state.entries.whereType<UserEntry>().where((e) => e.id == id).firstOrNull;
+    if (entry == null || !entry.canRetry || state.sending) return;
+    _replace(id, UserEntry(id, text: entry.text, status: SendStatus.sending));
+    await _deliver(id, entry.text);
+  }
+
+  Future<void> _deliver(String id, String text) async {
     try {
-      final response = await _api.sendMessage(message);
+      final response = await _api.sendMessage(text);
       if (!ref.mounted) return;
-      state = ChatState(
-        messages: [
-          for (final existing in state.messages)
-            if (existing.id != pending.id) existing,
-          response.userMessage,
-          response.reply,
+      final reply = switch (response) {
+        CrisisReply(:final reply, :final resources) => CrisisEntry(reply, resources),
+        ChatReply(:final reply) => MarlixEntry(reply),
+      };
+      state = state.copyWith(
+        entries: [
+          for (final entry in state.entries)
+            if (entry.id == id) ...[
+              UserEntry(id, text: text, status: SendStatus.sent),
+              reply,
+            ] else
+              entry,
         ],
         usage: response.usage,
       );
-    } catch (_) {
-      if (ref.mounted) {
-        state = state.copyWith(
-          messages: [
-            for (final existing in state.messages)
-              if (existing.id != pending.id) existing,
-          ],
-          sending: false,
-        );
+    } on ApiException catch (error) {
+      if (!ref.mounted) return;
+      _replace(
+        id,
+        UserEntry(
+          id,
+          text: text,
+          status: SendStatus.failed,
+          failure: _failureOf(error),
+          retryAfter: error is RateLimitedException ? error.retryAfter : null,
+        ),
+      );
+      if (error is DailyLimitReachedException) {
+        state = state.copyWith(limitResetsAt: error.resetsAt);
       }
-      rethrow;
     }
   }
+
+  void _replace(String id, ChatEntry replacement) {
+    state = state.copyWith(
+      entries: [for (final entry in state.entries) entry.id == id ? replacement : entry],
+    );
+  }
+
+  static SendFailure _failureOf(ApiException error) => switch (error) {
+    NetworkException() => SendFailure.network,
+    ApiTimeoutException() => SendFailure.timeout,
+    LlmUnavailableException() => SendFailure.unavailable,
+    RateLimitedException() => SendFailure.tooFast,
+    DailyLimitReachedException() => SendFailure.dailyLimit,
+    _ => SendFailure.unexpected,
+  };
 }
 
 final chatControllerProvider = NotifierProvider<ChatController, ChatState>(ChatController.new);

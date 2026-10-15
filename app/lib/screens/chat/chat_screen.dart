@@ -1,23 +1,34 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/usage.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/chat_states.dart';
 import '../../widgets/message_bubble.dart';
 import '../../widgets/typing_indicator.dart';
 import 'chat_controller.dart';
 
-/// Main screen (wireframe docs/diagrams/wireframes/screens/03a-chat.png).
+/// Main screen (wireframes docs/diagrams/wireframes/screens/03a to 03d).
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
+
+  /// A normal reply takes a few seconds; past this, the backend is probably
+  /// waking up.
+  static const slowReplyAfter = Duration(seconds: 5);
 
   @override
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
+  static const slowReplyAfter = ChatScreen.slowReplyAfter;
+
   final _input = TextEditingController();
   final _scroll = ScrollController();
+  Timer? _slowTimer;
+  var _slow = false;
 
   @override
   void initState() {
@@ -30,6 +41,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   @override
   void dispose() {
+    _slowTimer?.cancel();
     _input.dispose();
     _scroll.dispose();
     super.dispose();
@@ -38,15 +50,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Future<void> _send() async {
     final text = _input.text;
     _input.clear();
-    try {
-      await ref.read(chatControllerProvider.notifier).send(text);
-    } on Exception {
-      // Error, limit and crisis states are S3-4; for now the text is kept.
-      if (!mounted) return;
-      _input.text = text;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('No se pudo enviar. Intentá de nuevo.')));
-    }
+    // A failure keeps the message in the chat with a retry, so nothing is lost.
+    await ref.read(chatControllerProvider.notifier).send(text);
   }
 
   void _scrollToLatest() {
@@ -56,17 +61,35 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
+  /// The banner only appears when a reply takes longer than usual.
+  void _watchSlowReply(bool sending) {
+    _slowTimer?.cancel();
+    if (sending) {
+      _slowTimer = Timer(slowReplyAfter, () => setState(() => _slow = true));
+    } else if (_slow) {
+      setState(() => _slow = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final chat = ref.watch(chatControllerProvider);
     ref.listen(chatControllerProvider, (previous, next) {
-      if (previous?.messages.length != next.messages.length || next.sending) {
+      if (previous?.entries.length != next.entries.length ||
+          previous?.sending != next.sending ||
+          previous?.limitReached != next.limitReached) {
         WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToLatest());
       }
+      if (previous?.sending != next.sending) _watchSlowReply(next.sending);
     });
 
-    final items = [if (chat.sending) null, ...chat.messages.reversed];
-    final canSend = _input.text.trim().isNotEmpty && !chat.sending;
+    final controller = ref.read(chatControllerProvider.notifier);
+    final items = <Widget>[
+      if (chat.limitReached) const DailyLimitCard(),
+      if (chat.sending) const TypingIndicator(),
+      for (final entry in chat.entries.reversed) _entry(entry, controller, chat.sending),
+    ];
+    final canSend = _input.text.trim().isNotEmpty && !chat.sending && !chat.limitReached;
 
     return Scaffold(
       body: SafeArea(
@@ -74,8 +97,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           children: [
             const _Header(),
             if (chat.usage case final usage?) _UsageChip(usage: usage),
+            if (_slow)
+              const Padding(padding: EdgeInsets.fromLTRB(16, 12, 16, 0), child: WakingUpBanner()),
             Expanded(
-              child: chat.messages.isEmpty && !chat.sending
+              child: items.isEmpty
                   ? const _EmptyChat()
                   : ListView.separated(
                       controller: _scroll,
@@ -84,18 +109,52 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                       itemCount: items.length,
                       separatorBuilder: (_, _) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) => switch (items[index]) {
-                        null => const TypingIndicator(),
-                        final message => MessageBubble(message: message),
-                      },
+                      itemBuilder: (context, index) => items[index],
                     ),
             ),
-            _Composer(controller: _input, canSend: canSend, onSend: _send),
+            _Composer(
+              controller: _input,
+              canSend: canSend,
+              enabled: !chat.limitReached,
+              onSend: _send,
+            ),
           ],
         ),
       ),
     );
   }
+
+  Widget _entry(ChatEntry entry, ChatController controller, bool sending) => switch (entry) {
+    UserEntry(status: SendStatus.failed) => Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        MessageBubble(text: entry.text, fromUser: true, failed: true),
+        SendFailedNotice(
+          message: _failureText(entry),
+          onRetry: entry.canRetry && !sending ? () => controller.retry(entry.id) : null,
+        ),
+      ],
+    ),
+    UserEntry() => MessageBubble(text: entry.text, fromUser: true),
+    MarlixEntry(:final message) => MessageBubble(text: message.content, fromUser: false),
+    CrisisEntry(:final message, :final resources) => CrisisCard(
+      text: message.content,
+      resources: resources,
+    ),
+  };
+
+  static String _failureText(UserEntry entry) => switch (entry.failure) {
+    SendFailure.network => 'No se pudo enviar. Revisá tu conexión a internet.',
+    SendFailure.timeout => 'marlix tardó demasiado en responder. No se pudo enviar.',
+    SendFailure.unavailable => 'marlix no puede responder en este momento. No se pudo enviar.',
+    SendFailure.tooFast => switch (entry.retryAfter?.inSeconds) {
+      final seconds? when seconds > 0 =>
+        'Vas muy rápido. Esperá $seconds segundos y volvé a intentarlo.',
+      _ => 'Vas muy rápido. Esperá un momento y volvé a intentarlo.',
+    },
+    SendFailure.dailyLimit => 'No se envió: llegamos al límite de hoy.',
+    SendFailure.unexpected || null => 'No se pudo enviar.',
+  };
 }
 
 class _Header extends StatelessWidget {
@@ -185,10 +244,18 @@ class _EmptyChat extends StatelessWidget {
 }
 
 class _Composer extends StatelessWidget {
-  const _Composer({required this.controller, required this.canSend, required this.onSend});
+  const _Composer({
+    required this.controller,
+    required this.canSend,
+    required this.enabled,
+    required this.onSend,
+  });
 
   final TextEditingController controller;
   final bool canSend;
+
+  /// False once the daily limit is reached.
+  final bool enabled;
   final VoidCallback onSend;
 
   @override
@@ -205,6 +272,7 @@ class _Composer extends StatelessWidget {
             Expanded(
               child: TextField(
                 controller: controller,
+                enabled: enabled,
                 minLines: 1,
                 maxLines: 5,
                 // Same limit as the API contract.
@@ -212,15 +280,19 @@ class _Composer extends StatelessWidget {
                 textCapitalization: TextCapitalization.sentences,
                 style: AppText.body,
                 decoration: InputDecoration(
-                  hintText: 'Escribe un mensaje…',
+                  hintText: enabled ? 'Escribe un mensaje…' : 'Límite diario alcanzado',
                   hintStyle: AppText.body.copyWith(color: AppColors.textSecondary),
                   counterText: '',
                   filled: true,
-                  fillColor: AppColors.white,
+                  fillColor: enabled ? AppColors.white : AppColors.line,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(28),
                     borderSide: const BorderSide(color: AppColors.line, width: 1.5),
+                  ),
+                  disabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(28),
+                    borderSide: BorderSide.none,
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(28),
