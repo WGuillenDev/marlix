@@ -2,6 +2,7 @@ import type { AddressInfo } from 'node:net';
 
 import { createApp } from '../src/app.js';
 import type { CrisisConfig } from '../src/config/crisis-config.js';
+import type { PlansConfig } from '../src/config/plans.js';
 import type { ActivationLog } from '../src/services/crisis/activation-log.js';
 import { LlmError } from '../src/services/llm/index.js';
 import type { LlmCompletionRequest, LlmProvider } from '../src/services/llm/index.js';
@@ -30,6 +31,11 @@ export function failingLlm(error: LlmError): LlmProvider {
   };
 }
 
+// Tests send many messages to one app; the real limits are tested on their own.
+const GENEROUS_PLANS: PlansConfig = {
+  personal: { dailyInteractions: 1000, rateLimit: { requests: 1000, windowSeconds: 60 } },
+};
+
 export const DEV_TOKEN = 'test-dev-token-0123456789abcdefghij';
 const AUTH_HEADER = { authorization: `Bearer ${DEV_TOKEN}` };
 
@@ -42,17 +48,20 @@ export async function startApp({
   crisisClassifier,
   crisisConfig,
   activationLog = { record: () => {} },
+  plans = GENEROUS_PLANS,
 }: {
   llm: LlmProvider;
   crisisClassifier?: LlmProvider;
   crisisConfig?: CrisisConfig;
   activationLog?: ActivationLog;
+  plans?: PlansConfig;
 }) {
   const app = createApp({
     llm,
     ...(crisisClassifier ? { crisisClassifier } : {}),
     ...(crisisConfig ? { crisisConfig } : {}),
     activationLog,
+    plans,
     devAccessToken: DEV_TOKEN,
   });
   const server = app.listen(0);
