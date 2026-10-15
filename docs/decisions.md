@@ -4,6 +4,22 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-10-15 — App API service: `package:http`, typed errors, development token from an ignored file (S3-2)
+
+**Decision:** `lib/services/marlix_api.dart` is the only code that talks to the backend, on `package:http`. It covers the endpoints the backend has today (`/health`, `/v1/help-resources`, `/v1/chat`, `/v1/usage`); each endpoint built in Sprint 4 adds its method in its own card (decided by the user on 2026-10-15).
+
+| Option | Result |
+|---|---|
+| `package:http` | **Chosen.** Maintained by the Dart team, small, and `MockClient` replaces the network in tests without extra packages. Four JSON endpoints do not need more. |
+| `dio` | Discarded. Interceptors and cancellation are not needed yet, and it is a larger third-party dependency to keep up to date. |
+
+- **Typed errors:** every failure is an `ApiException` subtype (`NetworkException`, `ApiTimeoutException`, `InvalidResponseException`, or one per contract error code, such as `DailyLimitReachedException` with `resetsAt` and `RateLimitedException` with `Retry-After`). A crisis is a `CrisisReply`, not an error, as in the contract.
+- **Timeout of 75 seconds:** the free Render plan takes up to a minute to wake up.
+- **Development token:** until S4-3, `/v1/chat` and `/v1/usage` need `DEV_ACCESS_TOKEN`. The app reads it from `config/dev-token.json`, ignored by Git and passed with a second `--dart-define-from-file`, so it never enters the repository (decided by the user on 2026-10-15). It is removed with the real accounts.
+- A test fails if any file outside `lib/services/` imports `package:http`, or if the app's code or config contains something that looks like an API key.
+
+---
+
 ## 2026-10-15 — App foundations: Riverpod, backend URL per environment, emulator (S3-1)
 
 **State management: Riverpod** (`flutter_riverpod`), without code generation.
