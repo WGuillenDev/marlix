@@ -4,10 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/usage.dart';
+import '../../services/help_resources.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/chat_states.dart';
 import '../../widgets/message_bubble.dart';
 import '../../widgets/typing_indicator.dart';
+import '../help_screen.dart';
 import 'chat_controller.dart';
 
 /// Main screen (wireframes docs/diagrams/wireframes/screens/03a to 03d).
@@ -34,9 +36,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   void initState() {
     super.initState();
     _input.addListener(() => setState(() {}));
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => ref.read(chatControllerProvider.notifier).loadUsage(),
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(chatControllerProvider.notifier).loadUsage();
+      // So the help screen has the full list if the connection drops later.
+      ref.read(helpResourcesProvider.notifier).refresh();
+    });
   }
 
   @override
@@ -53,6 +57,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     // A failure keeps the message in the chat with a retry, so nothing is lost.
     await ref.read(chatControllerProvider.notifier).send(text);
   }
+
+  void _openHelp() => Navigator.of(context).push(HelpScreen.route());
 
   void _scrollToLatest() {
     // The list is reversed, so offset 0 is the newest message.
@@ -85,7 +91,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     final controller = ref.read(chatControllerProvider.notifier);
     final items = <Widget>[
-      if (chat.limitReached) const DailyLimitCard(),
+      if (chat.limitReached) DailyLimitCard(onHelp: _openHelp),
       if (chat.sending) const TypingIndicator(),
       for (final entry in chat.entries.reversed) _entry(entry, controller, chat.sending),
     ];
@@ -95,7 +101,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const _Header(),
+            _Header(onHelp: _openHelp),
             if (chat.usage case final usage?) _UsageChip(usage: usage),
             if (_slow)
               const Padding(padding: EdgeInsets.fromLTRB(16, 12, 16, 0), child: WakingUpBanner()),
@@ -140,6 +146,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     CrisisEntry(:final message, :final resources) => CrisisCard(
       text: message.content,
       resources: resources,
+      onMoreHelp: _openHelp,
     ),
   };
 
@@ -158,7 +165,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 }
 
 class _Header extends StatelessWidget {
-  const _Header();
+  const _Header({required this.onHelp});
+
+  final VoidCallback onHelp;
 
   @override
   Widget build(BuildContext context) {
@@ -188,6 +197,19 @@ class _Header extends StatelessWidget {
                     style: AppText.caption.copyWith(color: AppColors.textSecondary),
                   ),
                 ],
+              ),
+            ),
+            // Always visible, so help is one tap away from the chat.
+            IconButton(
+              onPressed: onHelp,
+              tooltip: 'Ayuda',
+              icon: const Icon(Icons.support_rounded),
+              iconSize: 28,
+              style: IconButton.styleFrom(
+                fixedSize: const Size(52, 52),
+                foregroundColor: AppColors.crisis,
+                backgroundColor: AppColors.white,
+                side: const BorderSide(color: AppColors.crisis, width: 2.5),
               ),
             ),
           ],
