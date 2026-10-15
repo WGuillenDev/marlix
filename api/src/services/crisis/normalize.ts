@@ -26,3 +26,22 @@ export function normalizeForMatching(text: string): string {
     .replace(/([a-z])\1+/g, '$1')
     .trim();
 }
+
+/**
+ * Builds one pattern that finds any of the phrases, as whole words, in a
+ * normalized text. A trailing `*` also matches any ending ("suicid*").
+ * With `ignoreNegated`, a phrase right after "no" does not match
+ * ("no soy tu terapeuta").
+ */
+export function compilePhrasePattern(
+  phrases: readonly string[],
+  { ignoreNegated = false } = {},
+): RegExp {
+  const alternatives = phrases.map((phrase) => {
+    const isPrefix = phrase.endsWith('*');
+    const words = normalizeForMatching(isPrefix ? phrase.slice(0, -1) : phrase);
+    return isPrefix ? `${words}[a-z]*` : words;
+  });
+  const notNegated = ignoreNegated ? '(?<!\\bno)' : '';
+  return new RegExp(`${notNegated}(?:^| )(?:${alternatives.join('|')})(?: |$)`);
+}
