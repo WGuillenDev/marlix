@@ -18,7 +18,7 @@ The repository is public: no secrets or real user data in it, ever.
 5. Wait for the CI checks to pass and review your own PR against the Definition of Done before merging.
 6. Merge into `main` and delete the branch.
 
-`main` must always build and run. It only receives changes through pull requests, and GitHub blocks the merge until the [CI](.github/workflows/ci.yml) passes: the backend's type check, tests and build, and the database privilege and RLS tests.
+`main` must always build and run. It only receives changes through pull requests, and GitHub blocks the merge until the [CI](.github/workflows/ci.yml) passes: the backend's type check, tests and build, the app's format check, analysis and tests, and the database privilege and RLS tests.
 
 ## Branches
 
