@@ -7,7 +7,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:marlix/app.dart';
+import 'package:marlix/services/dialer.dart';
+import 'package:marlix/services/help_resources.dart';
 import 'package:marlix/services/marlix_api.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Relative to now, so the limit logic behaves the same on any date.
 Map<String, Object?> usageJson({int remaining = 87}) => {
@@ -60,8 +63,15 @@ class FakeBackend {
   final sent = <String>[];
   int usageRemaining = 87;
 
+  /// `GET /v1/help-resources` fails as if there were no connection.
+  bool offline = false;
+
   MarlixApi api() => MarlixApi(
     client: MockClient((request) async {
+      if (request.url.path == '/v1/help-resources') {
+        if (offline) throw http.ClientException('No connection');
+        return jsonResponse({'updatedAt': '2026-10-14T00:00:00Z', 'resources': crisisResources});
+      }
       if (request.url.path == '/v1/usage') {
         return jsonResponse({'plan': 'personal', ...usageJson(remaining: usageRemaining)});
       }
@@ -108,17 +118,39 @@ class FakeBackend {
   void dropConnection() => reply.completeError(http.ClientException('Connection closed'));
 }
 
+/// Records the numbers instead of opening the dialer.
+class FakeDialer implements Dialer {
+  final dialed = <String>[];
+
+  /// False simulates a device without a dialer.
+  bool available = true;
+
+  @override
+  Future<bool> dial(String phone) async {
+    dialed.add(phone);
+    return available;
+  }
+}
+
 Future<FakeBackend> openChat(
   WidgetTester tester, {
   Size size = const Size(360, 800),
   FakeBackend? backend,
+  FakeDialer? dialer,
+  Map<String, Object> savedPreferences = const {},
 }) async {
   tester.view.physicalSize = size * tester.view.devicePixelRatio;
   addTearDown(tester.view.reset);
   final fake = backend ?? FakeBackend();
+  SharedPreferences.setMockInitialValues(savedPreferences);
+  final preferences = await SharedPreferences.getInstance();
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [marlixApiProvider.overrideWithValue(fake.api())],
+      overrides: [
+        marlixApiProvider.overrideWithValue(fake.api()),
+        sharedPreferencesProvider.overrideWithValue(preferences),
+        dialerProvider.overrideWithValue(dialer ?? FakeDialer()),
+      ],
       child: const MarlixApp(),
     ),
   );

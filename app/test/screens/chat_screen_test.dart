@@ -19,7 +19,8 @@ void main() {
 
   testWidgets('the send button is disabled for an empty or blank message', (tester) async {
     await openChat(tester);
-    IconButton button() => tester.widget<IconButton>(find.byType(IconButton));
+    IconButton button() =>
+        tester.widget<IconButton>(find.widgetWithIcon(IconButton, Icons.send_rounded));
 
     expect(button().onPressed, isNull);
     await type(tester, '   ');
@@ -39,7 +40,10 @@ void main() {
     expect(find.text('Hoy salí a caminar'), findsOneWidget);
     expect(find.byType(TypingIndicator), findsOneWidget);
     expect(tester.widget<TextField>(find.byType(TextField)).controller!.text, isEmpty);
-    expect(tester.widget<IconButton>(find.byType(IconButton)).onPressed, isNull);
+    expect(
+      tester.widget<IconButton>(find.widgetWithIcon(IconButton, Icons.send_rounded)).onPressed,
+      isNull,
+    );
 
     backend.answer('Hoy salí a caminar', '¡Qué rico! ¿Por dónde fuiste?');
     await tester.pump();

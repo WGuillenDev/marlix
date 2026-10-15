@@ -2,18 +2,25 @@ import 'package:flutter/material.dart';
 
 import '../models/help_resource.dart';
 import '../theme/app_theme.dart';
+import 'call_buttons.dart';
 
 /// Wireframe 03c: the crisis reply stands out from the conversation, with a
-/// red accent and the help lines, the primary one first.
+/// red accent, a button that dials the primary line and a way to the rest.
 class CrisisCard extends StatelessWidget {
-  const CrisisCard({super.key, required this.text, required this.resources});
+  const CrisisCard({
+    super.key,
+    required this.text,
+    required this.resources,
+    required this.onMoreHelp,
+  });
 
   final String text;
   final List<HelpResource> resources;
+  final VoidCallback onMoreHelp;
 
   @override
   Widget build(BuildContext context) {
-    final ordered = [...resources]..sort((a, b) => (b.primary ? 1 : 0) - (a.primary ? 1 : 0));
+    final primary = resources.where((line) => line.primary).firstOrNull ?? emergencyLine;
     return Semantics(
       container: true,
       liveRegion: true,
@@ -32,7 +39,7 @@ class CrisisCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Semantics(
                       header: true,
@@ -40,8 +47,20 @@ class CrisisCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     SelectableText(text, style: AppText.body),
-                    const SizedBox(height: 16),
-                    for (final resource in ordered) _ResourceLine(resource: resource),
+                    const SizedBox(height: 20),
+                    EmergencyCallButton(line: primary),
+                    const SizedBox(height: 12),
+                    OutlinedButton(
+                      onPressed: onMoreHelp,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.crisis,
+                        side: const BorderSide(color: AppColors.crisis, width: 2),
+                        textStyle: AppText.button,
+                        minimumSize: const Size.fromHeight(52),
+                        shape: const StadiumBorder(),
+                      ),
+                      child: const Text('Ver más ayuda'),
+                    ),
                   ],
                 ),
               ),
@@ -53,54 +72,11 @@ class CrisisCard extends StatelessWidget {
   }
 }
 
-class _ResourceLine extends StatelessWidget {
-  const _ResourceLine({required this.resource});
-
-  final HelpResource resource;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = resource.primary ? AppColors.crisis : AppColors.charcoal;
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.phone_rounded, size: 20, color: color),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    text: '${resource.name}\n',
-                    style: AppText.bodyStrong.copyWith(color: color),
-                  ),
-                  TextSpan(
-                    text: '${formatPhone(resource.phone)} · ${resource.hours}',
-                    style: AppText.caption.copyWith(color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// `911` → `9-1-1`; `8002737869` → `800-273-7869`; `22257511` → `2225-7511`.
-String formatPhone(String digits) => switch (digits.length) {
-  3 => digits.split('').join('-'),
-  8 => '${digits.substring(0, 4)}-${digits.substring(4)}',
-  10 => '${digits.substring(0, 3)}-${digits.substring(3, 6)}-${digits.substring(6)}',
-  _ => digits,
-};
-
 /// Wireframe 03d: the day's messages are used up.
 class DailyLimitCard extends StatelessWidget {
-  const DailyLimitCard({super.key});
+  const DailyLimitCard({super.key, required this.onHelp});
+
+  final VoidCallback onHelp;
 
   @override
   Widget build(BuildContext context) {
@@ -140,18 +116,15 @@ class DailyLimitCard extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.support_rounded, color: AppColors.crisis),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      'La ayuda sigue disponible',
-                      style: AppText.bodyStrong.copyWith(color: AppColors.crisis),
-                    ),
-                  ),
-                ],
+              TextButton.icon(
+                onPressed: onHelp,
+                icon: const Icon(Icons.support_rounded),
+                label: const Text('La ayuda sigue disponible'),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.crisis,
+                  textStyle: AppText.bodyStrong,
+                  minimumSize: const Size(0, 48),
+                ),
               ),
             ],
           ),
