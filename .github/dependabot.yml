@@ -1,0 +1,47 @@
+# Dependabot version updates (S2-10). Security alerts are on in the repository
+# settings; this file adds weekly version updates. Every PR goes through the CI
+# (S2-8) before it can be merged.
+
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /api
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Costa_Rica
+    labels: [backend]
+    commit-message:
+      prefix: chore
+    groups:
+      # One PR for everything that should not break; majors come one by one.
+      npm-minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # The types must match the Node major the backend runs on (24).
+      - dependency-name: "@types/node"
+        update-types: [version-update:semver-major]
+
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Costa_Rica
+    labels: [infra]
+    commit-message:
+      prefix: chore
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Costa_Rica
+    labels: [infra]
+    commit-message:
+      prefix: chore
