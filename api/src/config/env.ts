@@ -24,6 +24,10 @@ const envSchema = z.object({
   // so it has its own quota. A timeout counts as a crisis, so it stays short.
   CRISIS_CLASSIFIER_MODEL: z.string().trim().min(1).default('openai/gpt-oss-20b'),
   CRISIS_CLASSIFIER_TIMEOUT_MS: z.coerce.number().int().min(1000).max(30_000).default(5000),
+  // Supabase project (S4-1). The secret key has service_role rights and
+  // bypasses RLS: only the backend holds it, never the app or a log.
+  SUPABASE_URL: z.url().refine((url) => /^https:\/\/[a-z0-9]+\.supabase\.co\/?$/.test(url)),
+  SUPABASE_SECRET_KEY: z.string().trim().startsWith('sb_secret_'),
 });
 
 /** The validated configuration. Code reads it from here, never from process.env. */

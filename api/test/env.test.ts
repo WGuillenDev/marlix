@@ -7,6 +7,8 @@ const validEnv = {
   DEV_ACCESS_TOKEN: 'a'.repeat(32),
   GROQ_API_KEY: 'test-key',
   GROQ_MODEL: 'test-model',
+  SUPABASE_URL: 'https://abcdefghijklmnop.supabase.co',
+  SUPABASE_SECRET_KEY: 'sb_secret_test-key',
 };
 
 describe('parseEnv', () => {
@@ -27,7 +29,8 @@ describe('parseEnv', () => {
       () => parseEnv({}),
       (error: unknown) =>
         error instanceof EnvValidationError &&
-        error.invalidVariables.join(',') === 'DEV_ACCESS_TOKEN,GROQ_API_KEY,GROQ_MODEL',
+        error.invalidVariables.join(',') ===
+          'DEV_ACCESS_TOKEN,GROQ_API_KEY,GROQ_MODEL,SUPABASE_SECRET_KEY,SUPABASE_URL',
     );
   });
 
@@ -45,6 +48,18 @@ describe('parseEnv', () => {
 
   it('rejects a development token shorter than 32 characters', () => {
     assert.throws(() => parseEnv({ ...validEnv, DEV_ACCESS_TOKEN: 'short' }), EnvValidationError);
+  });
+
+  it('rejects a Supabase URL that is not a project URL', () => {
+    for (const url of ['http://abcdefghijklmnop.supabase.co', 'https://example.com', 'not-a-url']) {
+      assert.throws(() => parseEnv({ ...validEnv, SUPABASE_URL: url }), EnvValidationError, url);
+    }
+  });
+
+  it('accepts only a Supabase secret key, not a publishable or legacy one', () => {
+    for (const key of ['sb_publishable_abc', 'eyJhbGciOiJIUzI1NiJ9.e30.x']) {
+      assert.throws(() => parseEnv({ ...validEnv, SUPABASE_SECRET_KEY: key }), EnvValidationError);
+    }
   });
 
   it('rejects an invalid port', () => {
