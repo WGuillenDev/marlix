@@ -1,79 +1,11 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
-import 'package:marlix/app.dart';
-import 'package:marlix/services/marlix_api.dart';
 import 'package:marlix/widgets/message_bubble.dart';
 import 'package:marlix/widgets/typing_indicator.dart';
 
-const usage = {'used': 13, 'limit': 100, 'remaining': 87, 'resetsAt': '2026-10-16T06:00:00Z'};
-var _ids = 0;
-
-Map<String, Object?> message(String role, String content) => {
-  'id': 'id-${_ids++}',
-  'role': role,
-  'content': content,
-  'createdAt': '2026-10-15T18:00:00Z',
-};
-
-http.Response json(Object body, [int status = 200]) => http.Response(
-  jsonEncode(body),
-  status,
-  headers: {'content-type': 'application/json; charset=utf-8'},
-);
-
-/// A backend whose chat replies wait for [reply] to complete, so the test
-/// controls when marlix answers.
-class FakeBackend {
-  Completer<http.Response> reply = Completer();
-  final sent = <String>[];
-
-  MarlixApi api() => MarlixApi(
-    client: MockClient((request) async {
-      if (request.url.path == '/v1/usage') return json({'plan': 'personal', ...usage});
-      sent.add((jsonDecode(request.body) as Map)['message'] as String);
-      return reply.future;
-    }),
-    baseUrl: Uri.parse('https://api.test'),
-  );
-
-  void answer(String userText, String replyText, {int remaining = 86}) {
-    reply.complete(
-      json({
-        'type': 'reply',
-        'userMessage': message('user', userText),
-        'reply': message('assistant', replyText),
-        'usage': {...usage, 'used': 100 - remaining, 'remaining': remaining},
-      }),
-    );
-  }
-}
-
-Future<FakeBackend> openChat(WidgetTester tester, {Size size = const Size(360, 800)}) async {
-  tester.view.physicalSize = size * tester.view.devicePixelRatio;
-  addTearDown(tester.view.reset);
-  final backend = FakeBackend();
-  await tester.pumpWidget(
-    ProviderScope(
-      overrides: [marlixApiProvider.overrideWithValue(backend.api())],
-      child: const MarlixApp(),
-    ),
-  );
-  await tester.pump();
-  return backend;
-}
-
-Future<void> type(WidgetTester tester, String text) async {
-  await tester.enterText(find.byType(TextField), text);
-  await tester.pump();
-}
-
-Finder get sendButton => find.byTooltip('Enviar');
+import '../helpers/fake_backend.dart';
 
 void main() {
   testWidgets('shows the header, the remaining messages and an empty chat', (tester) async {
@@ -171,21 +103,6 @@ void main() {
 
     expect(find.text('La más nueva'), findsOneWidget);
     expect(tester.getRect(find.text('La más nueva')).bottom, lessThan(800));
-  });
-
-  testWidgets('keeps the text when sending fails', (tester) async {
-    final backend = await openChat(tester);
-
-    await type(tester, 'No se pierde');
-    await tester.tap(sendButton);
-    await tester.pump();
-    backend.reply.completeError(http.ClientException('Connection closed'));
-    await tester.pump();
-    await tester.pump();
-
-    expect(tester.widget<TextField>(find.byType(TextField)).controller!.text, 'No se pierde');
-    expect(find.byType(MessageBubble), findsNothing);
-    expect(find.byType(TypingIndicator), findsNothing);
   });
 
   testWidgets('fits a small screen with the keyboard open', (tester) async {

@@ -4,6 +4,23 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-10-15 — Chat states: a failed message stays in place with a retry (S3-4)
+
+**Decision:** when sending fails, the message stays in the chat with a red border, the reason and a **Reintentar** button (wireframe 03b), and the retry sends it again in the same place.
+
+| Option | Result |
+|---|---|
+| Failed message in place, with retry | **Chosen.** The text is never lost, the user sees which message failed and why, and one tap sends it again. It is how most messaging apps behave. |
+| Put the text back in the field | Discarded (it was the temporary behavior of S3-3). The message disappears from the conversation, and a second failed message would overwrite the first. |
+
+- **Each typed error has its own copy:** no connection, timeout, model unavailable, too many messages (with the seconds from `Retry-After`), daily limit and unexpected error. A message that hit the daily limit cannot be retried until the reset.
+- **Daily limit (wireframe 03d):** a card says the messages renew at midnight, the help is still available and the composer is locked. It also appears when a reply uses the last message or the chat opens with none left, and it lifts by itself once `resetsAt` passes.
+- **Crisis (wireframe 03c):** a card with a red accent, the backend's fixed text and the help lines, the primary one first. The dial buttons are S3-5.
+- **Waking up (wireframe 03b):** if a reply takes more than 5 seconds, a banner explains that marlix is waking up; the free Render plan sleeps after 15 minutes.
+- The wireframe's offline banner promises that messages "will be sent when the connection is back". That needs an offline queue, which is out of scope, so the failed message and its retry cover the offline case.
+
+---
+
 ## 2026-10-15 — Chat screen: fonts bundled with the app, prototype avatar, scope against the wireframe (S3-3)
 
 **Fonts bundled, not fetched.** Nunito (UI and chat) and Baloo 2 (titles), the style guide's fonts, are in `app/assets/fonts/` with their OFL licenses.
