@@ -15,10 +15,10 @@ The repository is public: no secrets or real user data in it, ever.
 2. Create a branch from `main`: `<type>/<short-description>`, lowercase with hyphens.
 3. Make small, frequent commits.
 4. Open a pull request with `Closes #N` in the description.
-5. Review your own PR against the Definition of Done before merging.
+5. Wait for the CI checks to pass and review your own PR against the Definition of Done before merging.
 6. Merge into `main` and delete the branch.
 
-`main` must always build and run. It only receives changes through pull requests.
+`main` must always build and run. It only receives changes through pull requests, and GitHub blocks the merge until the [CI](.github/workflows/ci.yml) passes: the backend's type check, tests and build, and the database privilege and RLS tests.
 
 ## Branches
 

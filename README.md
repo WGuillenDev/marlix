@@ -1,5 +1,7 @@
 # marlix 🐾
 
+[![CI](https://github.com/WGuillenDev/marlix/actions/workflows/ci.yml/badge.svg)](https://github.com/WGuillenDev/marlix/actions/workflows/ci.yml)
+
 Open source mobile app for conversational companionship with an AI avatar.
 
 marlix is designed for people facing social isolation who need accessible emotional support. It keeps them company without fostering dependency: it encourages users to connect with the people in their lives.
@@ -85,7 +87,7 @@ The server validates these variables when it starts. If a required one is missin
 |---|---|
 | `npm run dev` | Starts the server and restarts it on every change. |
 | `npm run typecheck` | Checks the types in strict mode without emitting files. |
-| `npm test` | Runs the automated tests. |
+| `npm test` | Runs the automated tests. The [CI](.github/workflows/ci.yml) also runs them, with the type check and the build, on every pull request. |
 | `npm run llm:smoke` | Sends one real message to the configured LLM and prints the reply. `-- --burst 6` sends several at once to check that a quota error (429) is handled. Spends real quota. |
 | `npm run crisis:eval` | Runs the crisis test cases through the real filter, classifier included, and reports false negatives and false positives. Spends real quota. |
 | `npm run build` | Compiles TypeScript to `dist/`. |
