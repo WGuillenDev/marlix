@@ -1,0 +1,71 @@
+# Continuous integration (S2-8): every PR and every push to main must pass
+# before it can be merged and deployed. No secrets: the tests use a fake LLM.
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api:
+    name: API
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      # Actions are pinned by commit SHA so a moved tag cannot change what runs.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  database:
+    name: Database
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Start Postgres with the schema
+        # Same image as docker-compose.yml; the schema runs once on first start.
+        run: |
+          docker run -d --name db -e POSTGRES_PASSWORD=ci-only \
+            -v "$PWD/docs/schema.sql:/docker-entrypoint-initdb.d/zz-marlix-schema.sql:ro" \
+            public.ecr.aws/supabase/postgres:17.11.0.002
+      - name: Wait for the database
+        # The image restarts Postgres after the init scripts; wait for that
+        # restart, not just the first connection.
+        run: |
+          for attempt in $(seq 1 90); do
+            if docker logs db 2>&1 | grep -q "init process complete" &&
+              docker exec db pg_isready -U postgres -h localhost > /dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs db
+          exit 1
+      - name: Run the privilege and RLS tests
+        run: >-
+          docker exec -i db psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f -
+          < docs/schema-test.sql
