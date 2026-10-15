@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marlix/screens/chat/chat_screen.dart';
+import 'package:marlix/screens/help_screen.dart';
 import 'package:marlix/widgets/chat_states.dart';
+import 'package:marlix/widgets/phone_format.dart';
 import 'package:marlix/widgets/message_bubble.dart';
 import 'package:marlix/widgets/typing_indicator.dart';
 
@@ -122,12 +124,15 @@ void main() {
       find.text('Mañana volvemos a conversar: los mensajes se renuevan a medianoche.'),
       findsOneWidget,
     );
-    expect(find.text('La ayuda sigue disponible'), findsOneWidget);
     expect(find.text('Un mensaje más'), findsOneWidget, reason: 'the text is not lost');
     expect(find.text('No se envió: llegamos al límite de hoy.'), findsOneWidget);
     expect(retryButton, findsNothing, reason: 'retrying cannot work until the reset');
     expect(tester.widget<TextField>(find.byType(TextField)).enabled, isFalse);
     expect(find.text('Límite diario alcanzado'), findsOneWidget);
+
+    await tester.tap(find.text('La ayuda sigue disponible'));
+    await tester.pumpAndSettle();
+    expect(find.byType(HelpScreen), findsOneWidget, reason: 'help stays one tap away');
   });
 
   testWidgets('using the last message shows the limit right away', (tester) async {
@@ -149,8 +154,9 @@ void main() {
     expect(find.byType(DailyLimitCard), findsOneWidget);
   });
 
-  testWidgets('the crisis reply is a prominent card with the help lines', (tester) async {
-    final backend = await openChat(tester);
+  testWidgets('the crisis reply is a prominent card that dials 9-1-1', (tester) async {
+    final dialer = FakeDialer();
+    final backend = await openChat(tester, dialer: dialer);
     await type(tester, 'Ya no aguanto más');
     await tester.tap(sendButton);
     backend.answerCrisis('Ya no aguanto más', 'Por favor llamá al 9-1-1 ahora.');
@@ -159,13 +165,15 @@ void main() {
     expect(find.byType(CrisisCard), findsOneWidget);
     expect(find.text('No estás solo ni sola en esto'), findsOneWidget);
     expect(find.text('Por favor llamá al 9-1-1 ahora.'), findsOneWidget);
-    expect(find.textContaining('9-1-1 · 24/7, gratuito'), findsOneWidget);
-    expect(find.textContaining('800-273-7869'), findsOneWidget);
     expect(retryButton, findsNothing);
 
-    final primary = tester.getTopLeft(find.textContaining('9-1-1, Despacho')).dy;
-    final secondary = tester.getTopLeft(find.textContaining('Aquí Estoy')).dy;
-    expect(primary, lessThan(secondary), reason: 'the primary line comes first');
+    await tester.tap(find.text('Llamar al 9-1-1'));
+    await tester.pump();
+    expect(dialer.dialed, ['911']);
+
+    await tester.tap(find.text('Ver más ayuda'));
+    await tester.pumpAndSettle();
+    expect(find.byType(HelpScreen), findsOneWidget);
   });
 
   test('formats the phone numbers of the help lines', () {
