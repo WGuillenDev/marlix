@@ -13,7 +13,8 @@ services:
     # Supabase's own Postgres image: same as production, with the `auth`
     # schema (auth.users, auth.uid()) and the anon/authenticated/service_role
     # roles that docs/schema.sql needs. A plain `postgres` image lacks them.
-    image: public.ecr.aws/supabase/postgres:17.11.0.002
+    # The CI reads this line, so the version Dependabot bumps is the one tested.
+    image: supabase/postgres:17.11.0.002
     restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
