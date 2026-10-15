@@ -14,6 +14,8 @@ export interface LlmCompletionRequest {
   messages: readonly LlmMessage[];
   /** Upper bound for the reply, so one call cannot use the whole quota. */
   maxOutputTokens?: number;
+  /** 0 makes the answer repeatable, as a classifier needs. Provider default if omitted. */
+  temperature?: number;
   /** Lets the caller cancel the call, for example when the client disconnects. */
   signal?: AbortSignal;
 }

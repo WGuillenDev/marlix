@@ -43,7 +43,7 @@ The lists are in [`api/src/services/crisis/signals.ts`](../api/src/services/cris
 To change them:
 
 1. Add or move the phrase in `signals.ts`, as people would write it (with accents; normalization takes care of variants).
-2. Add the case to the tests (`api/test/crisis-filter.test.ts`, and the full set of S2-7).
+2. Add a case to the [test suite](#tests) (`api/test/fixtures/crisis-cases.ts`), and run `npm test`.
 3. Prefer `ambiguous` for phrases that also have an everyday meaning ("me van a matar" can be a figure of speech). Use `risk` only for phrases that are almost never figurative.
 
 ## The second layer
@@ -53,10 +53,11 @@ Messages marked `ambiguous` get an isolated classification by an LLM (S2-2), so 
 - **Only ambiguous messages.** A clear risk never goes to the classifier, and normal messages skip it.
 - **Only the current message.** The request carries the classification policy and that one message: no history, no memory and no personality prompt. A message that would go to Groq anyway if it were normal is not exposed further.
 - **A fixed answer.** The policy ([`api/src/config/crisis-classifier-prompt.ts`](../api/src/config/crisis-classifier-prompt.ts)) asks for one word, `RISK` or `SAFE`. Only an exact `SAFE` lets the message through.
+- **Repeatable.** The classifier is called with temperature 0, so the same message always gets the same answer.
 - **Conservative on failure.** An error, a quota error or a timeout counts as a crisis. The timeout is short (`CRISIS_CLASSIFIER_TIMEOUT_MS`, 5 seconds by default) and there is no retry.
 - **Its own model.** It uses `CRISIS_CLASSIFIER_MODEL` (`openai/gpt-oss-20b` by default), not the chat model, so it does not spend the conversation's quota. Why this model is in [decisions.md](decisions.md).
 
-`npm run crisis:eval` (in `api/`) runs a set of ambiguous messages through the real classifier and reports how many it got right.
+How well it classifies is measured with the [test suite](#tests).
 
 ## The crisis reply
 
@@ -105,6 +106,38 @@ To count activations for a period, search the Render logs of `marlix-api` for `c
 
 The backend has no database until S4-1, so the record lives in the logs, which Render only keeps for a limited time. The record goes through the `ActivationLog` interface (`api/src/services/crisis/activation-log.ts`), so Sprint 4 can store it in a database table by replacing that one implementation.
 
+## Tests
+
+This is the one part of marlix that cannot rely on manual tests: if it fails, it fails with someone vulnerable (S2-7). The suite is built on a shared set of **invented** messages in [`api/test/fixtures/crisis-cases.ts`](../api/test/fixtures/crisis-cases.ts); never add a real conversation to it. Each case says what the whole filter should decide and what the keyword layer alone should find.
+
+| Group | Cases | Expected |
+|---|---|---|
+| Clear risk, including other spellings and voice transcriptions | 25 | Crisis, decided by the keywords. |
+| Ambiguous risk | 10 | Crisis, decided by the second layer. |
+| Ambiguous but safe | 6 | No crisis, decided by the second layer. |
+| Normal, including figurative death ("me muero de risa") | 20 | No crisis; the second layer is not called. |
+
+**`npm test`** runs it automatically, without spending quota:
+
+- Every case through the keyword layer.
+- Every clear risk through `POST /v1/chat`: the answer is a crisis with 9-1-1 first, and **no model is called**, not even the classifier.
+- Every ambiguous risk: a crisis, and the conversation model is never called.
+- Every normal message: a normal reply, without the classifier.
+- A report of false negatives and false positives, which fails on any:
+
+  ~~~text
+  ℹ clear risk detected: 25/25
+  ℹ normal messages let through: 20/20
+  ℹ ambiguous sent to the second layer: 16/16
+  ℹ conservative mode: 0 false negatives, 6 false positives
+  ~~~
+
+  *Conservative mode* is the filter without a second layer: every ambiguous message is a crisis, so the only false alarms are the ambiguous safe ones.
+
+**`npm run crisis:eval`** (in `api/`) runs the same cases through the real classifier and prints the confusion matrix of the whole filter. It spends quota, so it is run by hand, after changing the signals, the policy or the model. It fails if any crisis is missed. Result on 2026-10-14, twice in a row: **0 false negatives out of 35 and 0 false positives out of 26**.
+
+The suite already caught two problems while it was being written: "me kiero matar" passed as normal (*k* and *q* for *qu* are now normalized), and the classifier gave different answers to the same message in different runs (it now uses temperature 0).
+
 ## Known limits
 
 - **Spanish only.** The app is in Spanish; messages in other languages are not checked.
@@ -116,5 +149,4 @@ The backend has no database until S4-1, so the record lives in the logs, which R
 
 | Card | What it adds |
 |---|---|
-| S2-7 | The full set of automated test cases. |
 | S7-7 | Periodic verification of the help phone numbers. |

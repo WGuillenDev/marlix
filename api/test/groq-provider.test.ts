@@ -68,7 +68,7 @@ describe('GroqProvider', () => {
       jsonResponse(200, completionBody('  ¡Hola!  ')),
     );
 
-    const result = await provider.complete({ messages, maxOutputTokens: 256 });
+    const result = await provider.complete({ messages, maxOutputTokens: 256, temperature: 0 });
 
     assert.equal(result.content, '¡Hola!');
     assert.deepEqual(result.usage, { inputTokens: 12, outputTokens: 5 });
@@ -77,6 +77,7 @@ describe('GroqProvider', () => {
     assert.equal(sent.model, 'test-model');
     assert.equal(sent.reasoning_effort, 'low');
     assert.equal(sent.max_completion_tokens, 256);
+    assert.equal(sent.temperature, 0);
     assert.deepEqual(sent.messages, messages);
     assert.equal(requests[0]!.headers.get('authorization'), `Bearer ${API_KEY}`);
   });

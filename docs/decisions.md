@@ -46,6 +46,8 @@ The public endpoints are unchanged: `GET /health` and `GET /v1/help-resources`.
 
 Any answer other than an exact `SAFE`, an error or a timeout counts as a crisis.
 
+**Update (S2-7):** the full test suite later found that the classifier could give different answers to the same message ("nada tiene sentido desde que perdí el trabajo" passed once as safe). It is now called with **temperature 0**. With that, the 61 cases of the suite gave 0 false negatives and 0 false positives in two runs in a row.
+
 ---
 
 ## 2026-10-13 — Deployment: Render Blueprint, and a development token until the crisis filter exists (S1-7)

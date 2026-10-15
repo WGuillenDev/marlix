@@ -20,6 +20,12 @@ describe('createAmbiguousClassifier', () => {
     assert.doesNotMatch(CRISIS_CLASSIFIER_PROMPT, /Sos marlix/);
   });
 
+  it('asks for a repeatable answer (temperature 0)', async () => {
+    const fake = createFakeLlm(() => 'SAFE');
+    await createAmbiguousClassifier(fake.llm)('ya no aguanto más');
+    assert.equal(fake.requests[0]!.temperature, 0);
+  });
+
   const answers: [string, boolean][] = [
     ['SAFE', false],
     [' safe. ', false],

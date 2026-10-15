@@ -11,6 +11,7 @@ describe('normalizeForMatching', () => {
     assert.equal(normalizeForMatching('Sueño, vergüenza... ¿Qué?'), 'sueno verguenza que');
     assert.equal(normalizeForMatching('m4t4rm3'), 'matarme');
     assert.equal(normalizeForMatching('quierooo moriiiir'), 'quiero morir');
+    assert.equal(normalizeForMatching('me kiero matar, qiero'), 'me quiero matar quiero');
   });
 });
 
