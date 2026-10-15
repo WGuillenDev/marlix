@@ -15,7 +15,8 @@
     "start": "node dist/server.js",
     "typecheck": "tsc",
     "test": "tsx --test \"test/**/*.test.ts\"",
-    "llm:smoke": "tsx scripts/llm-smoke.ts"
+    "llm:smoke": "tsx scripts/llm-smoke.ts",
+    "crisis:eval": "tsx scripts/crisis-classifier-eval.ts"
   },
   "dependencies": {
     "dotenv": "^18.0.5",
