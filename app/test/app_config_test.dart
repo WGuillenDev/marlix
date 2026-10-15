@@ -49,6 +49,33 @@ void main() {
       expect(withoutToken.devAccessToken, isNull);
     });
 
+    test('rejects the development token in a release build, naming the file', () {
+      expect(
+        () => AppConfig.parse(
+          apiBaseUrl: 'https://marlix-api.onrender.com',
+          devAccessToken: 'dev-token-with-at-least-thirty-two-characters',
+          allowInsecure: false,
+          isRelease: true,
+        ),
+        throwsA(
+          isA<AppConfigException>().having(
+            (error) => error.message,
+            'message',
+            contains('config/dev-token.json'),
+          ),
+        ),
+      );
+    });
+
+    test('a release build without the token is valid', () {
+      final config = AppConfig.parse(
+        apiBaseUrl: 'https://marlix-api.onrender.com',
+        allowInsecure: false,
+        isRelease: true,
+      );
+      expect(config.devAccessToken, isNull);
+    });
+
     test('rejects a development token shorter than the backend accepts', () {
       expect(
         () => AppConfig.parse(

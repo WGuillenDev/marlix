@@ -60,7 +60,7 @@ The backend URL is not in the code: it comes from a file in `app/config/`, and t
 
 Plain `http` is only accepted in debug builds, for a backend on your computer; a release build always uses HTTPS.
 
-Until accounts exist (S4-3), the chat needs the backend's development token. Copy `config/dev-token.example.json` to `config/dev-token.json` (ignored by Git), paste the token there, and pass the file as a second `--dart-define-from-file`. For your local backend it is `DEV_ACCESS_TOKEN` in `api/.env`; for production, read it in the Render service's **Environment** tab. Never paste it anywhere else.
+Until accounts exist (S4-3), the chat needs the backend's development token. Copy `config/dev-token.example.json` to `config/dev-token.json` (ignored by Git), paste the token there, and pass the file as a second `--dart-define-from-file`. For your local backend it is `DEV_ACCESS_TOKEN` in `api/.env`; for production, read it in the Render service's **Environment** tab. Never paste it anywhere else. The token only works in debug and profile builds: a release build refuses to start if it was given one, and never compiles its value in, because anyone with the APK could extract it.
 
 ~~~bash
 flutter run --dart-define-from-file=config/production.json --dart-define-from-file=config/dev-token.json
