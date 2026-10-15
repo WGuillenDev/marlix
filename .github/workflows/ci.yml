@@ -47,11 +47,13 @@ jobs:
         with:
           persist-credentials: false
       - name: Start Postgres with the schema
-        # Same image as docker-compose.yml; the schema runs once on first start.
+        # Same image and tag as docker-compose.yml, pulled from Docker Hub:
+        # ECR Public rejects anonymous pulls from shared CI runners
+        # ("toomanyrequests"). The schema runs once on first start.
         run: |
           docker run -d --name db -e POSTGRES_PASSWORD=ci-only \
             -v "$PWD/docs/schema.sql:/docker-entrypoint-initdb.d/zz-marlix-schema.sql:ro" \
-            public.ecr.aws/supabase/postgres:17.11.0.002
+            supabase/postgres:17.11.0.002
       - name: Wait for the database
         # The image restarts Postgres after the init scripts; wait for that
         # restart, not just the first connection.
