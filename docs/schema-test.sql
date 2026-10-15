@@ -1,4 +1,4 @@
--- marlix database tests: privileges and Row Level Security (S0-6, S1-8).
+-- marlix database tests: privileges and Row Level Security (S0-6, S1-8, S4-2).
 --
 -- Runs against the local database after docs/schema.sql was applied:
 --
@@ -125,6 +125,52 @@ select pg_temp.expect('a new table gives nothing to anon',
 select pg_temp.expect('a new table gives nothing to authenticated',
   not has_table_privilege('authenticated', 'public.privilege_probe', 'SELECT'));
 drop table public.privilege_probe;
+
+-- ---------------------------------------------------------------------------
+-- Row Level Security (S4-2): checked in the catalog, so a table added later
+-- without RLS, or with a policy that does not depend on the user, fails here
+-- ---------------------------------------------------------------------------
+
+-- Every table in public has RLS enabled.
+select pg_temp.expect(format('%s has RLS enabled', c.oid::regclass), c.relrowsecurity)
+from pg_class c
+where c.relnamespace = 'public'::regnamespace and c.relkind in ('r', 'p');
+
+-- Every table with user data (a user_id column, or the profiles table itself)
+-- has at least one policy, and every one of its policies depends on auth.uid().
+select pg_temp.expect(format('%s has at least one policy', t.oid::regclass),
+  exists (select 1 from pg_policies p
+          where p.schemaname = 'public' and p.tablename = t.relname))
+from pg_class t
+where t.relnamespace = 'public'::regnamespace and t.relkind in ('r', 'p')
+  and (t.relname = 'users'
+       or exists (select 1 from pg_attribute a
+                  where a.attrelid = t.oid and a.attname = 'user_id' and not a.attisdropped));
+
+select pg_temp.expect(format('policy "%s" on %s depends on auth.uid()', p.policyname, p.tablename),
+  coalesce(p.qual, '') || coalesce(p.with_check, '') like '%auth.uid()%')
+from pg_policies p
+join pg_class t on t.relname = p.tablename and t.relnamespace = 'public'::regnamespace
+where p.schemaname = 'public'
+  and (t.relname = 'users'
+       or exists (select 1 from pg_attribute a
+                  where a.attrelid = t.oid and a.attname = 'user_id' and not a.attisdropped));
+
+-- No policy opens a table to anon or to every role.
+select pg_temp.expect(
+  format('policy "%s" on %s is only for signed-in users', policyname, tablename),
+  roles = array['authenticated']::name[])
+from pg_policies
+where schemaname = 'public';
+
+-- The guard itself works: with a table created without RLS, the same query
+-- that checks every table finds it.
+create table public.rls_probe (id integer, user_id uuid);
+select pg_temp.expect('the RLS guard detects a table created without RLS',
+  exists (select 1 from pg_class c
+          where c.relnamespace = 'public'::regnamespace and c.relkind in ('r', 'p')
+            and not c.relrowsecurity));
+drop table public.rls_probe;
 
 -- ---------------------------------------------------------------------------
 -- Fixtures: two users, Ana and Beto, with data written as the backend would
