@@ -4,6 +4,27 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-10-15 — App foundations: Riverpod, backend URL per environment, emulator (S3-1)
+
+**State management: Riverpod** (`flutter_riverpod`), without code generation.
+
+| Option | Result |
+|---|---|
+| Riverpod | **Chosen.** Providers are declared once and can be replaced in tests (`overrideWithValue`) without a widget tree around them. It handles the async states the chat needs (loading, error, retry) and catches a missing provider at compile time. |
+| Provider | Discarded. Simpler, but its own author recommends Riverpod for new projects, and it depends on the widget tree for everything. |
+| Bloc | Discarded. Solid, but every feature needs events, states and a bloc: a lot of ceremony for an app built by one person. |
+| `setState` only | Discarded. The chat state (messages, sending, limits) is shared by several widgets. |
+
+Code generation (`riverpod_generator`) is left out for now: it adds `build_runner` to every change. It can be added later without rewriting the providers.
+
+**Backend URL per environment:** it is compiled in with `--dart-define-from-file=config/<environment>.json` and read with `String.fromEnvironment`. `config/production.json` is in Git; `config/local.json` is per developer and ignored. The app validates the URL at startup. Plain `http` is accepted only in debug builds, and Android allows cleartext only to `10.0.2.2` and `localhost` in debug builds (`android/app/src/debug/res/xml/network_security_config.xml`).
+
+**Development device: the Android Studio emulator** (decided 2026-10-15 by the user), so no physical phone is needed. It uses 2 to 4 GB of RAM; a phone over USB works the same way.
+
+**Application id:** `io.github.wguillendev.marlix`. The project has no domain of its own, and the GitHub namespace is unique and owned by the author. It cannot change once the APK is installed on family phones without reinstalling.
+
+---
+
 ## 2026-10-14 — HTTP security headers: a small middleware of our own, not helmet (S2-9)
 
 **Decision:** the security headers come from a middleware of a few lines (`api/src/middleware/security-headers.ts`), not from `helmet`.
