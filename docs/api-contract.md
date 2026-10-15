@@ -96,7 +96,7 @@ When the crisis filter detects risk, `POST /v1/chat` answers **`200`** with `"ty
 
 ### `GET /v1/help-resources`
 
-**Public**, so the help screen works before sign-in. Returns the Costa Rican help resources from configuration, not from code. The app caches the last response so the help screen also works offline (US-15).
+**Public**, so the help screen works before sign-in. Returns the Costa Rican help resources from configuration ([`api/config/crisis.json`](../api/config/crisis.json)), not from code, so changing a number never requires a new app build. The crisis reply of `POST /v1/chat` returns the same list. The app caches the last response so the help screen also works offline (US-15); `updatedAt` changes whenever the list does.
 
 **Response `200`**
 
@@ -291,10 +291,9 @@ Checks that happen before the model (auth, validation, daily limit) still answer
 
 | Part | Until | Meanwhile |
 |---|---|---|
-| Auth with the Supabase token | S4-3 | No user session. Every `/v1` request needs `Authorization: Bearer <DEV_ACCESS_TOKEN>`, a development token only the developer has (S1-7); without it the answer is `401 UNAUTHORIZED`. |
+| Auth with the Supabase token | S4-3 | No user session. Every `/v1` request except the public `GET /v1/help-resources` needs `Authorization: Bearer <DEV_ACCESS_TOKEN>`, a development token only the developer has (S1-7); without it the answer is `401 UNAUTHORIZED`. |
 | Stored messages | S4-4 | `userMessage.id` and `reply.id` are generated per request and not stored. `interruptedMessageId` is validated but not checked against the history, so it never answers `404`. |
 | `usage` | S2-6 | Not returned. |
-| Crisis reply text and `resources` | S2-3 | The crisis filter is active (keywords plus the second layer, see the [crisis protocol](crisis-protocol.md)). The reply text is a minimal fixed text and `resources` only has 9-1-1. |
 | Streaming | S6-10 | Only the JSON reply. |
 
 ---

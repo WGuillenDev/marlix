@@ -62,7 +62,28 @@ Messages marked `ambiguous` get an isolated classification by an LLM (S2-2), so 
 
 `POST /v1/chat` answers **`200`** with `"type": "crisis"`: a fixed text and the help resources, with 9-1-1 first. It is not an error code, because the app must show it right away and never offer a retry. The exact shape is in the [API contract](api-contract.md#post-v1chat).
 
-The text acknowledges the person and points to 9-1-1. It gives no advice or techniques and does not try to contain the crisis. Until S2-3 moves the text and the resources to configuration, the reply is a minimal fixed text with 9-1-1 only.
+The text acknowledges the person and points to 9-1-1. It gives no advice or techniques and does not try to contain the crisis: its only goal is to connect the person with someone who can help.
+
+### Text and resources live in configuration
+
+The reply text and the help resources are in [`api/config/crisis.json`](../api/config/crisis.json), not in code. The same resources are served to the app by the public [`GET /v1/help-resources`](api-contract.md#get-v1help-resources), so the help screen and the crisis reply always show the same numbers, and **changing a number never requires a new app build**: edit the file, open a pull request and Render deploys it.
+
+| Resource | Phone | Hours |
+|---|---|---|
+| 9-1-1, Despacho de Apoyo Psicológico (**main option**) | 911 | 24/7, free |
+| Aquí Estoy, Colegio de Psicólogos | 800-2737869 | Limited hours |
+| Emergencias CCSS | 2225-7511 | Check |
+| Emergencias CCSS (second line) | 2234-2730 | Check |
+
+The server validates the file when it starts and **refuses to start** if it would break the protocol:
+
+- The reply must mention 9-1-1.
+- There must be exactly one primary resource, it must be 9-1-1 and it must be listed first.
+- Phones are digits only, ready to dial; ids are unique; `updatedAt` is an ISO 8601 date.
+
+When a number changes, also update `updatedAt`, so the app knows its cached copy is old.
+
+**Numbers can change.** Verify them before using the app with anyone, and periodically after that (S7-7).
 
 ## Known limits
 
@@ -75,7 +96,6 @@ The text acknowledges the person and points to 9-1-1. It gives no advice or tech
 
 | Card | What it adds |
 |---|---|
-| S2-3 | Crisis text and help resources in configuration, with every verified Costa Rican resource. |
 | S2-5 | A log of each activation, without the content of the message. |
 | S2-7 | The full set of automated test cases. |
 | S7-7 | Periodic verification of the help phone numbers. |
