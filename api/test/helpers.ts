@@ -35,8 +35,19 @@ const AUTH_HEADER = { authorization: `Bearer ${DEV_TOKEN}` };
  * Starts the app on a free port. `postJson` sends the development token
  * unless the test passes its own authorization header.
  */
-export async function startApp({ llm }: { llm: LlmProvider }) {
-  const server = createApp({ llm, devAccessToken: DEV_TOKEN }).listen(0);
+export async function startApp({
+  llm,
+  crisisClassifier,
+}: {
+  llm: LlmProvider;
+  crisisClassifier?: LlmProvider;
+}) {
+  const app = createApp({
+    llm,
+    ...(crisisClassifier ? { crisisClassifier } : {}),
+    devAccessToken: DEV_TOKEN,
+  });
+  const server = app.listen(0);
   await new Promise<void>((resolve) => server.once('listening', resolve));
   const { port } = server.address() as AddressInfo;
   const baseUrl = `http://127.0.0.1:${port}`;
