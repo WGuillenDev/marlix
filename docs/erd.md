@@ -183,7 +183,7 @@ RLS decides **which rows** a user reaches; table privileges decide **which opera
 
 - Creating the real Supabase project (S4-1).
 - Deleting messages older than 90 days: the scheduled job is S4-10; `messages_created_at_idx` is ready for it.
-- Crisis activation log without content: S2-5.
+- Crisis activation log without content: for now it is written to the server logs (S2-5, see the [crisis protocol](crisis-protocol.md#activation-log)); a table can replace it once the backend uses the database (Sprint 4).
 - Scheduling inactivity reminders: they are local notifications on the phone (S5-3). The database only stores the opt-in (`reminders_enabled`).
 
 ## How to test

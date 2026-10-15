@@ -85,6 +85,26 @@ When a number changes, also update `updatedAt`, so the app knows its cached copy
 
 **Numbers can change.** Verify them before using the app with anyone, and periodically after that (S7-7).
 
+## Activation log
+
+Every time the protocol triggers, the backend records it (S2-5), so the filter can be tuned: too many activations suggest false alarms, none that it may not be detecting. **The record never holds the message in any form**: not the text, a hash or its length.
+
+Each activation is one JSON line in the server logs:
+
+~~~json
+{"event":"crisis_activation","at":"2026-10-15T05:00:29.539Z","signal":"risk","layer":"keywords"}
+~~~
+
+| Field | Values |
+|---|---|
+| `at` | When it happened, ISO 8601 in UTC. |
+| `signal` | `risk` or `ambiguous`. |
+| `layer` | `keywords` (clear risk), `classifier` (the second layer said risk), `classifier_failure` (the second layer failed or timed out, so the conservative criterion applied) or `no_classifier` (ambiguous with no second layer configured). |
+
+To count activations for a period, search the Render logs of `marlix-api` for `crisis_activation` and filter by date. A rising `classifier_failure` count means the classifier is failing (quota, timeouts) and every ambiguous message is being treated as risk.
+
+The backend has no database until S4-1, so the record lives in the logs, which Render only keeps for a limited time. The record goes through the `ActivationLog` interface (`api/src/services/crisis/activation-log.ts`), so Sprint 4 can store it in a database table by replacing that one implementation.
+
 ## Known limits
 
 - **Spanish only.** The app is in Spanish; messages in other languages are not checked.
@@ -96,6 +116,5 @@ When a number changes, also update `updatedAt`, so the app knows its cached copy
 
 | Card | What it adds |
 |---|---|
-| S2-5 | A log of each activation, without the content of the message. |
 | S2-7 | The full set of automated test cases. |
 | S7-7 | Periodic verification of the help phone numbers. |
