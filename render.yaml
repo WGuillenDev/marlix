@@ -15,8 +15,8 @@ services:
     buildCommand: npm ci --include=dev && npm run build
     startCommand: npm start
     healthCheckPath: /health
-    # Every push to main deploys.
-    autoDeployTrigger: commit
+    # Deploys a push to main only after its GitHub checks (the CI) pass (S3-6).
+    autoDeployTrigger: checksPass
     envVars:
       - key: NODE_VERSION
         value: "24"
