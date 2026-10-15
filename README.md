@@ -87,7 +87,7 @@ The server validates these variables when it starts. If a required one is missin
 | `npm run typecheck` | Checks the types in strict mode without emitting files. |
 | `npm test` | Runs the automated tests. |
 | `npm run llm:smoke` | Sends one real message to the configured LLM and prints the reply. `-- --burst 6` sends several at once to check that a quota error (429) is handled. Spends real quota. |
-| `npm run crisis:eval` | Runs a set of ambiguous messages through the real crisis classifier and reports how many it got right. Spends real quota. |
+| `npm run crisis:eval` | Runs the crisis test cases through the real filter, classifier included, and reports false negatives and false positives. Spends real quota. |
 | `npm run build` | Compiles TypeScript to `dist/`. |
 | `npm start` | Runs the compiled server from `dist/`. |
 
