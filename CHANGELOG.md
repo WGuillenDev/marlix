@@ -4,7 +4,32 @@ Notable changes to marlix, one entry per sprint. The format follows [Keep a Chan
 
 ## [Unreleased]
 
-Sprint 2 — Security: nobody in crisis is left without help.
+Sprint 3 — Chat app: talking to marlix from the phone.
+
+## Sprint 2 — Security (2026-10-14)
+
+Nobody in crisis is left without help: every message goes through the crisis filter before the model, and every reply is reviewed before it reaches the user.
+
+### Added
+
+- Keyword crisis filter, run on every message before the model. A crisis gets a fixed reply with 9-1-1 first, and the model is not called ([#48](https://github.com/WGuillenDev/marlix/pull/48)).
+- Second layer that classifies ambiguous messages with `openai/gpt-oss-20b`. If the classifier fails, the message is treated as a crisis ([#50](https://github.com/WGuillenDev/marlix/pull/50)).
+- Help resources in `api/config/crisis.json` and the public `GET /v1/help-resources` endpoint ([#52](https://github.com/WGuillenDev/marlix/pull/52)).
+- Review of the model's reply, which replaces a reply that encourages harm or dependency with a safe one ([#54](https://github.com/WGuillenDev/marlix/pull/54)).
+- Log of crisis filter activations without any of the message: not the text, a hash or its length ([#56](https://github.com/WGuillenDev/marlix/pull/56)).
+- Per-person usage limits from `api/config/plans.json` (100 replies a day and 5 messages a minute) and `GET /v1/usage` ([#58](https://github.com/WGuillenDev/marlix/pull/58)).
+- Crisis filter test suite with 61 invented messages and a report of false negatives and false positives. `npm run crisis:eval` measures the whole filter with the real classifier ([#60](https://github.com/WGuillenDev/marlix/pull/60)).
+
+### Fixed
+
+- "me kiero matar" passed the filter as normal: *k* and *q* typed for *qu* are now normalized ([#60](https://github.com/WGuillenDev/marlix/pull/60)).
+- The classifier answered the same message differently between runs. It now runs at temperature 0 ([#60](https://github.com/WGuillenDev/marlix/pull/60)).
+
+### Security
+
+- Continuous integration on every pull request: type check, tests and build of the backend, and the database privilege and RLS tests. The `main` ruleset requires both checks before a merge ([#62](https://github.com/WGuillenDev/marlix/pull/62), [#70](https://github.com/WGuillenDev/marlix/pull/70)).
+- HTTP security headers on every response (HSTS, `nosniff`, `no-referrer` and a CSP that blocks everything) and `Cache-Control: no-store` on `/v1` ([#64](https://github.com/WGuillenDev/marlix/pull/64)).
+- Dependabot version updates for npm, Docker Compose and GitHub Actions, tested by the CI before each merge ([#66](https://github.com/WGuillenDev/marlix/pull/66), [#67](https://github.com/WGuillenDev/marlix/pull/67), [#68](https://github.com/WGuillenDev/marlix/pull/68)).
 
 ## Sprint 1 — Backend base (2026-10-03 to 2026-10-13)
 
