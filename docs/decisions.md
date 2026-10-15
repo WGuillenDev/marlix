@@ -4,6 +4,27 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-10-14 — HTTP security headers: a small middleware of our own, not helmet (S2-9)
+
+**Decision:** the security headers come from a middleware of a few lines (`api/src/middleware/security-headers.ts`), not from `helmet`.
+
+| Header | Value | Where |
+|---|---|---|
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` | Every response |
+| `X-Content-Type-Options` | `nosniff` | Every response |
+| `Referrer-Policy` | `no-referrer` | Every response |
+| `Content-Security-Policy` | `default-src 'none'; frame-ancestors 'none'` | Every response |
+| `Cache-Control` | `no-store` | Everything under `/v1` |
+
+| Option | Result |
+|---|---|
+| Own middleware | **Chosen.** The API only returns JSON to a mobile app, so five fixed headers cover it. The values are visible in one file and need no dependency. |
+| `helmet` | Discarded. Well maintained and the usual choice for Express, but it sets about a dozen headers meant for web pages (frames, cross-origin isolation, DNS prefetch) that a JSON API does not use, and adds a dependency to keep up to date. |
+
+`Cache-Control: no-store` covers `/v1/help-resources` too: the app keeps its own copy of the resources (US-15), so no HTTP cache is needed. CORS stays off, because the mobile app does not need it.
+
+---
+
 ## 2026-10-14 — The development token stays until accounts exist (S2-6)
 
 **Decision:** the development token of S1-7 (`DEV_ACCESS_TOKEN`) stays on `/v1/chat` until the Supabase session check of S4-3 replaces it. The S2-1 card planned to remove it once the crisis filter and the crisis reply were done (S2-1, S2-3).
