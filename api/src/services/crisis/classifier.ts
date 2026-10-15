@@ -21,6 +21,8 @@ export function createAmbiguousClassifier(llm: LlmProvider): AmbiguousResolver {
         { role: 'user', content: message },
       ],
       maxOutputTokens: MAX_OUTPUT_TOKENS,
+      // The same message must always get the same answer (found by S2-7).
+      temperature: 0,
     });
     return content.trim().toUpperCase().replace(/[^A-Z]/g, '') !== 'SAFE';
   };

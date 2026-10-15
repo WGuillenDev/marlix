@@ -78,6 +78,7 @@ export class GroqProvider implements LlmProvider {
           model: this.model,
           messages: request.messages.map(({ role, content }) => ({ role, content })),
           ...(request.maxOutputTokens ? { max_completion_tokens: request.maxOutputTokens } : {}),
+          ...(request.temperature !== undefined ? { temperature: request.temperature } : {}),
           ...(this.#reasoningEffort ? { reasoning_effort: this.#reasoningEffort } : {}),
         },
         request.signal ? { signal: request.signal } : undefined,
