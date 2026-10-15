@@ -26,6 +26,7 @@ flutter:
     # Prototype from S0-5 (docs/diagrams/wireframes/style-guide/avatar.png)
     # until the final artwork (S5-1).
     - assets/avatar/marlix.png
+    - assets/avatar/marlix-happy.png
 
   # Bundled, not fetched at runtime. OFL licenses are next to the files.
   fonts:
