@@ -1,4 +1,4 @@
--- marlix database tests: privileges and Row Level Security (S0-6, S1-8, S4-2).
+-- marlix database tests: privileges, Row Level Security and sign-up (S0-6, S1-8, S4-2, S4-3).
 --
 -- Runs against the local database after docs/schema.sql was applied:
 --
@@ -100,6 +100,8 @@ select pg_temp.expect('authenticated cannot update users.plan',
   not has_column_privilege('authenticated', 'public.users', 'plan', 'UPDATE'));
 select pg_temp.expect('authenticated cannot update users.avatar_id',
   not has_column_privilege('authenticated', 'public.users', 'avatar_id', 'UPDATE'));
+select pg_temp.expect('authenticated cannot update users.birth_date',
+  not has_column_privilege('authenticated', 'public.users', 'birth_date', 'UPDATE'));
 select pg_temp.expect('authenticated can update memories.fact',
   has_column_privilege('authenticated', 'public.memories', 'fact', 'UPDATE'));
 select pg_temp.expect('authenticated cannot update memories.user_id',
@@ -173,17 +175,59 @@ select pg_temp.expect('the RLS guard detects a table created without RLS',
 drop table public.rls_probe;
 
 -- ---------------------------------------------------------------------------
+-- Sign-up (S4-3): a birth date is required, and nobody under 18 gets an account
+-- ---------------------------------------------------------------------------
+
+-- Runs a sign-up that the trigger must cancel.
+create function pg_temp.expect_sign_up_refused(description text, metadata jsonb)
+returns void
+language plpgsql
+as $$
+begin
+  insert into auth.users (id, email, raw_user_meta_data)
+  values (gen_random_uuid(), 'refused@example.com', metadata);
+  raise exception 'FAILED: % (the sign-up was allowed)', description;
+exception
+  when check_violation or invalid_datetime_format or datetime_field_overflow then null;
+end;
+$$;
+
+select pg_temp.expect_sign_up_refused('a sign-up without metadata is refused', null);
+select pg_temp.expect_sign_up_refused('a sign-up without a birth date is refused', '{}');
+select pg_temp.expect_sign_up_refused('a birth date in another format is refused',
+  '{"birth_date": "20/05/1990"}');
+select pg_temp.expect_sign_up_refused('a birth date that does not exist is refused',
+  '{"birth_date": "1990-02-30"}');
+select pg_temp.expect_sign_up_refused('someone who turns 18 tomorrow is refused',
+  jsonb_build_object('birth_date',
+    to_char((now() at time zone 'America/Costa_Rica')::date - interval '18 years' + interval '1 day',
+            'YYYY-MM-DD')));
+select pg_temp.expect('no refused sign-up left an account or a profile',
+  not exists (select 1 from auth.users where email = 'refused@example.com'));
+
+insert into auth.users (id, email, raw_user_meta_data)
+values ('00000000-0000-4000-8000-0000000000d1', 'cumple@example.com',
+  jsonb_build_object('birth_date',
+    to_char((now() at time zone 'America/Costa_Rica')::date - interval '18 years', 'YYYY-MM-DD')));
+select pg_temp.expect('someone who turns 18 today can sign up',
+  exists (select 1 from public.users where id = '00000000-0000-4000-8000-0000000000d1'));
+delete from auth.users where id = '00000000-0000-4000-8000-0000000000d1';
+
+-- ---------------------------------------------------------------------------
 -- Fixtures: two users, Ana and Beto, with data written as the backend would
 -- ---------------------------------------------------------------------------
 
-insert into auth.users (id, email) values
-  ('00000000-0000-4000-8000-00000000000a', 'ana@example.com'),
-  ('00000000-0000-4000-8000-00000000000b', 'beto@example.com');
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('00000000-0000-4000-8000-00000000000a', 'ana@example.com', '{"birth_date": "1990-05-20"}'),
+  ('00000000-0000-4000-8000-00000000000b', 'beto@example.com', '{"birth_date": "1985-11-02"}');
 
 -- The sign-up trigger still works without EXECUTE granted to anyone.
 select pg_temp.expect('the sign-up trigger created both profiles with the default avatar',
   (select count(*) from public.users u join public.avatars a on a.id = u.avatar_id and a.is_default
    where u.id in ('00000000-0000-4000-8000-00000000000a', '00000000-0000-4000-8000-00000000000b')) = 2);
+select pg_temp.expect('the sign-up trigger stored the birth date',
+  (select birth_date from public.users where id = '00000000-0000-4000-8000-00000000000a')
+  = date '1990-05-20');
 
 insert into public.conversations (id, user_id, avatar_id)
 select c.id, c.user_id, (select id from public.avatars where is_default)

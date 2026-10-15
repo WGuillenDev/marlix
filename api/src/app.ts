@@ -3,7 +3,7 @@ import express from 'express';
 import { loadCrisisConfig, type CrisisConfig } from './config/crisis-config.js';
 import { loadPlansConfig, type PlansConfig } from './config/plans.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
-import { requireDevToken } from './middleware/require-dev-token.js';
+import { requireSession, type SessionCheck } from './middleware/require-session.js';
 import { noStore, securityHeaders } from './middleware/security-headers.js';
 import { createChatRouter } from './routes/chat.js';
 import { healthRouter } from './routes/health.js';
@@ -23,8 +23,8 @@ export interface AppDependencies {
   llm: LlmProvider;
   /** Classifies ambiguous messages (S2-2). Without it, they are a crisis. */
   crisisClassifier?: LlmProvider;
-  /** Token every /v1 request must carry until real auth exists (S4-3). */
-  devAccessToken: string;
+  /** How /v1 requests are checked for a Supabase session (S4-3). */
+  session: SessionCheck;
   /** Crisis text and help resources; read from api/config/crisis.json by default. */
   crisisConfig?: CrisisConfig;
   /** Where crisis activations are recorded (S2-5); the logs by default. */
@@ -37,7 +37,7 @@ export interface AppDependencies {
 export function createApp({
   llm,
   crisisClassifier,
-  devAccessToken,
+  session,
   crisisConfig = loadCrisisConfig(),
   activationLog = createConsoleActivationLog(),
   plans = loadPlansConfig(),
@@ -62,7 +62,7 @@ export function createApp({
   const chatService = createChatService(llm, crisisFilter, activationLog, usageLimiter);
   app.use(
     '/v1',
-    requireDevToken(devAccessToken),
+    requireSession(session),
     createChatRouter(chatService, crisisConfig, usageLimiter),
     createUsageRouter(usageLimiter),
   );

@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:marlix/app.dart';
+import 'package:marlix/services/auth_service.dart';
 import 'package:marlix/services/dialer.dart';
 import 'package:marlix/services/help_resources.dart';
 import 'package:marlix/services/marlix_api.dart';
@@ -66,8 +67,13 @@ class FakeBackend {
   /// `GET /v1/help-resources` fails as if there were no connection.
   bool offline = false;
 
-  MarlixApi api() => MarlixApi(
+  /// Authorization headers of every request, in order.
+  final authorizations = <String?>[];
+
+  MarlixApi api(FakeAuthService auth) => MarlixApi(
+    accessToken: () => auth.accessToken,
     client: MockClient((request) async {
+      authorizations.add(request.headers['Authorization']);
       if (request.url.path == '/v1/help-resources') {
         if (offline) throw http.ClientException('No connection');
         return jsonResponse({'updatedAt': '2026-10-14T00:00:00Z', 'resources': crisisResources});
@@ -118,6 +124,74 @@ class FakeBackend {
   void dropConnection() => reply.completeError(http.ClientException('Connection closed'));
 }
 
+/// Supabase Auth without the network: accounts live in memory.
+class FakeAuthService implements AuthService {
+  FakeAuthService({this.userId});
+
+  /// email -> password of the accounts that exist.
+  final accounts = <String, String>{'ana@example.com': 'contraseña-de-ana'};
+
+  /// Every sign-up, with the birth date sent.
+  final signUps = <({String email, DateTime birthDate})>[];
+
+  /// When set, the next sign-in or sign-up fails with it.
+  AuthFailure? nextFailure;
+
+  /// Completes sign-in and sign-up; replace it to keep them pending.
+  Completer<void> gate = Completer()..complete();
+
+  final _changes = StreamController<String?>.broadcast();
+
+  @override
+  String? userId;
+
+  @override
+  String? get accessToken => userId == null ? null : 'token-of-$userId';
+
+  @override
+  Stream<String?> get userIdChanges => _changes.stream;
+
+  void _setUser(String? id) {
+    userId = id;
+    _changes.add(id);
+  }
+
+  Future<void> _check() async {
+    await gate.future;
+    if (nextFailure case final failure?) {
+      nextFailure = null;
+      throw AuthFailureException(failure);
+    }
+  }
+
+  @override
+  Future<void> signIn({required String email, required String password}) async {
+    await _check();
+    if (accounts[email.trim()] != password) {
+      throw const AuthFailureException(AuthFailure.invalidCredentials);
+    }
+    _setUser('user-${email.trim()}');
+  }
+
+  @override
+  Future<void> signUp({
+    required String email,
+    required String password,
+    required DateTime birthDate,
+  }) async {
+    await _check();
+    if (accounts.containsKey(email.trim())) {
+      throw const AuthFailureException(AuthFailure.emailTaken);
+    }
+    signUps.add((email: email.trim(), birthDate: birthDate));
+    accounts[email.trim()] = password;
+    _setUser('user-${email.trim()}');
+  }
+
+  @override
+  Future<void> signOut() async => _setUser(null);
+}
+
 /// Records the numbers instead of opening the dialer.
 class FakeDialer implements Dialer {
   final dialed = <String>[];
@@ -132,22 +206,27 @@ class FakeDialer implements Dialer {
   }
 }
 
+/// Opens the app signed in as Ana, on the chat. With [auth] signed out, it
+/// opens on the sign-in screen.
 Future<FakeBackend> openChat(
   WidgetTester tester, {
   Size size = const Size(360, 800),
   FakeBackend? backend,
+  FakeAuthService? auth,
   FakeDialer? dialer,
   Map<String, Object> savedPreferences = const {},
 }) async {
   tester.view.physicalSize = size * tester.view.devicePixelRatio;
   addTearDown(tester.view.reset);
   final fake = backend ?? FakeBackend();
+  final session = auth ?? FakeAuthService(userId: 'user-ana@example.com');
   SharedPreferences.setMockInitialValues(savedPreferences);
   final preferences = await SharedPreferences.getInstance();
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        marlixApiProvider.overrideWithValue(fake.api()),
+        authServiceProvider.overrideWithValue(session),
+        marlixApiProvider.overrideWithValue(fake.api(session)),
         sharedPreferencesProvider.overrideWithValue(preferences),
         dialerProvider.overrideWithValue(dialer ?? FakeDialer()),
       ],

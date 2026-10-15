@@ -4,6 +4,44 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-10-15 — Accounts: 18 or older, no email confirmation yet, sessions checked with the project's public keys (S4-3)
+
+**Decision:** people sign up in the app with email, password and birth date, against Supabase Auth. The backend checks the Supabase session on every `/v1` request, and the development token of S1-7 (`DEV_ACCESS_TOKEN`) is gone from the backend, the app and Render.
+
+**Minimum age: 18** (decided by the user on 2026-10-15). marlix accompanies people through emotional topics and has a crisis protocol, and in Costa Rica the data of minors needs the consent of a responsible adult (Ley 8968), a flow v1 does not have.
+
+| Option | Result |
+|---|---|
+| 18 or older, checked in the app and in the database | **Chosen.** The app explains it under the field; the sign-up trigger (`handle_new_auth_user`) refuses a missing, malformed or too recent birth date, so no client can skip it. Ages are counted on the Costa Rica calendar, like the daily limit. |
+| 13 or older | Discarded. It needs parental consent and a system prompt reviewed for minors. |
+| Store the date, decide later | Discarded. Minors could sign up meanwhile. |
+
+The birth date is stored, not the age, so the policy can change later with one constant in the trigger and one in the app (`minimumAge`). The app sends it as user metadata (`birth_date`, `YYYY-MM-DD`) and the trigger copies it to `users.birth_date`, which the app cannot change afterwards (no column grant).
+
+**No email confirmation for now** (decided by the user on 2026-10-15). "Confirm email" is off in Supabase, so a new account is signed in at once.
+
+| Option | Result |
+|---|---|
+| No confirmation until S7-9 | **Chosen.** Supabase's free email service sends about 2 emails an hour, and its default link opens a browser. S7-9 adds a 6-digit code typed in the app, a real SMTP and password recovery. |
+| 6-digit code now | Postponed to S7-9. It needs an SMTP service and email templates, beyond this card. |
+| Confirmation link | Discarded. It needs deep links and is still limited to about 2 emails an hour. |
+
+Until then, someone could sign up with an email that is not theirs; the account only reaches its own data. Signing up with an email that has an account says so, a small leak accepted because sign-up without confirmation cannot hide it; signing in never tells a wrong password from an unknown email (US-01).
+
+**Session check in the backend:**
+
+| Option | Result |
+|---|---|
+| Verify the token with the project's public keys (JWKS), with [`jose`](https://github.com/panva/jose) | **Chosen.** The project signs tokens with ES256 keys; their public half is at `/auth/v1/.well-known/jwks.json`. The keys are kept in memory, so a message does not wait for a call to Supabase. Checked: signature (ES256 or RS256 only, never HS256 or `none`), expiry, issuer, audience and `role: authenticated`, so the anon key is not a session. |
+| Ask Supabase for the user on every request (`auth.getUser`) | Discarded. One more network call per message, and the chat depends on Supabase being reachable. |
+| Shared JWT secret (HS256) | Discarded. Supabase's legacy method; the secret would be one more key to protect in Render. |
+
+A token stays valid until it expires (one hour) even after signing out on the phone; the app forgets it at once. If the keys cannot be fetched the answer is `500`, not `401`, so the app does not sign anyone out because of a Supabase outage.
+
+**The session on the phone:** Supabase keeps it in SharedPreferences by default, in plain text. The app stores it with `flutter_secure_storage` instead, encrypted with a key from the Android Keystore; backups already exclude it (S4-11). The app reads the current token on every request, because Supabase refreshes it in the background. If the backend still answers `401`, the session really ended: the app signs out and the sign-in screen says why.
+
+---
+
 ## 2026-10-15 — The app's data never leaves the phone in a backup (S4-11)
 
 **Decision:** the app opts out of every Android backup and transfer: `android:allowBackup="false"`, plus rules that exclude every data domain for Android 12 and later (`dataExtractionRules`, in both `<cloud-backup>` and `<device-transfer>`) and for Android 11 and earlier (`fullBackupContent`).

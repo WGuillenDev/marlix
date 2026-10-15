@@ -1,3 +1,5 @@
 {
-  "API_BASE_URL": "https://marlix-api.onrender.com"
+  "API_BASE_URL": "https://marlix-api.onrender.com",
+  "SUPABASE_URL": "https://nyuquguykjxovbtnahey.supabase.co",
+  "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_EIHk4q1k0pVeALgI-w0GxA_QMrGM8nH"
 }

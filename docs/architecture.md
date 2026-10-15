@@ -74,7 +74,8 @@ Thick arrows are the path of a normal chat message. Dotted arrows are background
 |---|---|---|
 | `GROQ_API_KEY` | Backend environment variables on Render (`.env` locally, never committed) | Anyone who extracts it from an app could use up or bill the account. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Backend environment variables on Render | It bypasses RLS and gives access to all data. |
-| Supabase publishable key | Flutter app | Public by design: it only allows sign-in and what RLS permits. |
+| Supabase publishable key | Flutter app (`app/config/`) | Public by design: it only allows sign-in and what RLS permits. |
+| The person's session | Phone, encrypted with a key from the Android Keystore (S4-3), outside backups (S4-11) | It keeps the person signed in; the backend checks it on every request against the project's public keys. |
 
 The app never holds a secret. That is why **the Flutter app never calls the LLM directly**: every request goes through the backend.
 

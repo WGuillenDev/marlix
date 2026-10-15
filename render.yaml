@@ -1,7 +1,7 @@
 # Render Blueprint for the marlix backend (S1-7).
 # Docs: https://render.com/docs/blueprint-spec
 # Secrets are not here: Render asks for the `sync: false` values when the
-# Blueprint is created, and generates DEV_ACCESS_TOKEN itself.
+# Blueprint is created.
 services:
   - type: web
     name: marlix-api
@@ -22,8 +22,6 @@ services:
         value: "24"
       - key: NODE_ENV
         value: production
-      - key: DEV_ACCESS_TOKEN
-        generateValue: true
       - key: GROQ_API_KEY
         sync: false
       - key: SUPABASE_URL

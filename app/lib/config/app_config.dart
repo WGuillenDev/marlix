@@ -4,67 +4,69 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Settings that change per environment. They come from
 /// `--dart-define-from-file=config/<environment>.json`, never from the code.
 class AppConfig {
-  const AppConfig({required this.apiBaseUrl, this.devAccessToken});
+  const AppConfig({
+    required this.apiBaseUrl,
+    required this.supabaseUrl,
+    required this.supabasePublishableKey,
+  });
 
   final Uri apiBaseUrl;
 
-  /// Development token for `/v1` until accounts exist (S4-3). It comes from
-  /// `config/dev-token.json`, which Git ignores; builds without it have none.
-  final String? devAccessToken;
+  /// The Supabase project, for sign-up and sign-in only (S4-3): the app never
+  /// reads the database directly, it goes through the backend.
+  final Uri supabaseUrl;
+
+  /// Public by design: it identifies the project and grants nothing beyond
+  /// what RLS allows. Never the secret key, which only the backend holds.
+  final String supabasePublishableKey;
 
   /// Reads the values compiled in with `--dart-define-from-file`.
-  ///
-  /// A release build never reads the token's value, so the compiler leaves it
-  /// out of the APK; it only checks whether one was passed, to refuse it.
   factory AppConfig.fromEnvironment() => AppConfig.parse(
     apiBaseUrl: const String.fromEnvironment('API_BASE_URL'),
-    devAccessToken: kReleaseMode
-        ? (const bool.hasEnvironment('DEV_ACCESS_TOKEN') ? _passedInRelease : '')
-        : const String.fromEnvironment('DEV_ACCESS_TOKEN'),
+    supabaseUrl: const String.fromEnvironment('SUPABASE_URL'),
+    supabasePublishableKey: const String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY'),
     allowInsecure: kDebugMode,
-    isRelease: kReleaseMode,
   );
-
-  /// Stands in for a token passed to a release build, so [parse] refuses it
-  /// without the real value ever being compiled in.
-  static const _passedInRelease = 'passed-to-a-release-build';
 
   /// Plain `http` is only accepted in debug builds, for a backend on the
   /// developer's computer; a release build always talks over HTTPS.
   factory AppConfig.parse({
     required String apiBaseUrl,
+    required String supabaseUrl,
+    required String supabasePublishableKey,
     required bool allowInsecure,
-    String devAccessToken = '',
-    bool isRelease = false,
   }) {
-    if (apiBaseUrl.isEmpty) {
+    if (apiBaseUrl.isEmpty || supabaseUrl.isEmpty || supabasePublishableKey.isEmpty) {
       throw const AppConfigException(
-        'API_BASE_URL is missing. Run with '
+        'API_BASE_URL, SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY are required. Run with '
         '--dart-define-from-file=config/production.json (see app/README.md).',
       );
     }
-    final uri = Uri.tryParse(apiBaseUrl);
+    final apiUri = Uri.tryParse(apiBaseUrl);
     final schemes = allowInsecure ? const {'https', 'http'} : const {'https'};
-    if (uri == null || !uri.hasAuthority || !schemes.contains(uri.scheme)) {
+    if (apiUri == null || !apiUri.hasAuthority || !schemes.contains(apiUri.scheme)) {
       throw AppConfigException(
         'API_BASE_URL must be an absolute ${schemes.join(' or ')} URL: "$apiBaseUrl".',
       );
     }
-    // A release APK can be shared, and anything compiled into it can be
-    // extracted, so the token is only accepted in debug and profile builds.
-    if (devAccessToken.isNotEmpty && isRelease) {
-      throw const AppConfigException(
-        'DEV_ACCESS_TOKEN is not allowed in a release build: anyone with the APK could '
-        'extract it. Build release without config/dev-token.json.',
+    // Same rule as the backend (api/src/config/env.ts): the project's base URL.
+    if (!RegExp(r'^https://[a-z0-9]+\.supabase\.co/?$').hasMatch(supabaseUrl)) {
+      throw AppConfigException(
+        'SUPABASE_URL must be the project URL, https://<project-ref>.supabase.co: "$supabaseUrl".',
       );
     }
-    // Same minimum as the backend (api/src/config/env.ts).
-    if (devAccessToken.isNotEmpty && devAccessToken.length < 32) {
-      throw const AppConfigException('DEV_ACCESS_TOKEN must be at least 32 characters.');
+    // Anything compiled into an APK can be extracted: the secret key here
+    // would let anyone skip RLS. The error never repeats the value.
+    if (!supabasePublishableKey.startsWith('sb_publishable_')) {
+      throw const AppConfigException(
+        'SUPABASE_PUBLISHABLE_KEY must be the publishable key (sb_publishable_...). '
+        'Never put the secret key in the app.',
+      );
     }
     return AppConfig(
-      apiBaseUrl: uri,
-      devAccessToken: devAccessToken.isEmpty ? null : devAccessToken,
+      apiBaseUrl: apiUri,
+      supabaseUrl: Uri.parse(supabaseUrl),
+      supabasePublishableKey: supabasePublishableKey,
     );
   }
 }

@@ -11,6 +11,7 @@ import '../models/help_resource.dart';
 import '../models/json_reader.dart';
 import '../models/usage.dart';
 import 'api_exception.dart';
+import 'auth_service.dart';
 
 /// The only way the app talks to the backend (docs/api-contract.md). It never
 /// talks to the LLM provider and holds no API key.
@@ -28,7 +29,10 @@ class MarlixApi {
 
   final http.Client _client;
   final Uri _baseUrl;
-  final String? _accessToken;
+
+  /// Read on every request: Supabase refreshes the session token in the
+  /// background, so it can change between two messages.
+  final String? Function()? _accessToken;
   final Duration timeout;
 
   /// `GET /health`. Public.
@@ -60,8 +64,10 @@ class MarlixApi {
   }) async {
     final request = http.Request(method, _baseUrl.resolve(path))
       ..headers['Accept'] = 'application/json';
-    if (authenticated && _accessToken != null) {
-      request.headers['Authorization'] = 'Bearer $_accessToken';
+    if (authenticated) {
+      if (_accessToken?.call() case final token?) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
     }
     if (body != null) {
       request.headers['Content-Type'] = 'application/json';
@@ -155,9 +161,10 @@ final httpClientProvider = Provider<http.Client>((ref) {
 
 final marlixApiProvider = Provider<MarlixApi>((ref) {
   final config = ref.watch(appConfigProvider);
+  final auth = ref.watch(authServiceProvider);
   return MarlixApi(
     client: ref.watch(httpClientProvider),
     baseUrl: config.apiBaseUrl,
-    accessToken: config.devAccessToken,
+    accessToken: () => auth.accessToken,
   );
 });

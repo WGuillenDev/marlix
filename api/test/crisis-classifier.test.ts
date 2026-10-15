@@ -106,7 +106,6 @@ describe('POST /v1/chat with the second layer', () => {
 describe('classifier configuration', () => {
   it('defaults to a model other than the chat, with a short timeout', () => {
     const env = parseEnv({
-      DEV_ACCESS_TOKEN: 'a'.repeat(32),
       GROQ_API_KEY: 'test-key',
       GROQ_MODEL: 'openai/gpt-oss-120b',
       SUPABASE_URL: 'https://abcdefghijklmnop.supabase.co',

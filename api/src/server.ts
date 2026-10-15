@@ -3,6 +3,7 @@ import 'dotenv/config';
 
 import { createApp } from './app.js';
 import { loadEnv } from './config/env.js';
+import { supabaseSessionCheck } from './middleware/require-session.js';
 import { createLlmProvider } from './services/llm/index.js';
 
 const env = loadEnv();
@@ -13,7 +14,7 @@ const app = createApp({
     timeoutMs: env.CRISIS_CLASSIFIER_TIMEOUT_MS,
     retry: false,
   }),
-  devAccessToken: env.DEV_ACCESS_TOKEN,
+  session: supabaseSessionCheck(env.SUPABASE_URL),
 });
 
 const server = app.listen(env.PORT, () => {

@@ -51,26 +51,22 @@ Requirements: [Flutter](https://docs.flutter.dev/get-started/install) stable (3.
    flutter run --dart-define-from-file=config/production.json
    ~~~
 
-The backend URL is not in the code: it comes from a file in `app/config/`, and the app refuses to start without a valid one.
+The backend URL and the Supabase project are not in the code: they come from a file in `app/config/`, and the app refuses to start without valid ones. The app uses Supabase only to sign up and sign in, with the project's publishable key, which is public by design; the secret key never goes in the app.
 
 | File | Backend | In Git |
 |---|---|---|
 | `config/production.json` | https://marlix-api.onrender.com | Yes |
-| `config/local.json` | Your own backend (`npm run dev`), copied from `config/local.example.json`. From the emulator, your computer is `10.0.2.2`. | No |
+| `config/local.json` | Your own backend (`npm run dev`), copied from `config/local.example.json`. From the emulator, your computer is `10.0.2.2`. Use the same `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` as `config/production.json`. | No |
 
 Plain `http` is only accepted in debug builds, for a backend on your computer; a release build always uses HTTPS.
 
-Until accounts exist (S4-3), the chat needs the backend's development token. Copy `config/dev-token.example.json` to `config/dev-token.json` (ignored by Git), paste the token there, and pass the file as a second `--dart-define-from-file`. For your local backend it is `DEV_ACCESS_TOKEN` in `api/.env`; for production, read it in the Render service's **Environment** tab. Never paste it anywhere else. The token only works in debug and profile builds: a release build refuses to start if it was given one, and never compiles its value in, because anyone with the APK could extract it.
-
-~~~bash
-flutter run --dart-define-from-file=config/production.json --dart-define-from-file=config/dev-token.json
-~~~
+The app opens on the sign-in screen. Create an account there (you must be 18 or older); the session is kept, encrypted, until you sign out in **Ajustes**.
 
 | Command (in `app/`) | What it does |
 |---|---|
 | `flutter analyze` | Checks the code with the project's lint rules. |
 | `flutter test` | Runs the automated tests. The [CI](.github/workflows/ci.yml) also runs them, with the format check and `flutter analyze`, on every pull request. |
-| `flutter test integration_test --dart-define-from-file=config/local.json --dart-define-from-file=config/dev-token.json` | Calls every backend endpoint from the app on the emulator. It sends two chat messages; one uses the Groq quota. |
+| `flutter test integration_test --dart-define-from-file=config/local.json --dart-define-from-file=config/test-account.json` | Signs in with a test account and calls every backend endpoint from the app on the emulator. Create the account in the app first, then copy `config/test-account.example.json` to `config/test-account.json` (ignored by Git) and fill it in. It sends two chat messages; one uses the Groq quota. |
 | `dart format lib test integration_test` | Formats the code (100 columns). |
 
 ### Backend
@@ -83,7 +79,7 @@ Requirements: [Node.js](https://nodejs.org/) 24 or later.
    npm install
    cp .env.example .env
    ~~~
-   Then fill in `GROQ_API_KEY` and a `DEV_ACCESS_TOKEN` of your own (the command to generate one is in `.env.example`).
+   Then fill in `GROQ_API_KEY` and the Supabase variables.
 2. Start the server with automatic reload:
    ~~~bash
    npm run dev
@@ -93,11 +89,18 @@ Requirements: [Node.js](https://nodejs.org/) 24 or later.
    curl http://localhost:3000/health
    # {"status":"ok"}
    ~~~
-4. Send a message to marlix, with the token from your `.env`:
+4. Every `/v1` request except the help resources needs a session. Sign in to Supabase Auth with an account created in the app; `access_token` in the answer is the token, valid for one hour:
+   ~~~bash
+   curl -X POST "https://<project-ref>.supabase.co/auth/v1/token?grant_type=password" \
+     -H "apikey: <SUPABASE_PUBLISHABLE_KEY>" \
+     -H "Content-Type: application/json" \
+     -d '{"email": "<your email>", "password": "<your password>"}'
+   ~~~
+5. Send a message to marlix with that token:
    ~~~bash
    curl -X POST http://localhost:3000/v1/chat \
      -H "Content-Type: application/json" \
-     -H "Authorization: Bearer <DEV_ACCESS_TOKEN>" \
+     -H "Authorization: Bearer <access_token>" \
      -d '{"message": "Hola, hoy tuve un buen día"}'
    ~~~
    The response follows the [API contract](docs/api-contract.md#post-v1chat).
@@ -107,7 +110,6 @@ The server validates these variables when it starts. If a required one is missin
 | Variable | Required | Default | What it is |
 |---|---|---|---|
 | `PORT` | No | `3000` | Port the API listens on. |
-| `DEV_ACCESS_TOKEN` | Yes | — | Token every `/v1` request (except the public help resources) must send as `Authorization: Bearer <token>`, at least 32 characters. Temporary: it keeps the chat private until real accounts replace it in S4-3. Never share it. |
 | `LLM_PROVIDER` | No | `groq` | LLM provider that answers the chat. Only `groq` exists for now; see [how to add one](docs/architecture.md#adding-an-llm-provider). |
 | `LLM_TIMEOUT_MS` | No | `15000` | Milliseconds to wait for one LLM call. Timeouts, network errors and 5xx are retried once; quota and key errors are not. |
 | `GROQ_API_KEY` | Yes | — | Groq API key, from [console.groq.com/keys](https://console.groq.com/keys). Only the backend holds it. |
@@ -116,7 +118,7 @@ The server validates these variables when it starts. If a required one is missin
 | `GROQ_REASONING_EFFORT` | No | `low` | Reasoning effort for gpt-oss models (`low`, `medium`, `high`), or `none` for models that do not reason. |
 | `CRISIS_CLASSIFIER_MODEL` | No | `openai/gpt-oss-20b` | Model that classifies ambiguous messages for the [crisis protocol](docs/crisis-protocol.md#the-second-layer). Different from the chat model, so it has its own quota. |
 | `CRISIS_CLASSIFIER_TIMEOUT_MS` | No | `5000` | Longest wait for that classification. A timeout counts as a crisis. |
-| `SUPABASE_URL` | Yes | — | The Supabase project URL, `https://<project-ref>.supabase.co`, without the `/rest/v1` that Project Settings → Data API shows. |
+| `SUPABASE_URL` | Yes | — | The Supabase project URL, `https://<project-ref>.supabase.co`, without the `/rest/v1` that Project Settings → Data API shows. Session tokens are checked against this project's public signing keys. |
 | `SUPABASE_SECRET_KEY` | Yes | — | Supabase secret key, starting with `sb_secret_` (Project Settings → API Keys). It has `service_role` rights and bypasses RLS: only the backend holds it. Never share it. |
 
 | Command | What it does |
@@ -141,11 +143,24 @@ Usage limits per plan are in [`api/config/plans.json`](api/config/plans.json): 1
 |---|---|
 | `GET /health` | Public. Used by the uptime monitor. |
 | `GET /v1/help-resources` | Public. The help resources the app shows, from `api/config/crisis.json`. |
-| Rest of `/v1/*` | Only with `Authorization: Bearer <DEV_ACCESS_TOKEN>`; anything else gets `401`. Until accounts exist (S4-3), only the developer has the token. |
+| Rest of `/v1/*` | Only with a Supabase session, `Authorization: Bearer <access token>`; anything else gets `401`. Each account has its own daily limit. |
 
 The free plan sleeps the service after about 15 minutes without traffic, so the first request after a pause can take up to a minute.
 
-To create the service the first time: in the Render dashboard, **New → Blueprint**, pick this repository and confirm. Render asks for `GROQ_API_KEY` (use a production key, not your local one) and generates `DEV_ACCESS_TOKEN`; read it in the service's **Environment** tab.
+To create the service the first time: in the Render dashboard, **New → Blueprint**, pick this repository and confirm. Render asks for `GROQ_API_KEY` (use a production key, not your local one), `SUPABASE_URL` and `SUPABASE_SECRET_KEY`.
+
+### Supabase project
+
+Production data and accounts live in the Supabase project. Changes to the schema after it was created are in [`docs/migrations/`](docs/migrations/): run each file once, in order, in the **SQL Editor**. [`docs/schema.sql`](docs/schema.sql) already includes them for a new database.
+
+Sign-up uses email and password, with these settings in **Authentication → Sign In / Providers → Email** ([decision](docs/decisions.md)):
+
+| Setting | Value | Why |
+|---|---|---|
+| Confirm email | Off | The free email service sends about 2 emails an hour; confirmation comes with its own card (S7-9). |
+| Minimum password length | 8 | The same minimum the app checks. |
+
+The minimum age is enforced in the database: the sign-up trigger in the schema refuses anyone under 18, whatever client calls Supabase Auth.
 
 ### Local database
 

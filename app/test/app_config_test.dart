@@ -1,99 +1,65 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marlix/config/app_config.dart';
 
+const supabaseUrl = 'https://abcdefghijklmnop.supabase.co';
+const publishableKey = 'sb_publishable_test-key';
+
+AppConfig parse({
+  String apiBaseUrl = 'https://marlix-api.onrender.com',
+  String supabaseUrl = supabaseUrl,
+  String supabasePublishableKey = publishableKey,
+  bool allowInsecure = false,
+}) => AppConfig.parse(
+  apiBaseUrl: apiBaseUrl,
+  supabaseUrl: supabaseUrl,
+  supabasePublishableKey: supabasePublishableKey,
+  allowInsecure: allowInsecure,
+);
+
+Matcher configError(String text) =>
+    throwsA(isA<AppConfigException>().having((error) => error.message, 'message', contains(text)));
+
 void main() {
   group('AppConfig.parse', () {
-    test('accepts an https URL', () {
-      final config = AppConfig.parse(
-        apiBaseUrl: 'https://marlix-api.onrender.com',
-        allowInsecure: false,
-      );
+    test('accepts https URLs and the publishable key', () {
+      final config = parse();
       expect(config.apiBaseUrl, Uri.parse('https://marlix-api.onrender.com'));
+      expect(config.supabaseUrl, Uri.parse(supabaseUrl));
+      expect(config.supabasePublishableKey, publishableKey);
     });
 
-    test('accepts http only when insecure URLs are allowed', () {
-      final config = AppConfig.parse(apiBaseUrl: 'http://10.0.2.2:3000', allowInsecure: true);
+    test('accepts an http backend only when insecure URLs are allowed', () {
+      final config = parse(apiBaseUrl: 'http://10.0.2.2:3000', allowInsecure: true);
       expect(config.apiBaseUrl.port, 3000);
-      expect(
-        () => AppConfig.parse(apiBaseUrl: 'http://10.0.2.2:3000', allowInsecure: false),
-        throwsA(isA<AppConfigException>()),
-      );
+      expect(() => parse(apiBaseUrl: 'http://10.0.2.2:3000'), throwsA(isA<AppConfigException>()));
     });
 
-    test('rejects a missing URL with a hint to the config file', () {
+    test('rejects a missing value with a hint to the config file', () {
+      expect(() => parse(apiBaseUrl: ''), configError('config/production.json'));
+      expect(() => parse(supabaseUrl: ''), configError('config/production.json'));
+      expect(() => parse(supabasePublishableKey: ''), configError('config/production.json'));
+    });
+
+    test('accepts only a Supabase project URL, even in debug', () {
+      for (final url in [
+        'http://abcdefghijklmnop.supabase.co',
+        'https://example.com',
+        '$supabaseUrl/rest/v1',
+      ]) {
+        expect(() => parse(supabaseUrl: url, allowInsecure: true), configError('SUPABASE_URL'));
+      }
+    });
+
+    test('refuses the secret key without repeating it', () {
+      const secret = 'sb_secret_never-in-the-app';
       expect(
-        () => AppConfig.parse(apiBaseUrl: '', allowInsecure: true),
+        () => parse(supabasePublishableKey: secret),
         throwsA(
-          isA<AppConfigException>().having(
-            (error) => error.message,
-            'message',
-            contains('config/production.json'),
-          ),
+          isA<AppConfigException>()
+              .having((error) => error.message, 'message', contains('Never put the secret key'))
+              .having((error) => error.message, 'message', isNot(contains(secret))),
         ),
       );
     });
-
-    test('reads the development token, and has none when it is empty', () {
-      const token = 'dev-token-with-at-least-thirty-two-characters';
-      final withToken = AppConfig.parse(
-        apiBaseUrl: 'https://marlix-api.onrender.com',
-        devAccessToken: token,
-        allowInsecure: false,
-      );
-      final withoutToken = AppConfig.parse(
-        apiBaseUrl: 'https://marlix-api.onrender.com',
-        allowInsecure: false,
-      );
-
-      expect(withToken.devAccessToken, token);
-      expect(withoutToken.devAccessToken, isNull);
-    });
-
-    test('rejects the development token in a release build, naming the file', () {
-      expect(
-        () => AppConfig.parse(
-          apiBaseUrl: 'https://marlix-api.onrender.com',
-          devAccessToken: 'dev-token-with-at-least-thirty-two-characters',
-          allowInsecure: false,
-          isRelease: true,
-        ),
-        throwsA(
-          isA<AppConfigException>().having(
-            (error) => error.message,
-            'message',
-            contains('config/dev-token.json'),
-          ),
-        ),
-      );
-    });
-
-    test('a release build without the token is valid', () {
-      final config = AppConfig.parse(
-        apiBaseUrl: 'https://marlix-api.onrender.com',
-        allowInsecure: false,
-        isRelease: true,
-      );
-      expect(config.devAccessToken, isNull);
-    });
-
-    test('rejects a development token shorter than the backend accepts', () {
-      expect(
-        () => AppConfig.parse(
-          apiBaseUrl: 'https://marlix-api.onrender.com',
-          devAccessToken: 'short',
-          allowInsecure: false,
-        ),
-        throwsA(isA<AppConfigException>()),
-      );
-    });
-
-    for (final invalid in ['marlix-api.onrender.com', '/v1', 'ftp://example.com']) {
-      test('rejects "$invalid"', () {
-        expect(
-          () => AppConfig.parse(apiBaseUrl: invalid, allowInsecure: true),
-          throwsA(isA<AppConfigException>()),
-        );
-      });
-    }
   });
 }
