@@ -2,6 +2,7 @@
 import type { ErrorRequestHandler, RequestHandler } from 'express';
 
 import { LlmError } from '../services/llm/index.js';
+import { UsageLimitExceededError } from '../services/usage/usage-limiter.js';
 
 export interface ValidationIssue {
   field: string;
@@ -69,6 +70,17 @@ function toApiError(error: unknown): ApiError {
       undefined,
       error.retryAfterSeconds ? { 'Retry-After': String(error.retryAfterSeconds) } : {},
     );
+  }
+
+  if (error instanceof UsageLimitExceededError) {
+    const { limit } = error;
+    return limit.reason === 'daily_limit'
+      ? new ApiError(429, 'DAILY_LIMIT_REACHED', 'Daily interaction limit reached.', {
+          resetsAt: limit.resetsAt,
+        })
+      : new ApiError(429, 'RATE_LIMITED', 'Too many requests.', undefined, {
+          'Retry-After': String(limit.retryAfterSeconds),
+        });
   }
 
   // Errors from the JSON body parser. Their message quotes the body, which
