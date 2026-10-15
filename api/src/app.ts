@@ -5,6 +5,7 @@ import { requireDevToken } from './middleware/require-dev-token.js';
 import { createChatRouter } from './routes/chat.js';
 import { healthRouter } from './routes/health.js';
 import { createChatService } from './services/chat-service.js';
+import { createCrisisFilter } from './services/crisis/filter.js';
 import type { LlmProvider } from './services/llm/index.js';
 
 export interface AppDependencies {
@@ -24,7 +25,8 @@ export function createApp({ llm, devAccessToken }: AppDependencies) {
 
   // Public: the uptime monitor calls it.
   app.use(healthRouter);
-  app.use('/v1', requireDevToken(devAccessToken), createChatRouter(createChatService(llm)));
+  const chatService = createChatService(llm, createCrisisFilter());
+  app.use('/v1', requireDevToken(devAccessToken), createChatRouter(chatService));
 
   app.use(notFoundHandler);
   app.use(errorHandler);

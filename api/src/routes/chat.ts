@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import { ApiError } from '../middleware/error-handler.js';
 import type { ChatService } from '../services/chat-service.js';
+import { CRISIS_REPLY_TEXT, CRISIS_RESOURCES } from '../services/crisis/crisis-reply.js';
 
 const MAX_MESSAGE_LENGTH = 2000;
 
@@ -44,11 +45,12 @@ export function createChatRouter(chatService: ChatService): Router {
 
     const { message, mode } = parsed.data;
     const userMessageCreatedAt = new Date().toISOString();
-    const replyContent = await chatService.reply({ message, mode });
+    const outcome = await chatService.reply({ message, mode });
+    const isCrisis = outcome.type === 'crisis';
 
     // IDs are generated per request until messages are stored (S4-4).
     res.status(200).json({
-      type: 'reply',
+      type: outcome.type,
       userMessage: {
         id: randomUUID(),
         role: 'user',
@@ -58,10 +60,11 @@ export function createChatRouter(chatService: ChatService): Router {
       reply: {
         id: randomUUID(),
         role: 'assistant',
-        content: replyContent,
+        content: isCrisis ? CRISIS_REPLY_TEXT : outcome.content,
         createdAt: new Date().toISOString(),
         interrupted: false,
       },
+      ...(isCrisis ? { resources: CRISIS_RESOURCES } : {}),
     });
   });
 
