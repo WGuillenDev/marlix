@@ -45,3 +45,17 @@ updates:
     labels: [infra]
     commit-message:
       prefix: chore
+
+  - package-ecosystem: pub
+    directory: /app
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Costa_Rica
+    labels: [app]
+    commit-message:
+      prefix: chore
+    groups:
+      pub-minor-and-patch:
+        update-types: [minor, patch]
