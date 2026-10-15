@@ -179,6 +179,15 @@ RLS decides **which rows** a user reaches; table privileges decide **which opera
 - **Functions:** `set_updated_at` and `handle_new_auth_user` run only as triggers, so nobody else can execute them (`public`, `anon` and `authenticated` have no `EXECUTE`). A trigger fires without that privilege.
 - **Future tables:** default privileges for `postgres` in `public` are revoked, so a table added by a later migration starts with no access for the app roles until it is granted on purpose.
 
+### Isolation tests (S4-2)
+
+[`schema-test.sql`](schema-test.sql) proves the rules above. It runs in a transaction that is rolled back, so it changes nothing, and it checks two things:
+
+- **Two users.** Ana and Beto each get a profile, a conversation, messages, a memory and usage, written as the backend would. Acting as Ana the way Supabase does for a request with her token (`request.jwt.claim.sub` and the `authenticated` role), she sees only her rows, her changes on Beto's rows affect nothing, and she cannot insert, truncate or change her plan. `anon` reaches nothing. Deleting Beto removes all his data.
+- **Guards on the catalog**, so a later migration cannot slip through: every table in `public` has RLS; every table with user data (a `user_id` column, or `users`) has at least one policy and every one of its policies depends on `auth.uid()`; no policy is open to `anon`. The test also creates a table without RLS to show the guard catches it.
+
+It runs on every pull request in the CI's Database job, against Supabase's Postgres image. To run it against the Supabase project, open the **SQL Editor**, paste the file without its two `psql` lines (`\o /dev/null` and the `\echo`), and run it: it ends in `rollback`, so an error names the failed check and success changes nothing.
+
 ## Out of scope
 
 - Creating the real Supabase project (S4-1).
