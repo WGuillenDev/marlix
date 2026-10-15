@@ -1,11 +1,13 @@
 import express from 'express';
 
 import { loadCrisisConfig, type CrisisConfig } from './config/crisis-config.js';
+import { loadPlansConfig, type PlansConfig } from './config/plans.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
 import { requireDevToken } from './middleware/require-dev-token.js';
 import { createChatRouter } from './routes/chat.js';
 import { healthRouter } from './routes/health.js';
 import { createHelpResourcesRouter } from './routes/help-resources.js';
+import { createUsageRouter } from './routes/usage.js';
 import { createChatService } from './services/chat-service.js';
 import {
   createConsoleActivationLog,
@@ -14,6 +16,7 @@ import {
 import { createAmbiguousClassifier } from './services/crisis/classifier.js';
 import { createCrisisFilter } from './services/crisis/filter.js';
 import type { LlmProvider } from './services/llm/index.js';
+import { createUsageLimiter } from './services/usage/usage-limiter.js';
 
 export interface AppDependencies {
   llm: LlmProvider;
@@ -25,6 +28,8 @@ export interface AppDependencies {
   crisisConfig?: CrisisConfig;
   /** Where crisis activations are recorded (S2-5); the logs by default. */
   activationLog?: ActivationLog;
+  /** Usage limits per plan (S2-6); read from api/config/plans.json by default. */
+  plans?: PlansConfig;
 }
 
 /** Builds the Express app without listening, so tests can use it directly. */
@@ -34,6 +39,7 @@ export function createApp({
   devAccessToken,
   crisisConfig = loadCrisisConfig(),
   activationLog = createConsoleActivationLog(),
+  plans = loadPlansConfig(),
 }: AppDependencies) {
   const app = express();
 
@@ -50,8 +56,14 @@ export function createApp({
   const crisisFilter = createCrisisFilter(
     crisisClassifier ? createAmbiguousClassifier(crisisClassifier) : undefined,
   );
-  const chatService = createChatService(llm, crisisFilter, activationLog);
-  app.use('/v1', requireDevToken(devAccessToken), createChatRouter(chatService, crisisConfig));
+  const usageLimiter = createUsageLimiter(plans);
+  const chatService = createChatService(llm, crisisFilter, activationLog, usageLimiter);
+  app.use(
+    '/v1',
+    requireDevToken(devAccessToken),
+    createChatRouter(chatService, crisisConfig, usageLimiter),
+    createUsageRouter(usageLimiter),
+  );
 
   app.use(notFoundHandler);
   app.use(errorHandler);
