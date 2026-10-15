@@ -86,9 +86,17 @@ Any answer other than an exact `SAFE`, an error or a timeout counts as a crisis.
 
 ---
 
+## 2026-10-14 — The database image comes from Docker Hub, and the CI reads it from docker-compose.yml (S2-11)
+
+**Decision:** `docker-compose.yml` uses `supabase/postgres` from Docker Hub instead of `public.ecr.aws/supabase/postgres`: the same image, published by Supabase with the same tags. The CI's Database job reads the image from `docker-compose.yml` instead of writing its own tag.
+
+ECR Public rejected the anonymous pulls of GitHub's shared runners (`toomanyrequests`), so the CI had moved to Docker Hub with a tag of its own. That left two versions in the repository: when Dependabot bumped `docker-compose.yml`, the CI still tested the old image. With a single line, the version Dependabot proposes is the one the CI tests, and local development keeps using the same image as the CI.
+
+---
+
 ## 2026-09-30 — Local database: Docker Compose with Supabase's Postgres image (S0-13)
 
-**Decision:** the local database runs with `docker compose` from [`docker-compose.yml`](../docker-compose.yml): the `public.ecr.aws/supabase/postgres` image plus pgAdmin. On the first start it applies `docs/schema.sql` automatically.
+**Decision:** the local database runs with `docker compose` from [`docker-compose.yml`](../docker-compose.yml): the `supabase/postgres` image (from ECR Public until S2-11, now from Docker Hub) plus pgAdmin. On the first start it applies `docs/schema.sql` automatically.
 
 Supabase's own Postgres image already includes the `auth` schema (`auth.users`, `auth.uid()`) and the `anon`, `authenticated` and `service_role` roles, so the schema runs as it does in production. Production stays on Supabase cloud.
 
