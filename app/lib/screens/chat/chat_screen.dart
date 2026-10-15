@@ -10,6 +10,7 @@ import '../../widgets/chat_states.dart';
 import '../../widgets/message_bubble.dart';
 import '../../widgets/typing_indicator.dart';
 import '../help_screen.dart';
+import '../settings_screen.dart';
 import 'chat_controller.dart';
 
 /// Main screen (wireframes docs/diagrams/wireframes/screens/03a to 03d).
@@ -101,7 +102,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            _Header(onHelp: _openHelp),
+            _Header(
+              onHelp: _openHelp,
+              onSettings: () => Navigator.of(context).push(SettingsScreen.route()),
+            ),
             if (chat.usage case final usage?) _UsageChip(usage: usage),
             if (_slow)
               const Padding(padding: EdgeInsets.fromLTRB(16, 12, 16, 0), child: WakingUpBanner()),
@@ -160,14 +164,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       _ => 'Vas muy rápido. Esperá un momento y volvé a intentarlo.',
     },
     SendFailure.dailyLimit => 'No se envió: llegamos al límite de hoy.',
+    SendFailure.sessionEnded => 'No se envió: tu sesión terminó.',
     SendFailure.unexpected || null => 'No se pudo enviar.',
   };
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.onHelp});
+  const _Header({required this.onHelp, required this.onSettings});
 
   final VoidCallback onHelp;
+  final VoidCallback onSettings;
 
   @override
   Widget build(BuildContext context) {
@@ -199,6 +205,15 @@ class _Header extends StatelessWidget {
                 ],
               ),
             ),
+            IconButton(
+              onPressed: onSettings,
+              tooltip: 'Ajustes',
+              icon: const Icon(Icons.settings_rounded),
+              iconSize: 28,
+              color: AppColors.textSecondary,
+              style: IconButton.styleFrom(fixedSize: const Size(48, 48)),
+            ),
+            const SizedBox(width: 4),
             // Always visible, so help is one tap away from the chat.
             IconButton(
               onPressed: onHelp,

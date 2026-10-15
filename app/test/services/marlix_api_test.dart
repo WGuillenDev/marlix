@@ -9,7 +9,7 @@ import 'package:marlix/models/chat.dart';
 import 'package:marlix/services/api_exception.dart';
 import 'package:marlix/services/marlix_api.dart';
 
-const token = 'dev-token-with-at-least-thirty-two-characters';
+const token = 'session-access-token';
 final baseUrl = Uri.parse('https://api.test');
 
 const resource = {
@@ -56,7 +56,7 @@ MarlixApi apiReturning(
 }) => MarlixApi(
   client: MockClient((request) async => handler(request)),
   baseUrl: baseUrl,
-  accessToken: accessToken,
+  accessToken: () => accessToken,
   timeout: timeout,
 );
 
@@ -160,6 +160,25 @@ void main() {
       await api.usage();
 
       expect(sent.headers.containsKey('Authorization'), isFalse);
+    });
+
+    test('reads the token on every request, so a refreshed one is used', () async {
+      final sent = <String?>[];
+      var current = 'first-token';
+      final api = MarlixApi(
+        client: MockClient((request) async {
+          sent.add(request.headers['Authorization']);
+          return jsonResponse({'plan': 'personal', ...usage}, 200);
+        }),
+        baseUrl: baseUrl,
+        accessToken: () => current,
+      );
+
+      await api.usage();
+      current = 'refreshed-token';
+      await api.usage();
+
+      expect(sent, ['Bearer first-token', 'Bearer refreshed-token']);
     });
   });
 

@@ -4,6 +4,7 @@ import '../../models/chat.dart';
 import '../../models/help_resource.dart';
 import '../../models/usage.dart';
 import '../../services/api_exception.dart';
+import '../../services/auth_service.dart';
 import '../../services/marlix_api.dart';
 
 /// One row of the chat.
@@ -16,7 +17,7 @@ sealed class ChatEntry {
 enum SendStatus { sending, sent, failed }
 
 /// Why a message was not sent; each one gets its own copy on screen.
-enum SendFailure { network, timeout, unavailable, tooFast, dailyLimit, unexpected }
+enum SendFailure { network, timeout, unavailable, tooFast, dailyLimit, sessionEnded, unexpected }
 
 class UserEntry extends ChatEntry {
   const UserEntry(
@@ -34,8 +35,12 @@ class UserEntry extends ChatEntry {
   /// For [SendFailure.tooFast]: how long the backend asked to wait.
   final Duration? retryAfter;
 
-  /// A message that hit the daily limit cannot be retried until it resets.
-  bool get canRetry => status == SendStatus.failed && failure != SendFailure.dailyLimit;
+  /// A message that hit the daily limit cannot be retried until it resets,
+  /// nor one sent with a session the backend rejected.
+  bool get canRetry =>
+      status == SendStatus.failed &&
+      failure != SendFailure.dailyLimit &&
+      failure != SendFailure.sessionEnded;
 }
 
 class MarlixEntry extends ChatEntry {
@@ -87,8 +92,12 @@ class ChatState {
 class ChatController extends Notifier<ChatState> {
   var _localIds = 0;
 
+  /// Starts empty for every session: another account never sees these messages.
   @override
-  ChatState build() => const ChatState();
+  ChatState build() {
+    ref.watch(signedInUserProvider);
+    return const ChatState();
+  }
 
   MarlixApi get _api => ref.read(marlixApiProvider);
 
@@ -97,6 +106,8 @@ class ChatController extends Notifier<ChatState> {
     try {
       final usage = await _api.usage();
       if (ref.mounted) state = state.copyWith(usage: usage);
+    } on UnauthorizedException {
+      if (ref.mounted) await _endSession();
     } on ApiException {
       // The next reply carries the usage too.
     }
@@ -160,7 +171,15 @@ class ChatController extends Notifier<ChatState> {
       if (error is DailyLimitReachedException) {
         state = state.copyWith(limitResetsAt: error.resetsAt);
       }
+      // Supabase refreshes the token by itself, so a rejected one means the
+      // session really ended (expired, or the account was deleted).
+      if (error is UnauthorizedException) await _endSession();
     }
+  }
+
+  Future<void> _endSession() async {
+    ref.read(sessionEndedProvider.notifier).set(true);
+    await ref.read(authServiceProvider).signOut();
   }
 
   void _replace(String id, ChatEntry replacement) {
@@ -175,6 +194,7 @@ class ChatController extends Notifier<ChatState> {
     LlmUnavailableException() => SendFailure.unavailable,
     RateLimitedException() => SendFailure.tooFast,
     DailyLimitReachedException() => SendFailure.dailyLimit,
+    UnauthorizedException() => SendFailure.sessionEnded,
     _ => SendFailure.unexpected,
   };
 }

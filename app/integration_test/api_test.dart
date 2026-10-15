@@ -4,22 +4,50 @@ import 'package:integration_test/integration_test.dart';
 import 'package:marlix/config/app_config.dart';
 import 'package:marlix/models/chat.dart';
 import 'package:marlix/services/api_exception.dart';
+import 'package:marlix/services/auth_service.dart';
 import 'package:marlix/services/marlix_api.dart';
 
 /// Calls the real backend from the app on a device or emulator, with the same
-/// configuration files as `flutter run`. It sends two chat messages: one uses
-/// the model (and the Groq quota), the other is caught by the crisis filter.
+/// configuration files as `flutter run`, signed in with a test account from
+/// `config/test-account.json`. It sends two chat messages: one uses the model
+/// (and the Groq quota), the other is caught by the crisis filter.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
+  const email = String.fromEnvironment('TEST_ACCOUNT_EMAIL');
+  const password = String.fromEnvironment('TEST_ACCOUNT_PASSWORD');
   final config = AppConfig.fromEnvironment();
   final client = http.Client();
-  final api = MarlixApi(
-    client: client,
-    baseUrl: config.apiBaseUrl,
-    accessToken: config.devAccessToken,
-  );
-  tearDownAll(client.close);
+  late SupabaseAuthService auth;
+  late MarlixApi api;
+
+  setUpAll(() async {
+    expect(email, isNotEmpty, reason: 'Pass config/test-account.json (see the README)');
+    auth = await SupabaseAuthService.initialize(config);
+    await auth.signIn(email: email, password: password);
+    api = MarlixApi(
+      client: client,
+      baseUrl: config.apiBaseUrl,
+      accessToken: () => auth.accessToken,
+    );
+  });
+  tearDownAll(() async {
+    await auth.signOut();
+    client.close();
+  });
+
+  testWidgets('a wrong password is invalidCredentials, never "unknown email"', (_) async {
+    await expectLater(
+      auth.signIn(email: email, password: '$password-wrong'),
+      throwsA(
+        isA<AuthFailureException>().having(
+          (error) => error.failure,
+          'failure',
+          AuthFailure.invalidCredentials,
+        ),
+      ),
+    );
+  });
 
   testWidgets('GET /health', (_) async {
     expect(await api.health(), isTrue);
@@ -47,7 +75,7 @@ void main() {
     expect((response as CrisisReply).resources.first.phone, '911');
   });
 
-  testWidgets('a request without the token is a typed UnauthorizedException', (_) async {
+  testWidgets('a request without a session is a typed UnauthorizedException', (_) async {
     final anonymous = MarlixApi(client: client, baseUrl: config.apiBaseUrl);
     await expectLater(anonymous.usage(), throwsA(isA<UnauthorizedException>()));
   });
