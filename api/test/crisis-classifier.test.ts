@@ -109,6 +109,8 @@ describe('classifier configuration', () => {
       DEV_ACCESS_TOKEN: 'a'.repeat(32),
       GROQ_API_KEY: 'test-key',
       GROQ_MODEL: 'openai/gpt-oss-120b',
+      SUPABASE_URL: 'https://abcdefghijklmnop.supabase.co',
+      SUPABASE_SECRET_KEY: 'sb_secret_test-key',
     });
     assert.equal(env.CRISIS_CLASSIFIER_MODEL, 'openai/gpt-oss-20b');
     assert.equal(env.CRISIS_CLASSIFIER_TIMEOUT_MS, 5000);
