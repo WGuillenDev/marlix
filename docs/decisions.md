@@ -4,6 +4,33 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-10-14 — The development token stays until accounts exist (S2-6)
+
+**Decision:** the development token of S1-7 (`DEV_ACCESS_TOKEN`) stays on `/v1/chat` until the Supabase session check of S4-3 replaces it. The S2-1 card planned to remove it once the crisis filter and the crisis reply were done (S2-1, S2-3).
+
+**Why:** without accounts there is no way to tell people apart, so the per-user limits of S2-6 can only apply to whoever holds the token. A public chat would let anyone who finds the URL use up Groq's shared quota (1,000 requests a day for the whole account) and leave the family without the avatar. The crisis filter being ready made the chat safe to answer; it did not make it safe to open.
+
+The public endpoints are unchanged: `GET /health` and `GET /v1/help-resources`.
+
+---
+
+## 2026-10-14 — Usage limits: configuration file and in-memory counters until Sprint 4 (S2-6)
+
+**Decision:** the caps per plan live in [`api/config/plans.json`](../api/config/plans.json) and the counters in memory. In Sprint 4, when the backend uses the database, they move to the `plan_limits` and `daily_usage` tables of the [schema](schema.sql).
+
+| Limit | `personal` plan | Answer when reached |
+|---|---|---|
+| Daily | 100 successful replies per day, resetting at midnight Costa Rica time | `429 DAILY_LIMIT_REACHED` with `details.resetsAt` |
+| Rate | 5 messages to the model per 60 seconds | `429 RATE_LIMITED` with `Retry-After` |
+
+- **Crisis first:** the crisis filter runs before the limits, so a crisis is always answered, even at the cap, and is not counted (decided in S0-8).
+- **Only successful replies count** against the daily cap. Every message that reaches the model takes a slot of the rate window, even if the model then fails, so a loop against a failing model is also stopped.
+- **In memory, for now:** a restart or deploy resets the counters. That can only give someone more room, never less, and the Groq quota still caps the account. The free Render service also sleeps after 15 minutes without traffic, which resets them too.
+- **No redeploy to change a cap** is only true once the caps are read from the `plan_limits` table (Sprint 4). Until then, a cap changes by editing `plans.json` and deploying.
+- An unknown plan gets the `personal` limits, never no limit.
+
+---
+
 ## 2026-10-14 — Crisis classifier: `openai/gpt-oss-20b` with a policy prompt (S2-2)
 
 **Decision:** the second layer of the crisis filter classifies ambiguous messages with `openai/gpt-oss-20b` on Groq's free plan and a policy prompt of our own that answers `RISK` or `SAFE`. The model is the `CRISIS_CLASSIFIER_MODEL` environment variable.

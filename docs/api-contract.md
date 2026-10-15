@@ -293,7 +293,7 @@ Checks that happen before the model (auth, validation, daily limit) still answer
 |---|---|---|
 | Auth with the Supabase token | S4-3 | No user session. Every `/v1` request except the public `GET /v1/help-resources` needs `Authorization: Bearer <DEV_ACCESS_TOKEN>`, a development token only the developer has (S1-7); without it the answer is `401 UNAUTHORIZED`. |
 | Stored messages | S4-4 | `userMessage.id` and `reply.id` are generated per request and not stored. `interruptedMessageId` is validated but not checked against the history, so it never answers `404`. |
-| `usage` | S2-6 | Not returned. |
+| Usage counters in the database | S4-4 | `usage` and the limits work (S2-6), but the counters are kept in memory and the caps come from `api/config/plans.json`, so a restart resets them ([decision](decisions.md)). |
 | Streaming | S6-10 | Only the JSON reply. |
 
 ---
