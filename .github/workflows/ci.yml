@@ -47,13 +47,14 @@ jobs:
         with:
           persist-credentials: false
       - name: Start Postgres with the schema
-        # Same image and tag as docker-compose.yml, pulled from Docker Hub:
-        # ECR Public rejects anonymous pulls from shared CI runners
-        # ("toomanyrequests"). The schema runs once on first start.
+        # The image comes from docker-compose.yml, so the CI tests the version
+        # Dependabot proposes. The schema runs once on first start.
         run: |
+          image=$(yq ".services.db.image" docker-compose.yml)
+          echo "Database image: $image"
           docker run -d --name db -e POSTGRES_PASSWORD=ci-only \
             -v "$PWD/docs/schema.sql:/docker-entrypoint-initdb.d/zz-marlix-schema.sql:ro" \
-            supabase/postgres:17.11.0.002
+            "$image"
       - name: Wait for the database
         # The image restarts Postgres after the init scripts; wait for that
         # restart, not just the first connection.
