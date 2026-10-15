@@ -149,6 +149,7 @@ Design documents for v1, in the order they are usually read:
 | [Chat sequence](docs/diagrams/chat-sequence.md) | Every step of sending a message, including the crisis filter and the daily limit. |
 | [API contract](docs/api-contract.md) | Every v1 endpoint with its request, response, errors and examples. |
 | [System prompt](docs/system-prompt.md) | marlix's personality, how memory is injected and the test conversations. |
+| [Crisis protocol](docs/crisis-protocol.md) | How the crisis filter classifies each message before the model, and what the crisis reply contains. |
 | [Technical decisions](docs/decisions.md) | Each choice between technical options, what was discarded and why. |
 
 Rules every change must follow are in [CONTRIBUTING.md](CONTRIBUTING.md); security reporting is in [SECURITY.md](SECURITY.md).
