@@ -1,7 +1,7 @@
 // Crisis filter (S2-1). It runs in code, before any call to the model,
 // because a model can be wrong or manipulated and a rule in code cannot.
 // Protocol: docs/crisis-protocol.md.
-import { normalizeForMatching } from './normalize.js';
+import { compilePhrasePattern, normalizeForMatching } from './normalize.js';
 import {
   AMBIGUOUS_SIGNALS,
   FIGURATIVE_DEATH_CAUSES,
@@ -18,17 +18,8 @@ export interface CrisisFilter {
   isCrisis(message: string): Promise<boolean>;
 }
 
-function compileSignals(signals: readonly string[]): RegExp {
-  const alternatives = signals.map((signal) => {
-    const isPrefix = signal.endsWith('*');
-    const phrase = normalizeForMatching(isPrefix ? signal.slice(0, -1) : signal);
-    return isPrefix ? `${phrase}[a-z]*` : phrase;
-  });
-  return new RegExp(`(?:^| )(?:${alternatives.join('|')})(?: |$)`);
-}
-
-const RISK_PATTERN = compileSignals(RISK_SIGNALS);
-const AMBIGUOUS_PATTERN = compileSignals(AMBIGUOUS_SIGNALS);
+const RISK_PATTERN = compilePhrasePattern(RISK_SIGNALS);
+const AMBIGUOUS_PATTERN = compilePhrasePattern(AMBIGUOUS_SIGNALS);
 const FIGURATIVE_PATTERN = new RegExp(
   `(?:^| )(?:${FIGURATIVE_DEATH_WORDS.map(normalizeForMatching).join('|')}) de (?:la )?` +
     `(?:${FIGURATIVE_DEATH_CAUSES.map(normalizeForMatching).join('|')})(?= |$)`,
