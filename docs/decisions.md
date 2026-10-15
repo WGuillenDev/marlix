@@ -4,6 +4,22 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-10-15 — Help screen: dialer, offline list and 9-1-1 always present (S3-5)
+
+**Dialing:** every help button opens the phone's dialer with the number loaded (`tel:` with `url_launcher`). The app never places the call itself and does not ask for the call permission: the person confirms on the dialer. If the device cannot dial, the app says which number to dial.
+
+**Offline (US-15):** the help screen must work without internet.
+
+| Option | Result |
+|---|---|
+| Last `GET /v1/help-resources` list in `shared_preferences`, plus 9-1-1 in the app | **Chosen.** The numbers still come from configuration (`api/config/crisis.json`), so a change needs no new build; the phone keeps the last list it saw, refreshed every time the chat opens. 9-1-1 is in the code as the one exception, so the screen is never empty, even on a first launch without connection. |
+| Whole list in the app | Discarded. A changed number would need a new APK on every family phone, and the contract says the list lives in configuration. |
+| Only what the backend answers | Discarded. Without internet the screen would be empty, exactly when it may matter most. |
+
+**Always one tap away:** a help button (lifebuoy) in the chat header opens the screen, and so do the crisis card ("Ver más ayuda") and the daily limit card ("La ayuda sigue disponible"). The crisis card dials the primary line directly.
+
+---
+
 ## 2026-10-15 — Chat states: a failed message stays in place with a retry (S3-4)
 
 **Decision:** when sending fails, the message stays in the chat with a red border, the reason and a **Reintentar** button (wireframe 03b), and the retry sends it again in the same place.

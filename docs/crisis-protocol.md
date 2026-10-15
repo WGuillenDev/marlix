@@ -86,6 +86,10 @@ When a number changes, also update `updatedAt`, so the app knows its cached copy
 
 **Numbers can change.** Verify them before using the app with anyone, and periodically after that (S7-7).
 
+### In the app
+
+The app shows the crisis reply as a card that stands out from the conversation, with a button that opens the dialer with 9-1-1 loaded and a way to the help screen (S3-4, S3-5). It never offers a retry. The help screen is one tap away from the chat at all times and works offline: it keeps the last list from `GET /v1/help-resources`, and 9-1-1 is always there ([decision](decisions.md)). The app never places a call by itself; the person confirms on the dialer.
+
 ## Activation log
 
 Every time the protocol triggers, the backend records it (S2-5), so the filter can be tuned: too many activations suggest false alarms, none that it may not be detecting. **The record never holds the message in any form**: not the text, a hash or its length.
