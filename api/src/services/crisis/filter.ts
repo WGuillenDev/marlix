@@ -14,8 +14,23 @@ export type CrisisLevel = 'risk' | 'ambiguous' | 'normal';
 /** Decides an ambiguous message: true means crisis. Provided by S2-2. */
 export type AmbiguousResolver = (message: string) => Promise<boolean>;
 
+/** Which part of the protocol decided the crisis (logged by S2-5). */
+export type CrisisLayer =
+  /** A clear risk signal. */
+  | 'keywords'
+  /** The second layer classified an ambiguous message as risk. */
+  | 'classifier'
+  /** The second layer failed or timed out: the conservative criterion applied. */
+  | 'classifier_failure'
+  /** Ambiguous, with no second layer configured. */
+  | 'no_classifier';
+
+export type CrisisDecision =
+  | { crisis: false }
+  | { crisis: true; signal: Exclude<CrisisLevel, 'normal'>; layer: CrisisLayer };
+
 export interface CrisisFilter {
-  isCrisis(message: string): Promise<boolean>;
+  check(message: string): Promise<CrisisDecision>;
 }
 
 const RISK_PATTERN = compilePhrasePattern(RISK_SIGNALS);
@@ -41,16 +56,17 @@ export function detectCrisisSignal(message: string): CrisisLevel {
  */
 export function createCrisisFilter(resolveAmbiguous?: AmbiguousResolver): CrisisFilter {
   return {
-    async isCrisis(message) {
+    async check(message) {
       const level = detectCrisisSignal(message);
-      if (level === 'risk') return true;
-      if (level === 'normal') return false;
-      if (!resolveAmbiguous) return true;
+      if (level === 'normal') return { crisis: false };
+      if (level === 'risk') return { crisis: true, signal: 'risk', layer: 'keywords' };
+      if (!resolveAmbiguous) return { crisis: true, signal: 'ambiguous', layer: 'no_classifier' };
 
       try {
-        return await resolveAmbiguous(message);
+        if (!(await resolveAmbiguous(message))) return { crisis: false };
+        return { crisis: true, signal: 'ambiguous', layer: 'classifier' };
       } catch {
-        return true;
+        return { crisis: true, signal: 'ambiguous', layer: 'classifier_failure' };
       }
     },
   };

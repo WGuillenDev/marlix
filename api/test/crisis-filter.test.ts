@@ -52,7 +52,7 @@ describe('detectCrisisSignal', () => {
 
 describe('createCrisisFilter', () => {
   it('treats ambiguous messages as a crisis until the second layer exists', async () => {
-    assert.equal(await createCrisisFilter().isCrisis('ya no aguanto más'), true);
+    assert.equal((await createCrisisFilter().check('ya no aguanto más')).crisis, true);
   });
 
   it('lets the second layer decide ambiguous messages, and only those', async () => {
@@ -62,15 +62,15 @@ describe('createCrisisFilter', () => {
       return false;
     });
 
-    assert.equal(await filter.isCrisis('ya no aguanto más'), false);
-    assert.equal(await filter.isCrisis('me quiero morir'), true);
-    assert.equal(await filter.isCrisis('hola'), false);
+    assert.equal((await filter.check('ya no aguanto más')).crisis, false);
+    assert.equal((await filter.check('me quiero morir')).crisis, true);
+    assert.equal((await filter.check('hola')).crisis, false);
     assert.deepEqual(asked, ['ya no aguanto más']);
   });
 
   it('treats a failure of the second layer as a crisis', async () => {
     const filter = createCrisisFilter(() => Promise.reject(new Error('classifier down')));
-    assert.equal(await filter.isCrisis('ya no aguanto más'), true);
+    assert.equal((await filter.check('ya no aguanto más')).crisis, true);
   });
 });
 
