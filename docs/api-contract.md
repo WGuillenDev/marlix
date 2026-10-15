@@ -13,7 +13,8 @@ See also the [chat sequence diagram](diagrams/chat-sequence.md), the [architectu
 | Names | JSON fields in `camelCase`. IDs are UUIDs. Dates are ISO 8601 in UTC (`2026-09-30T18:00:00Z`). |
 | Auth | `Authorization: Bearer <access token>`, the Supabase Auth session token the app gets on sign-in. Sign-up and sign-in happen against Supabase Auth, not this API. |
 | Ownership | Every authenticated endpoint only reads or changes the caller's own data. Another user's ID returns `404`, never `403`, so the API does not reveal what exists. |
-| Privacy | Request and response bodies are never logged. |
+| Privacy | Request and response bodies are never logged. Responses under `/v1` carry `Cache-Control: no-store`, so no cache keeps them. |
+| Security headers | Every response carries HSTS, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` and a CSP that blocks everything ([decision](decisions.md)). |
 
 Endpoints marked **Public** do not need a token.
 
