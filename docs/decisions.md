@@ -4,6 +4,23 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-10-15 — Chat screen: fonts bundled with the app, prototype avatar, scope against the wireframe (S3-3)
+
+**Fonts bundled, not fetched.** Nunito (UI and chat) and Baloo 2 (titles), the style guide's fonts, are in `app/assets/fonts/` with their OFL licenses.
+
+| Option | Result |
+|---|---|
+| Bundled TTF files | **Chosen.** The app shows the right type from the first frame, offline too, and sends no request to Google when it opens. About 1.3 MB for six weights. |
+| `google_fonts` fetching at runtime | Discarded. Every first launch would contact Google's servers, and the chat would show a fallback font without connection. |
+
+**Header avatar:** a crop of the S0-5 prototype (`app/assets/avatar/marlix.png`) until the final artwork and the animated widget (S5-1).
+
+**Against the wireframe (03a):** bubbles, header, remaining messages chip, typing indicator and composer follow it. Left out on purpose, each for the card that makes it work: date groups (there is no history until S4-4), the help button (S3-5), the settings button (its own card) and the voice button (Sprint 6). A button that does nothing is worse than no button.
+
+The message list is reversed, so it stays anchored to the newest message when the keyboard opens or a reply arrives.
+
+---
+
 ## 2026-10-15 — App API service: `package:http`, typed errors, development token from an ignored file (S3-2)
 
 **Decision:** `lib/services/marlix_api.dart` is the only code that talks to the backend, on `package:http`. It covers the endpoints the backend has today (`/health`, `/v1/help-resources`, `/v1/chat`, `/v1/usage`); each endpoint built in Sprint 4 adds its method in its own card (decided by the user on 2026-10-15).

@@ -21,3 +21,26 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  assets:
+    # Prototype from S0-5 (docs/diagrams/wireframes/style-guide/avatar.png)
+    # until the final artwork (S5-1).
+    - assets/avatar/marlix.png
+
+  # Bundled, not fetched at runtime. OFL licenses are next to the files.
+  fonts:
+    - family: Nunito
+      fonts:
+        - asset: assets/fonts/Nunito-Regular.ttf
+        - asset: assets/fonts/Nunito-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Nunito-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Nunito-ExtraBold.ttf
+          weight: 800
+    - family: Baloo 2
+      fonts:
+        - asset: assets/fonts/Baloo2-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Baloo2-ExtraBold.ttf
+          weight: 800

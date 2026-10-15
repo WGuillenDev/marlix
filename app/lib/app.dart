@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'screens/home_screen.dart';
+import 'screens/chat/chat_screen.dart';
 import 'theme/app_theme.dart';
 
 class MarlixApp extends StatelessWidget {
@@ -12,7 +12,7 @@ class MarlixApp extends StatelessWidget {
       title: 'marlix',
       theme: AppTheme.light(),
       debugShowCheckedModeBanner: false,
-      home: const HomeScreen(),
+      home: const ChatScreen(),
     );
   }
 }
