@@ -4,6 +4,20 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-10-15 — The app's data never leaves the phone in a backup (S4-11)
+
+**Decision:** the app opts out of every Android backup and transfer: `android:allowBackup="false"`, plus rules that exclude every data domain for Android 12 and later (`dataExtractionRules`, in both `<cloud-backup>` and `<device-transfer>`) and for Android 11 and earlier (`fullBackupContent`).
+
+| Option | Result |
+|---|---|
+| No backup at all | **Chosen.** From S4-3 the phone keeps the person's session. A copy in a Google backup or on another phone would outlive a sign-out or a password change, and `adb backup` could extract it. Losing it is cheap: the person signs in again and the conversation is on the server. |
+| Android's default (back up everything) | Discarded (it was the state until S4-11). |
+| `allowBackup="false"` only | Discarded. [Android's docs](https://developer.android.com/identity/data/autobackup) say that on Android 12+ some manufacturers still run device-to-device transfers with it, so explicit rules are needed. |
+
+Checked in the release APK with `aapt2 dump xmltree`: the manifest has the three attributes and the packaged rules exclude every domain. Done before S4-3 on purpose, so no session ever reaches a backup.
+
+---
+
 ## 2026-10-15 — Docker images pinned by tag and digest (S3-7)
 
 **Decision:** the two `docker-compose.yml` images are written as `tag@sha256:digest`: `supabase/postgres:17.11.0.003@sha256:7374d1…` and `dpage/pgadmin4:9.18.0@sha256:c332c5…`.
