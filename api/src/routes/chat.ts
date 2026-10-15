@@ -5,8 +5,10 @@ import { Router } from 'express';
 import { z } from 'zod';
 
 import type { CrisisConfig } from '../config/crisis-config.js';
+import { currentUser } from '../middleware/current-user.js';
 import { ApiError } from '../middleware/error-handler.js';
 import type { ChatService } from '../services/chat-service.js';
+import type { UsageLimiter } from '../services/usage/usage-limiter.js';
 
 const MAX_MESSAGE_LENGTH = 2000;
 
@@ -27,7 +29,11 @@ const chatRequestSchema = z
   })
   .strict();
 
-export function createChatRouter(chatService: ChatService, crisis: CrisisConfig): Router {
+export function createChatRouter(
+  chatService: ChatService,
+  crisis: CrisisConfig,
+  usageLimiter: UsageLimiter,
+): Router {
   const router = Router();
 
   // Errors (invalid body, LLM failures) go to the central error handler.
@@ -45,7 +51,8 @@ export function createChatRouter(chatService: ChatService, crisis: CrisisConfig)
 
     const { message, mode } = parsed.data;
     const userMessageCreatedAt = new Date().toISOString();
-    const outcome = await chatService.reply({ message, mode });
+    const user = currentUser(res);
+    const outcome = await chatService.reply({ message, mode, user });
     const isCrisis = outcome.type === 'crisis';
 
     // IDs are generated per request until messages are stored (S4-4).
@@ -65,6 +72,7 @@ export function createChatRouter(chatService: ChatService, crisis: CrisisConfig)
         interrupted: false,
       },
       ...(isCrisis ? { resources: crisis.resources } : {}),
+      usage: usageLimiter.snapshot(user),
     });
   });
 

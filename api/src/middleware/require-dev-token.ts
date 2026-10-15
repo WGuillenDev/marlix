@@ -2,6 +2,7 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 
 import type { RequestHandler } from 'express';
 
+import { DEVELOPER, setCurrentUser } from './current-user.js';
 import { ApiError } from './error-handler.js';
 
 const BEARER_PREFIX = 'Bearer ';
@@ -14,14 +15,14 @@ function sha256(value: string): Buffer {
 
 /**
  * Temporary access control (S1-7): only the developer, with the token from
- * DEV_ACCESS_TOKEN, can reach /v1 until the crisis filter exists (S2-1,
- * S2-3). It is replaced by the Supabase session check in S4-3.
+ * DEV_ACCESS_TOKEN, can reach /v1 until accounts exist. It stays until the
+ * Supabase session check of S4-3 replaces it (docs/decisions.md).
  * Expects `Authorization: Bearer <token>`, like the real auth will.
  */
 export function requireDevToken(expectedToken: string): RequestHandler {
   const expectedHash = sha256(expectedToken);
 
-  return (req, _res, next) => {
+  return (req, res, next) => {
     const header = req.get('authorization') ?? '';
     const token = header.startsWith(BEARER_PREFIX) ? header.slice(BEARER_PREFIX.length).trim() : '';
 
@@ -29,6 +30,7 @@ export function requireDevToken(expectedToken: string): RequestHandler {
       next(new ApiError(401, 'UNAUTHORIZED', 'Missing or invalid token.'));
       return;
     }
+    setCurrentUser(res, DEVELOPER);
     next();
   };
 }
