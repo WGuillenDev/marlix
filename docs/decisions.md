@@ -93,7 +93,7 @@ The message list is reversed, so it stays anchored to the newest message when th
 
 - **Typed errors:** every failure is an `ApiException` subtype (`NetworkException`, `ApiTimeoutException`, `InvalidResponseException`, or one per contract error code, such as `DailyLimitReachedException` with `resetsAt` and `RateLimitedException` with `Retry-After`). A crisis is a `CrisisReply`, not an error, as in the contract.
 - **Timeout of 75 seconds:** the free Render plan takes up to a minute to wake up.
-- **Development token:** until S4-3, `/v1/chat` and `/v1/usage` need `DEV_ACCESS_TOKEN`. The app reads it from `config/dev-token.json`, ignored by Git and passed with a second `--dart-define-from-file`, so it never enters the repository (decided by the user on 2026-10-15). It is removed with the real accounts.
+- **Development token:** until S4-3, `/v1/chat` and `/v1/usage` need `DEV_ACCESS_TOKEN`. The app reads it from `config/dev-token.json`, ignored by Git and passed with a second `--dart-define-from-file`, so it never enters the repository (decided by the user on 2026-10-15). It is removed with the real accounts. Since S4-12 a release build never reads the token's value, so it is not compiled into the APK, and it refuses to start if the file was passed.
 - A test fails if any file outside `lib/services/` imports `package:http`, or if the app's code or config contains something that looks like an API key.
 
 ---
