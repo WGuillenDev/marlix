@@ -4,6 +4,7 @@ import { loadCrisisConfig, type CrisisConfig } from './config/crisis-config.js';
 import { loadPlansConfig, type PlansConfig } from './config/plans.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
 import { requireDevToken } from './middleware/require-dev-token.js';
+import { noStore, securityHeaders } from './middleware/security-headers.js';
 import { createChatRouter } from './routes/chat.js';
 import { healthRouter } from './routes/health.js';
 import { createHelpResourcesRouter } from './routes/help-resources.js';
@@ -45,13 +46,14 @@ export function createApp({
 
   // Do not advertise the framework in every response.
   app.disable('x-powered-by');
+  app.use(securityHeaders);
   // A chat message is at most 2,000 characters; anything far bigger is rejected.
   app.use(express.json({ limit: '16kb' }));
 
   // Public: the uptime monitor calls it.
   app.use(healthRouter);
   // Public: the help screen must work without a session or token.
-  app.use('/v1', createHelpResourcesRouter(crisisConfig));
+  app.use('/v1', noStore, createHelpResourcesRouter(crisisConfig));
 
   const crisisFilter = createCrisisFilter(
     crisisClassifier ? createAmbiguousClassifier(crisisClassifier) : undefined,
