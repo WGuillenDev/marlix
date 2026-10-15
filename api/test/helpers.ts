@@ -1,6 +1,7 @@
 import type { AddressInfo } from 'node:net';
 
 import { createApp } from '../src/app.js';
+import type { CrisisConfig } from '../src/config/crisis-config.js';
 import { LlmError } from '../src/services/llm/index.js';
 import type { LlmCompletionRequest, LlmProvider } from '../src/services/llm/index.js';
 
@@ -38,13 +39,16 @@ const AUTH_HEADER = { authorization: `Bearer ${DEV_TOKEN}` };
 export async function startApp({
   llm,
   crisisClassifier,
+  crisisConfig,
 }: {
   llm: LlmProvider;
   crisisClassifier?: LlmProvider;
+  crisisConfig?: CrisisConfig;
 }) {
   const app = createApp({
     llm,
     ...(crisisClassifier ? { crisisClassifier } : {}),
+    ...(crisisConfig ? { crisisConfig } : {}),
     devAccessToken: DEV_TOKEN,
   });
   const server = app.listen(0);

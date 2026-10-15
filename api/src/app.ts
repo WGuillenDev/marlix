@@ -1,9 +1,11 @@
 import express from 'express';
 
+import { loadCrisisConfig, type CrisisConfig } from './config/crisis-config.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
 import { requireDevToken } from './middleware/require-dev-token.js';
 import { createChatRouter } from './routes/chat.js';
 import { healthRouter } from './routes/health.js';
+import { createHelpResourcesRouter } from './routes/help-resources.js';
 import { createChatService } from './services/chat-service.js';
 import { createAmbiguousClassifier } from './services/crisis/classifier.js';
 import { createCrisisFilter } from './services/crisis/filter.js';
@@ -15,10 +17,17 @@ export interface AppDependencies {
   crisisClassifier?: LlmProvider;
   /** Token every /v1 request must carry until real auth exists (S4-3). */
   devAccessToken: string;
+  /** Crisis text and help resources; read from api/config/crisis.json by default. */
+  crisisConfig?: CrisisConfig;
 }
 
 /** Builds the Express app without listening, so tests can use it directly. */
-export function createApp({ llm, crisisClassifier, devAccessToken }: AppDependencies) {
+export function createApp({
+  llm,
+  crisisClassifier,
+  devAccessToken,
+  crisisConfig = loadCrisisConfig(),
+}: AppDependencies) {
   const app = express();
 
   // Do not advertise the framework in every response.
@@ -28,11 +37,14 @@ export function createApp({ llm, crisisClassifier, devAccessToken }: AppDependen
 
   // Public: the uptime monitor calls it.
   app.use(healthRouter);
+  // Public: the help screen must work without a session or token.
+  app.use('/v1', createHelpResourcesRouter(crisisConfig));
+
   const crisisFilter = createCrisisFilter(
     crisisClassifier ? createAmbiguousClassifier(crisisClassifier) : undefined,
   );
   const chatService = createChatService(llm, crisisFilter);
-  app.use('/v1', requireDevToken(devAccessToken), createChatRouter(chatService));
+  app.use('/v1', requireDevToken(devAccessToken), createChatRouter(chatService, crisisConfig));
 
   app.use(notFoundHandler);
   app.use(errorHandler);

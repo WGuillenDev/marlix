@@ -71,7 +71,7 @@ The server validates these variables when it starts. If a required one is missin
 | Variable | Required | Default | What it is |
 |---|---|---|---|
 | `PORT` | No | `3000` | Port the API listens on. |
-| `DEV_ACCESS_TOKEN` | Yes | — | Token every `/v1` request must send as `Authorization: Bearer <token>`, at least 32 characters. Temporary: it keeps the chat private until the crisis filter exists, and is replaced by real accounts in S4-3. Never share it. |
+| `DEV_ACCESS_TOKEN` | Yes | — | Token every `/v1` request (except the public help resources) must send as `Authorization: Bearer <token>`, at least 32 characters. Temporary: it keeps the chat private until the crisis filter exists, and is replaced by real accounts in S4-3. Never share it. |
 | `LLM_PROVIDER` | No | `groq` | LLM provider that answers the chat. Only `groq` exists for now; see [how to add one](docs/architecture.md#adding-an-llm-provider). |
 | `LLM_TIMEOUT_MS` | No | `15000` | Milliseconds to wait for one LLM call. Timeouts, network errors and 5xx are retried once; quota and key errors are not. |
 | `GROQ_API_KEY` | Yes | — | Groq API key, from [console.groq.com/keys](https://console.groq.com/keys). Only the backend holds it. |
@@ -100,7 +100,8 @@ The backend runs on [Render](https://render.com) (free plan), defined in [`rende
 | Endpoint | Access |
 |---|---|
 | `GET /health` | Public. Used by the uptime monitor. |
-| `/v1/*` | Only with `Authorization: Bearer <DEV_ACCESS_TOKEN>`; anything else gets `401`. Until the crisis filter is finished (S2-1, S2-3), only the developer has the token. |
+| `GET /v1/help-resources` | Public. The help resources the app shows, from `api/config/crisis.json`. |
+| Rest of `/v1/*` | Only with `Authorization: Bearer <DEV_ACCESS_TOKEN>`; anything else gets `401`. Until the crisis filter is finished (S2-1, S2-3), only the developer has the token. |
 
 The free plan sleeps the service after about 15 minutes without traffic, so the first request after a pause can take up to a minute.
 
