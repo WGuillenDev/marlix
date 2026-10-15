@@ -27,6 +27,7 @@ erDiagram
         uuid id PK, FK "auth.users.id"
         text plan FK "default personal"
         uuid avatar_id FK
+        date birth_date "18 or older at sign-up"
         timestamptz data_consent_at "nullable"
         timestamptz onboarding_completed_at "nullable"
         boolean reminders_enabled "default false"
@@ -95,7 +96,7 @@ erDiagram
 
 | Relationship | Cardinality | Notes |
 |---|---|---|
-| `auth.users` → `users` | 1 to 1 | The profile is created by a trigger on sign-up. |
+| `auth.users` → `users` | 1 to 1 | The profile is created by a trigger on sign-up, which also checks the minimum age. |
 | `plan_limits` → `users` | 1 to many | Every user has a plan; v1 has only `personal`. |
 | `avatars` → `users` | 1 to many | Every user has an avatar; v1 has only one. |
 | `auth.users` → `conversations` | 1 to many | A user has many internal sessions. |
@@ -110,7 +111,7 @@ erDiagram
 
 | Table | Purpose | Stories |
 |---|---|---|
-| `users` | App profile: plan, avatar, consent, onboarding state and reminders opt-in. | US-01, US-02, US-14 |
+| `users` | App profile: plan, avatar, birth date, consent, onboarding state and reminders opt-in. | US-01, US-02, US-14 |
 | `plan_limits` | Daily interaction cap per plan. | US-10 |
 | `avatars` | Avatar catalog: voice settings and SVG layers folder. | US-13 |
 | `conversations` | Internal chat sessions. | US-06, US-07 |
@@ -135,6 +136,10 @@ Nothing in v2 requires changing the structure, only adding data:
 | `avatar_id` points to the only avatar | The user picks another one |
 
 New users get the avatar marked `is_default`, so adding avatars does not change sign-up.
+
+### Birth date and minimum age (S4-3)
+
+The app sends the birth date with the sign-up as user metadata (`birth_date`, `YYYY-MM-DD`). The sign-up trigger copies it to `users.birth_date` and cancels the sign-up, so no account is created, when it is missing, malformed or the person is under 18 on the Costa Rica calendar. Storing the date instead of the age lets the minimum age change later without reworking the model ([decision](decisions.md)). Existing databases get the column from [`migrations/2026-10-15-users-birth-date.sql`](migrations/2026-10-15-users-birth-date.sql).
 
 ### Account deletion in cascade
 
@@ -164,7 +169,7 @@ What a signed-in user (`authenticated`) can do, always limited to their own rows
 | `memories` | ✅ | — | Only `fact` | ✅ |
 | `daily_usage` | ✅ | — | — | — |
 
-Anonymous users (`anon`) have no access. Column-level grants stop a user from changing their own `plan` or `avatar_id`.
+Anonymous users (`anon`) have no access. Column-level grants stop a user from changing their own `plan`, `avatar_id` or `birth_date`.
 
 ### Least privilege (S1-8)
 
@@ -181,7 +186,9 @@ RLS decides **which rows** a user reaches; table privileges decide **which opera
 
 ### Isolation tests (S4-2)
 
-[`schema-test.sql`](schema-test.sql) proves the rules above. It runs in a transaction that is rolled back, so it changes nothing, and it checks two things:
+[`schema-test.sql`](schema-test.sql) proves the rules above. It runs in a transaction that is rolled back, so it changes nothing, and it checks these things:
+
+- **Sign-up (S4-3).** A sign-up without a birth date, with another format, with a date that does not exist, or of someone who turns 18 tomorrow is refused and leaves no account behind; someone who turns 18 today can sign up. A user cannot change their birth date.
 
 - **Two users.** Ana and Beto each get a profile, a conversation, messages, a memory and usage, written as the backend would. Acting as Ana the way Supabase does for a request with her token (`request.jwt.claim.sub` and the `authenticated` role), she sees only her rows, her changes on Beto's rows affect nothing, and she cannot insert, truncate or change her plan. `anon` reaches nothing. Deleting Beto removes all his data.
 - **Guards on the catalog**, so a later migration cannot slip through: every table in `public` has RLS; every table with user data (a `user_id` column, or `users`) has at least one policy and every one of its policies depends on `auth.uid()`; no policy is open to `anon`. The test also creates a table without RLS to show the guard catches it.

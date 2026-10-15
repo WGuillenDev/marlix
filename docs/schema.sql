@@ -105,13 +105,15 @@ create trigger avatars_set_updated_at
 
 -- ---------------------------------------------------------------------------
 -- users: app profile, one row per auth user (US-01, US-02, US-14)
--- Created automatically on sign-up by the trigger below.
+-- Created automatically on sign-up by the trigger below, which also enforces
+-- the minimum age (S4-3).
 -- ---------------------------------------------------------------------------
 
 create table public.users (
   id                      uuid primary key references auth.users (id) on delete cascade,
   plan                    text not null default 'personal' references public.plan_limits (plan),
   avatar_id               uuid not null references public.avatars (id),
+  birth_date              date not null check (birth_date >= date '1900-01-01'),
   data_consent_at         timestamptz,
   onboarding_completed_at timestamptz,
   reminders_enabled       boolean not null default false,
@@ -119,6 +121,8 @@ create table public.users (
   updated_at              timestamptz not null default now()
 );
 
+comment on column public.users.birth_date is
+  'Given at sign-up (S4-3). Stored instead of the age, so the minimum age policy can change without reworking the model.';
 comment on column public.users.data_consent_at is
   'When the user gave explicit data consent during onboarding (US-02).';
 comment on column public.users.onboarding_completed_at is
@@ -133,7 +137,10 @@ create trigger users_set_updated_at
   before update on public.users
   for each row execute function public.set_updated_at();
 
--- Create the profile when someone signs up, with the default avatar.
+-- Create the profile when someone signs up, with the default avatar and the
+-- birth date the app sends as user metadata (`birth_date`, YYYY-MM-DD).
+-- Raising an error here cancels the sign-up, so nobody under the minimum age
+-- gets an account, whatever client calls Supabase Auth (S4-3).
 -- `security definer` lets the trigger write to public.users on behalf of the
 -- auth service; the empty search_path avoids search_path hijacking.
 create function public.handle_new_auth_user()
@@ -142,11 +149,32 @@ language plpgsql
 security definer
 set search_path = ''
 as $$
+declare
+  -- Decided on 2026-10-15 (docs/decisions.md). The app checks the same age.
+  minimum_age constant integer := 18;
+  birth_date_text text := new.raw_user_meta_data ->> 'birth_date';
+  given_birth_date date;
+  -- Ages are counted on the Costa Rica calendar, like the daily limit.
+  today date := (now() at time zone 'America/Costa_Rica')::date;
 begin
-  insert into public.users (id, avatar_id)
+  -- The format is checked first: a cast alone would also accept other
+  -- formats, read according to the server's DateStyle.
+  if birth_date_text is null or birth_date_text !~ '^\d{4}-\d{2}-\d{2}$' then
+    raise exception 'A birth date (YYYY-MM-DD) is required to sign up'
+      using errcode = 'check_violation';
+  end if;
+  given_birth_date := birth_date_text::date;
+
+  if given_birth_date > (today - make_interval(years => minimum_age))::date then
+    raise exception 'marlix is for people aged % or older', minimum_age
+      using errcode = 'check_violation';
+  end if;
+
+  insert into public.users (id, avatar_id, birth_date)
   values (
     new.id,
-    (select id from public.avatars where is_default)
+    (select id from public.avatars where is_default),
+    given_birth_date
   );
   return new;
 end;
