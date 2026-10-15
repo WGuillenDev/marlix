@@ -33,6 +33,33 @@ void main() {
       );
     });
 
+    test('reads the development token, and has none when it is empty', () {
+      const token = 'dev-token-with-at-least-thirty-two-characters';
+      final withToken = AppConfig.parse(
+        apiBaseUrl: 'https://marlix-api.onrender.com',
+        devAccessToken: token,
+        allowInsecure: false,
+      );
+      final withoutToken = AppConfig.parse(
+        apiBaseUrl: 'https://marlix-api.onrender.com',
+        allowInsecure: false,
+      );
+
+      expect(withToken.devAccessToken, token);
+      expect(withoutToken.devAccessToken, isNull);
+    });
+
+    test('rejects a development token shorter than the backend accepts', () {
+      expect(
+        () => AppConfig.parse(
+          apiBaseUrl: 'https://marlix-api.onrender.com',
+          devAccessToken: 'short',
+          allowInsecure: false,
+        ),
+        throwsA(isA<AppConfigException>()),
+      );
+    });
+
     for (final invalid in ['marlix-api.onrender.com', '/v1', 'ftp://example.com']) {
       test('rejects "$invalid"', () {
         expect(
