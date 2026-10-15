@@ -5,9 +5,6 @@ import { z } from 'zod';
 // value, so a secret cannot end up in a log.
 const envSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
-  // Required on every /v1 request until real auth exists (S1-7, removed in
-  // S4-3). Long and random: it is the only thing protecting the chat.
-  DEV_ACCESS_TOKEN: z.string().trim().min(32),
   // Which LLM provider answers the chat (services/llm/). Each provider has its
   // own variables below; adding one is described in docs/architecture.md.
   LLM_PROVIDER: z.enum(['groq']).default('groq'),
@@ -24,8 +21,9 @@ const envSchema = z.object({
   // so it has its own quota. A timeout counts as a crisis, so it stays short.
   CRISIS_CLASSIFIER_MODEL: z.string().trim().min(1).default('openai/gpt-oss-20b'),
   CRISIS_CLASSIFIER_TIMEOUT_MS: z.coerce.number().int().min(1000).max(30_000).default(5000),
-  // Supabase project (S4-1). The secret key has service_role rights and
-  // bypasses RLS: only the backend holds it, never the app or a log.
+  // Supabase project (S4-1). Session tokens are checked against its public
+  // keys (S4-3). The secret key has service_role rights and bypasses RLS:
+  // only the backend holds it, never the app or a log.
   SUPABASE_URL: z.url().refine((url) => /^https:\/\/[a-z0-9]+\.supabase\.co\/?$/.test(url)),
   SUPABASE_SECRET_KEY: z.string().trim().startsWith('sb_secret_'),
 });

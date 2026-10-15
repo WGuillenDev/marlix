@@ -4,7 +4,6 @@ import { describe, it } from 'node:test';
 import { EnvValidationError, parseEnv } from '../src/config/env.js';
 
 const validEnv = {
-  DEV_ACCESS_TOKEN: 'a'.repeat(32),
   GROQ_API_KEY: 'test-key',
   GROQ_MODEL: 'test-model',
   SUPABASE_URL: 'https://abcdefghijklmnop.supabase.co',
@@ -30,7 +29,7 @@ describe('parseEnv', () => {
       (error: unknown) =>
         error instanceof EnvValidationError &&
         error.invalidVariables.join(',') ===
-          'DEV_ACCESS_TOKEN,GROQ_API_KEY,GROQ_MODEL,SUPABASE_SECRET_KEY,SUPABASE_URL',
+          'GROQ_API_KEY,GROQ_MODEL,SUPABASE_SECRET_KEY,SUPABASE_URL',
     );
   });
 
@@ -44,10 +43,6 @@ describe('parseEnv', () => {
 
   it('rejects an unknown LLM provider', () => {
     assert.throws(() => parseEnv({ ...validEnv, LLM_PROVIDER: 'unknown' }), EnvValidationError);
-  });
-
-  it('rejects a development token shorter than 32 characters', () => {
-    assert.throws(() => parseEnv({ ...validEnv, DEV_ACCESS_TOKEN: 'short' }), EnvValidationError);
   });
 
   it('rejects a Supabase URL that is not a project URL', () => {

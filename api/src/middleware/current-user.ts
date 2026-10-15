@@ -1,12 +1,10 @@
 import type { Response } from 'express';
 
 export interface AuthenticatedUser {
+  /** The Supabase Auth user id (`sub` of the session token). */
   id: string;
   plan: string;
 }
-
-/** The only identity until accounts exist (S4-3): whoever holds the development token. */
-export const DEVELOPER: AuthenticatedUser = { id: 'developer', plan: 'personal' };
 
 /** Set by the auth middleware; routes behind it can rely on it. */
 export function setCurrentUser(res: Response, user: AuthenticatedUser): void {

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { after, before, describe, it } from 'node:test';
 
 import { LlmError } from '../src/services/llm/index.js';
-import { captureConsole, createFakeLlm, DEV_TOKEN, failingLlm, startApp } from './helpers.js';
+import { captureConsole, createFakeLlm, failingLlm, startApp } from './helpers.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -100,7 +100,7 @@ describe('central error handling', () => {
       for (const response of [
         await app.request('/nothing-here'),
         await app.request('/v1/nothing-here', {
-          headers: { authorization: `Bearer ${DEV_TOKEN}` },
+          headers: app.authHeader,
         }),
       ]) {
         assert.equal(response.status, 404);

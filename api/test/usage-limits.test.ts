@@ -10,7 +10,7 @@ import {
   type UsageLimitError,
 } from '../src/services/usage/usage-limiter.js';
 import { LlmError } from '../src/services/llm/index.js';
-import { createFakeLlm, DEV_TOKEN, failingLlm, startApp } from './helpers.js';
+import { createFakeLlm, failingLlm, startApp } from './helpers.js';
 
 const user = { id: 'ana', plan: 'personal' };
 
@@ -193,7 +193,7 @@ describe('limits in POST /v1/chat', () => {
       assert.equal(response.status, 503);
 
       const usage = (await (
-        await app.request('/v1/usage', { headers: { authorization: `Bearer ${DEV_TOKEN}` } })
+        await app.request('/v1/usage', { headers: app.authHeader })
       ).json()) as any;
       assert.equal(usage.used, 0);
     } finally {
@@ -209,7 +209,7 @@ describe('GET /v1/usage', () => {
       assert.equal((await app.request('/v1/usage')).status, 401);
 
       const response = await app.request('/v1/usage', {
-        headers: { authorization: `Bearer ${DEV_TOKEN}` },
+        headers: app.authHeader,
       });
       const body = (await response.json()) as any;
       assert.equal(response.status, 200);
