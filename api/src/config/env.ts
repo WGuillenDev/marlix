@@ -20,6 +20,10 @@ const envSchema = z.object({
   // gpt-oss models reason before answering; "low" saves tokens and time.
   // "none" omits the parameter, for models without reasoning.
   GROQ_REASONING_EFFORT: z.enum(['low', 'medium', 'high', 'none']).default('low'),
+  // Second layer of the crisis filter (S2-2). A different model than the chat,
+  // so it has its own quota. A timeout counts as a crisis, so it stays short.
+  CRISIS_CLASSIFIER_MODEL: z.string().trim().min(1).default('openai/gpt-oss-20b'),
+  CRISIS_CLASSIFIER_TIMEOUT_MS: z.coerce.number().int().min(1000).max(30_000).default(5000),
 });
 
 /** The validated configuration. Code reads it from here, never from process.env. */

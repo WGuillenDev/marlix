@@ -6,7 +6,15 @@ import { loadEnv } from './config/env.js';
 import { createLlmProvider } from './services/llm/index.js';
 
 const env = loadEnv();
-const app = createApp({ llm: createLlmProvider(env), devAccessToken: env.DEV_ACCESS_TOKEN });
+const app = createApp({
+  llm: createLlmProvider(env),
+  crisisClassifier: createLlmProvider(env, {
+    model: env.CRISIS_CLASSIFIER_MODEL,
+    timeoutMs: env.CRISIS_CLASSIFIER_TIMEOUT_MS,
+    retry: false,
+  }),
+  devAccessToken: env.DEV_ACCESS_TOKEN,
+});
 
 const server = app.listen(env.PORT, () => {
   console.log(`marlix api listening on http://localhost:${env.PORT}`);

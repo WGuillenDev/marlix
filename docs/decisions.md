@@ -4,6 +4,23 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-10-14 — Crisis classifier: `openai/gpt-oss-20b` with a policy prompt (S2-2)
+
+**Decision:** the second layer of the crisis filter classifies ambiguous messages with `openai/gpt-oss-20b` on Groq's free plan and a policy prompt of our own that answers `RISK` or `SAFE`. The model is the `CRISIS_CLASSIFIER_MODEL` environment variable.
+
+| Option | Result |
+|---|---|
+| `openai/gpt-oss-safeguard-20b` | Discarded. It is built to follow a custom safety policy, as the card suggested, but the free plan allows only **3 requests per minute** (confirmed in the response of a test call on 2026-10-14). Every classification over that limit would fail and count as a crisis. |
+| `meta-llama/llama-prompt-guard-2` | Discarded. It detects prompt injection and jailbreaks, not risk of self-harm. |
+| `openai/gpt-oss-20b` | **Chosen.** 30 requests per minute and a quota separate from the chat model (`gpt-oss-120b`), so classifying does not slow down conversations. |
+| Same model as the chat | Discarded. It would share the conversation's 8,000 tokens per minute. |
+
+**Evaluation (2026-10-14):** 12 ambiguous Spanish messages, half risk and half harmless (figurative expressions, grief for someone else, everyday frustration). With the first version of the policy it got 10/12: it missed hopelessness with a stated reason ("nada tiene sentido desde que perdí el trabajo"). After adding those examples to the policy, **12/12**, in 0.3 to 0.8 seconds. The same set is in `npm run crisis:eval`; the full test set comes in S2-7.
+
+Any answer other than an exact `SAFE`, an error or a timeout counts as a crisis.
+
+---
+
 ## 2026-10-13 — Deployment: Render Blueprint, and a development token until the crisis filter exists (S1-7)
 
 **Decision:** the backend is deployed on Render's free plan from a `render.yaml` Blueprint at the repository root, with `rootDir: api`. Until the crisis filter is done (S2-1, S2-3), every `/v1` request needs a development token in `Authorization: Bearer <token>`.
