@@ -17,7 +17,7 @@ The filter lives in code (`api/src/services/crisis/`), not in the system prompt:
 | Outcome | When | What happens |
 |---|---|---|
 | `risk` | The message has a clear risk signal ("me quiero morir", "quitarme la vida"). | The message never leaves the backend. The answer is the crisis reply. |
-| `ambiguous` | The message has an indirect signal ("ya no aguanto más", "soy una carga"). | The second layer (S2-2) classifies only that message. If it says risk, fails or times out, the answer is the crisis reply. **Until S2-2 exists, `ambiguous` is treated as `risk`.** |
+| `ambiguous` | The message has an indirect signal ("ya no aguanto más", "soy una carga"). | The [second layer](#the-second-layer) classifies only that message. If it says risk, fails, times out or answers anything unexpected, the answer is the crisis reply. |
 | `normal` | No signal. | The message continues to the conversation with the model. |
 
 When in doubt, the protocol is triggered: a false alarm is better than leaving someone without help.
@@ -46,6 +46,18 @@ To change them:
 2. Add the case to the tests (`api/test/crisis-filter.test.ts`, and the full set of S2-7).
 3. Prefer `ambiguous` for phrases that also have an everyday meaning ("me van a matar" can be a figure of speech). Use `risk` only for phrases that are almost never figurative.
 
+## The second layer
+
+Messages marked `ambiguous` get an isolated classification by an LLM (S2-2), so an indirect message is not answered with a crisis reply when it is clearly harmless ("ya no aguanto más este tráfico"), and is when it is not ("siento que soy una carga").
+
+- **Only ambiguous messages.** A clear risk never goes to the classifier, and normal messages skip it.
+- **Only the current message.** The request carries the classification policy and that one message: no history, no memory and no personality prompt. A message that would go to Groq anyway if it were normal is not exposed further.
+- **A fixed answer.** The policy ([`api/src/config/crisis-classifier-prompt.ts`](../api/src/config/crisis-classifier-prompt.ts)) asks for one word, `RISK` or `SAFE`. Only an exact `SAFE` lets the message through.
+- **Conservative on failure.** An error, a quota error or a timeout counts as a crisis. The timeout is short (`CRISIS_CLASSIFIER_TIMEOUT_MS`, 5 seconds by default) and there is no retry.
+- **Its own model.** It uses `CRISIS_CLASSIFIER_MODEL` (`openai/gpt-oss-20b` by default), not the chat model, so it does not spend the conversation's quota. Why this model is in [decisions.md](decisions.md).
+
+`npm run crisis:eval` (in `api/`) runs a set of ambiguous messages through the real classifier and reports how many it got right.
+
 ## The crisis reply
 
 `POST /v1/chat` answers **`200`** with `"type": "crisis"`: a fixed text and the help resources, with 9-1-1 first. It is not an error code, because the app must show it right away and never offer a retry. The exact shape is in the [API contract](api-contract.md#post-v1chat).
@@ -55,15 +67,14 @@ The text acknowledges the person and points to 9-1-1. It gives no advice or tech
 ## Known limits
 
 - **Spanish only.** The app is in Spanish; messages in other languages are not checked.
-- **Keywords miss indirect language.** That is what the second layer (S2-2) is for.
+- **Keywords miss indirect language.** The second layer only sees messages that already have an ambiguous signal, so an indirect message with no signal at all goes to the conversation.
 - **Words split with spaces** ("m a t a r m e") or deliberate misspellings that change letters are not detected.
-- **False alarms** are possible, especially while ambiguous messages are treated as risk. They are accepted on purpose.
+- **False alarms** are possible, for example when the classifier is down or out of quota. They are accepted on purpose.
 
 ## Still to come
 
 | Card | What it adds |
 |---|---|
-| S2-2 | Second layer: an isolated classification of ambiguous messages, with no history or memory. |
 | S2-3 | Crisis text and help resources in configuration, with every verified Costa Rican resource. |
 | S2-5 | A log of each activation, without the content of the message. |
 | S2-7 | The full set of automated test cases. |

@@ -78,6 +78,8 @@ The server validates these variables when it starts. If a required one is missin
 | `GROQ_MODEL` | Yes | `openai/gpt-oss-120b` | Model used for the conversation. Groq retires models: change it here, not in code. |
 | `GROQ_BASE_URL` | No | `https://api.groq.com/openai/v1` | Groq's OpenAI-compatible endpoint. Only changed for tests. |
 | `GROQ_REASONING_EFFORT` | No | `low` | Reasoning effort for gpt-oss models (`low`, `medium`, `high`), or `none` for models that do not reason. |
+| `CRISIS_CLASSIFIER_MODEL` | No | `openai/gpt-oss-20b` | Model that classifies ambiguous messages for the [crisis protocol](docs/crisis-protocol.md#the-second-layer). Different from the chat model, so it has its own quota. |
+| `CRISIS_CLASSIFIER_TIMEOUT_MS` | No | `5000` | Longest wait for that classification. A timeout counts as a crisis. |
 
 | Command | What it does |
 |---|---|
@@ -85,6 +87,7 @@ The server validates these variables when it starts. If a required one is missin
 | `npm run typecheck` | Checks the types in strict mode without emitting files. |
 | `npm test` | Runs the automated tests. |
 | `npm run llm:smoke` | Sends one real message to the configured LLM and prints the reply. `-- --burst 6` sends several at once to check that a quota error (429) is handled. Spends real quota. |
+| `npm run crisis:eval` | Runs a set of ambiguous messages through the real crisis classifier and reports how many it got right. Spends real quota. |
 | `npm run build` | Compiles TypeScript to `dist/`. |
 | `npm start` | Runs the compiled server from `dist/`. |
 
