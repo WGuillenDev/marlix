@@ -49,3 +49,4 @@ app.*.map.json
 
 # Per-developer environment (copy config/local.example.json)
 /config/local.json
+/config/dev-token.json
