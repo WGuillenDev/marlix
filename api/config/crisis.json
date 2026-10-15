@@ -1,0 +1,34 @@
+{
+  "updatedAt": "2026-10-14T00:00:00Z",
+  "reply": "Lo que me contás me importa de verdad, y quiero que tengás ayuda ya. En Costa Rica podés llamar al 9-1-1: es gratis, atienden las 24 horas y te pueden acompañar ahora mismo. Abajo te dejo otros lugares donde también te pueden escuchar.",
+  "resources": [
+    {
+      "id": "911",
+      "name": "9-1-1, Despacho de Apoyo Psicológico",
+      "phone": "911",
+      "hours": "24/7, gratuito",
+      "primary": true
+    },
+    {
+      "id": "aqui-estoy",
+      "name": "Aquí Estoy, Colegio de Psicólogos",
+      "phone": "8002737869",
+      "hours": "Horario limitado",
+      "primary": false
+    },
+    {
+      "id": "ccss-emergencias",
+      "name": "Emergencias CCSS",
+      "phone": "22257511",
+      "hours": "Consultar",
+      "primary": false
+    },
+    {
+      "id": "ccss-emergencias-2",
+      "name": "Emergencias CCSS (segunda línea)",
+      "phone": "22342730",
+      "hours": "Consultar",
+      "primary": false
+    }
+  ]
+}
