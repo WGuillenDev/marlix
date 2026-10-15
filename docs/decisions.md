@@ -4,6 +4,20 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-10-15 — Docker images pinned by tag and digest (S3-7)
+
+**Decision:** the two `docker-compose.yml` images are written as `tag@sha256:digest`: `supabase/postgres:17.11.0.003@sha256:7374d1…` and `dpage/pgadmin4:9.18.0@sha256:c332c5…`.
+
+| Option | Result |
+|---|---|
+| Tag and digest | **Chosen.** The digest guarantees the exact image: a tag can be republished with other content, a digest cannot. The tag keeps the line readable and lets Dependabot know the version, so it proposes new versions and updates both parts in the same PR. |
+| Tag only | Discarded (it was the state until S3-7). The CI and the local database would run whatever the tag points to that day. |
+| Digest only | Discarded. Nobody can tell the version from the line, and Dependabot cannot compare versions. |
+
+Each digest is the **multi-platform index** (amd64 and arm64), checked with `docker buildx imagetools inspect`, so the same line works on any developer's machine and on the CI. The CI's Database job reads the image from this file (S2-11), so it runs the pinned digest too.
+
+---
+
 ## 2026-10-15 — Help screen: dialer, offline list and 9-1-1 always present (S3-5)
 
 **Dialing:** every help button opens the phone's dialer with the number loaded (`tel:` with `url_launcher`). The app never places the call itself and does not ask for the call permission: the person confirms on the dialer. If the device cannot dial, the app says which number to dial.
