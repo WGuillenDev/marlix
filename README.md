@@ -11,7 +11,7 @@ marlix is designed for people facing social isolation who need accessible emotio
 
 ## Status
 
-🚧 Early development. Design (Sprint 0), the backend base (Sprint 1) and security (Sprint 2) are finished; see the [changelog](CHANGELOG.md). The [backend](#backend) is [deployed](#deployment) with the [crisis filter](docs/crisis-protocol.md), the reply review and the usage limits, and the [CI](.github/workflows/ci.yml) tests every pull request. `/v1` stays behind a development token until accounts exist (S4-3; see the [decision](docs/decisions.md)). There are no accounts or memory yet, and the app does not run yet: the chat app is Sprint 3. The [local database](#local-database) runs.
+🚧 Early development. Design (Sprint 0), the backend base (Sprint 1), security (Sprint 2) and the chat app (Sprint 3) are finished; see the [changelog](CHANGELOG.md). The [app](#app) chats with the [backend](#backend), which is [deployed](#deployment) with the [crisis filter](docs/crisis-protocol.md), the reply review and the usage limits; the app has the help screen with 9-1-1, also offline. The [CI](.github/workflows/ci.yml) tests the backend, the app and the database on every pull request. `/v1` stays behind a development token until accounts exist (S4-3; see the [decision](docs/decisions.md)), so the app is not shared yet. There are no accounts, history or memory yet: that is Sprint 4. The [local database](#local-database) runs.
 
 ## Stack
 
