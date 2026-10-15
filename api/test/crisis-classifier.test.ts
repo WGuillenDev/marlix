@@ -41,7 +41,7 @@ describe('createAmbiguousClassifier', () => {
     it(`makes the filter answer with a crisis when the classifier fails (${kind})`, async () => {
       const classifier = createAmbiguousClassifier(failingLlm(new LlmError(kind, kind)));
       const filter = createCrisisFilter(classifier);
-      assert.equal(await filter.isCrisis('ya no aguanto más'), true);
+      assert.equal((await filter.check('ya no aguanto más')).crisis, true);
     });
   }
 });

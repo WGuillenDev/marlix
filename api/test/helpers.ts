@@ -2,6 +2,7 @@ import type { AddressInfo } from 'node:net';
 
 import { createApp } from '../src/app.js';
 import type { CrisisConfig } from '../src/config/crisis-config.js';
+import type { ActivationLog } from '../src/services/crisis/activation-log.js';
 import { LlmError } from '../src/services/llm/index.js';
 import type { LlmCompletionRequest, LlmProvider } from '../src/services/llm/index.js';
 
@@ -40,15 +41,18 @@ export async function startApp({
   llm,
   crisisClassifier,
   crisisConfig,
+  activationLog = { record: () => {} },
 }: {
   llm: LlmProvider;
   crisisClassifier?: LlmProvider;
   crisisConfig?: CrisisConfig;
+  activationLog?: ActivationLog;
 }) {
   const app = createApp({
     llm,
     ...(crisisClassifier ? { crisisClassifier } : {}),
     ...(crisisConfig ? { crisisConfig } : {}),
+    activationLog,
     devAccessToken: DEV_TOKEN,
   });
   const server = app.listen(0);
@@ -68,10 +72,15 @@ export async function startApp({
   };
 }
 
-/** Runs `action` while capturing everything written to console.log/error. */
+/** Runs `action` while capturing everything written to the console. */
 export async function captureConsole<T>(action: () => Promise<T>) {
   const lines: string[] = [];
-  const original = { log: console.log, error: console.error, warn: console.warn };
+  const original = {
+    log: console.log,
+    info: console.info,
+    error: console.error,
+    warn: console.warn,
+  };
   const record = (...args: unknown[]) => {
     const parts = args.map((arg) =>
       arg instanceof Error ? (arg.stack ?? arg.message) : String(arg),
@@ -79,6 +88,7 @@ export async function captureConsole<T>(action: () => Promise<T>) {
     lines.push(parts.join(' '));
   };
   console.log = record;
+  console.info = record;
   console.error = record;
   console.warn = record;
   try {

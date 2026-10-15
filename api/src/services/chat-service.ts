@@ -1,4 +1,5 @@
 import { buildSystemPrompt, type ChatMode } from '../config/system-prompt.js';
+import type { ActivationLog } from './crisis/activation-log.js';
 import type { CrisisFilter } from './crisis/filter.js';
 import type { LlmProvider } from './llm/index.js';
 import { reviewReply } from './review/reply-review.js';
@@ -25,10 +26,19 @@ export interface ChatService {
  * on every call, and the reply is reviewed before it is returned. There is no
  * history or memory yet (Sprint 4), so the model only sees the current message.
  */
-export function createChatService(llm: LlmProvider, crisisFilter: CrisisFilter): ChatService {
+export function createChatService(
+  llm: LlmProvider,
+  crisisFilter: CrisisFilter,
+  activationLog: ActivationLog,
+): ChatService {
   return {
     async reply({ message, mode }) {
-      if (await crisisFilter.isCrisis(message)) return { type: 'crisis' };
+      const decision = await crisisFilter.check(message);
+      if (decision.crisis) {
+        const { signal, layer } = decision;
+        activationLog.record({ at: new Date().toISOString(), signal, layer });
+        return { type: 'crisis' };
+      }
 
       const completion = await llm.complete({
         messages: [
