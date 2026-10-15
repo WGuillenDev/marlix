@@ -37,7 +37,34 @@ marlix/
 
 ## Getting started
 
-Setup instructions for the app (`app/`) will be added when it is initialized.
+### App
+
+Requirements: [Flutter](https://docs.flutter.dev/get-started/install) stable (3.47 or later) and [Android Studio](https://developer.android.com/studio) with an Android emulator, or an Android phone over USB with developer mode on.
+
+1. Install the dependencies:
+   ~~~bash
+   cd app
+   flutter pub get
+   ~~~
+2. Start an emulator from Android Studio (**Device Manager → ▶**) and run the app against the production backend:
+   ~~~bash
+   flutter run --dart-define-from-file=config/production.json
+   ~~~
+
+The backend URL is not in the code: it comes from a file in `app/config/`, and the app refuses to start without a valid one.
+
+| File | Backend | In Git |
+|---|---|---|
+| `config/production.json` | https://marlix-api.onrender.com | Yes |
+| `config/local.json` | Your own backend (`npm run dev`), copied from `config/local.example.json`. From the emulator, your computer is `10.0.2.2`. | No |
+
+Plain `http` is only accepted in debug builds, for a backend on your computer; a release build always uses HTTPS.
+
+| Command (in `app/`) | What it does |
+|---|---|
+| `flutter analyze` | Checks the code with the project's lint rules. |
+| `flutter test` | Runs the automated tests. |
+| `dart format lib test` | Formats the code (100 columns). |
 
 ### Backend
 
