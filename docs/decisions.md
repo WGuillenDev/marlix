@@ -171,6 +171,8 @@ Any answer other than an exact `SAFE`, an error or a timeout counts as a crisis.
 
 **Region:** Virginia, the closest to Costa Rica. The free plan sleeps the service after about 15 minutes without traffic; the S7-6 monitor will keep it awake.
 
+**Update 2026-10-15 (S3-6):** auto-deploy changed from `commit` to `checksPass`. Render now waits for the GitHub checks of each commit on `main` (the CI's API and Database jobs) and skips the deploy if any fails. The ruleset already blocks merging a PR with a failed check, but two PRs that pass separately can still break `main` together; this keeps such a commit out of production. Deploying from GitHub Actions was not chosen: it would need a Render API key as a repository secret for no extra safety.
+
 ---
 
 ## 2026-10-14 — The database image comes from Docker Hub, and the CI reads it from docker-compose.yml (S2-11)

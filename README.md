@@ -129,7 +129,7 @@ The server validates these variables when it starts. If a required one is missin
 
 ### Deployment
 
-The backend runs on [Render](https://render.com) (free plan), defined in [`render.yaml`](render.yaml). Every push to `main` that changes `api/` deploys automatically.
+The backend runs on [Render](https://render.com) (free plan), defined in [`render.yaml`](render.yaml). Every push to `main` that changes `api/` deploys automatically, once the [CI](.github/workflows/ci.yml) checks of that commit pass; a commit with a failed check is never deployed.
 
 Usage limits per plan are in [`api/config/plans.json`](api/config/plans.json): 100 replies a day per person, resetting at midnight Costa Rica time, and 5 messages per minute. Reaching one answers `429`, as described in the [API contract](docs/api-contract.md#errors).
 
