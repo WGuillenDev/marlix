@@ -4,9 +4,9 @@ import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import { z } from 'zod';
 
+import type { CrisisConfig } from '../config/crisis-config.js';
 import { ApiError } from '../middleware/error-handler.js';
 import type { ChatService } from '../services/chat-service.js';
-import { CRISIS_REPLY_TEXT, CRISIS_RESOURCES } from '../services/crisis/crisis-reply.js';
 
 const MAX_MESSAGE_LENGTH = 2000;
 
@@ -27,7 +27,7 @@ const chatRequestSchema = z
   })
   .strict();
 
-export function createChatRouter(chatService: ChatService): Router {
+export function createChatRouter(chatService: ChatService, crisis: CrisisConfig): Router {
   const router = Router();
 
   // Errors (invalid body, LLM failures) go to the central error handler.
@@ -60,11 +60,11 @@ export function createChatRouter(chatService: ChatService): Router {
       reply: {
         id: randomUUID(),
         role: 'assistant',
-        content: isCrisis ? CRISIS_REPLY_TEXT : outcome.content,
+        content: isCrisis ? crisis.reply : outcome.content,
         createdAt: new Date().toISOString(),
         interrupted: false,
       },
-      ...(isCrisis ? { resources: CRISIS_RESOURCES } : {}),
+      ...(isCrisis ? { resources: crisis.resources } : {}),
     });
   });
 
