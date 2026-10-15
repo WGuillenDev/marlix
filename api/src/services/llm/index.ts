@@ -15,22 +15,31 @@ export type {
   LlmUsage,
 } from './types.js';
 
-/**
- * Creates the provider chosen by LLM_PROVIDER, configured from the
- * environment, with one retry for transient failures.
- */
-export function createLlmProvider(env: Env): LlmProvider {
-  return withRetry(createBaseProvider(env));
+export interface LlmProviderOverrides {
+  model?: string;
+  timeoutMs?: number;
+  /** One retry for transient failures. On by default. */
+  retry?: boolean;
 }
 
-function createBaseProvider(env: Env): LlmProvider {
+/**
+ * Creates the provider chosen by LLM_PROVIDER, configured from the
+ * environment. The conversation uses the defaults; the crisis classifier
+ * passes its own model and timeout, without retry.
+ */
+export function createLlmProvider(env: Env, overrides: LlmProviderOverrides = {}): LlmProvider {
+  const provider = createBaseProvider(env, overrides);
+  return overrides.retry === false ? provider : withRetry(provider);
+}
+
+function createBaseProvider(env: Env, overrides: LlmProviderOverrides): LlmProvider {
   switch (env.LLM_PROVIDER) {
     case 'groq':
       return new GroqProvider({
         apiKey: env.GROQ_API_KEY,
-        model: env.GROQ_MODEL,
+        model: overrides.model ?? env.GROQ_MODEL,
         baseUrl: env.GROQ_BASE_URL,
-        timeoutMs: env.LLM_TIMEOUT_MS,
+        timeoutMs: overrides.timeoutMs ?? env.LLM_TIMEOUT_MS,
         ...(env.GROQ_REASONING_EFFORT !== 'none'
           ? { reasoningEffort: env.GROQ_REASONING_EFFORT }
           : {}),
