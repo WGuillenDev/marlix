@@ -39,6 +39,7 @@ User stories for the marlix MVP. Every feature in the v1 scope is backed by at l
 
 **Acceptance criteria**
 - [ ] I can sign up with email and password
+- [ ] Sign-up asks for my birth date; marlix is for people aged 18 or older
 - [ ] I can sign in and my session persists after closing the app
 - [ ] I can sign out
 - [ ] Wrong credentials show a clear error message, without revealing whether the email exists

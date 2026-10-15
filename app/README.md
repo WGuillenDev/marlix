@@ -7,7 +7,7 @@ The Flutter app (Android first). Setup and commands are in the [main README](../
 | `lib/screens/` | One folder or file per screen, with its Riverpod controller next to it. |
 | `lib/widgets/` | Widgets shared by several screens. |
 | `lib/models/` | Data classes, such as the API's request and response bodies. |
-| `lib/services/` | Communication with the backend (`MarlixApi`, the only code that uses `package:http`) and the device. |
+| `lib/services/` | Communication with the backend (`MarlixApi`, the only code that uses `package:http`), with Supabase Auth (`AuthService`, the only code that uses `supabase_flutter`, for sign-up and sign-in only) and the device. |
 | `lib/config/` | Configuration per environment (`AppConfig`). |
 | `lib/theme/` | Colors and theme from the [style guide](../docs/diagrams/wireframes/README.md). |
 | `config/` | Environment files for `--dart-define-from-file`. |

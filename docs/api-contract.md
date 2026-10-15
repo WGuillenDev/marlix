@@ -11,7 +11,7 @@ See also the [chat sequence diagram](diagrams/chat-sequence.md), the [architectu
 | Base URL | `https://<backend-host>`. Every route except `/health` starts with `/v1`. A breaking change ships as `/v2`, so apps installed by APK keep working. |
 | Format | JSON in and out (`Content-Type: application/json`), UTF-8. `POST /v1/chat` can also stream (see below). |
 | Names | JSON fields in `camelCase`. IDs are UUIDs. Dates are ISO 8601 in UTC (`2026-09-30T18:00:00Z`). |
-| Auth | `Authorization: Bearer <access token>`, the Supabase Auth session token the app gets on sign-in. Sign-up and sign-in happen against Supabase Auth, not this API. |
+| Auth | `Authorization: Bearer <access token>`, the Supabase Auth session token the app gets on sign-in. The backend checks it on every request against the project's public signing keys: signature, expiry, issuer, audience `authenticated` and role `authenticated`. Sign-up and sign-in happen against Supabase Auth, not this API; sign-up must send the birth date as user metadata (`data.birth_date`, `YYYY-MM-DD`), and the database refuses it when it is missing or the person is under 18. |
 | Ownership | Every authenticated endpoint only reads or changes the caller's own data. Another user's ID returns `404`, never `403`, so the API does not reveal what exists. |
 | Privacy | Request and response bodies are never logged. Responses under `/v1` carry `Cache-Control: no-store`, so no cache keeps them. |
 | Security headers | Every response carries HSTS, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` and a CSP that blocks everything ([decision](decisions.md)). |
@@ -292,7 +292,6 @@ Checks that happen before the model (auth, validation, daily limit) still answer
 
 | Part | Until | Meanwhile |
 |---|---|---|
-| Auth with the Supabase token | S4-3 | No user session. Every `/v1` request except the public `GET /v1/help-resources` needs `Authorization: Bearer <DEV_ACCESS_TOKEN>`, a development token only the developer has (S1-7); without it the answer is `401 UNAUTHORIZED`. |
 | Stored messages | S4-4 | `userMessage.id` and `reply.id` are generated per request and not stored. `interruptedMessageId` is validated but not checked against the history, so it never answers `404`. |
 | Usage counters in the database | S4-4 | `usage` and the limits work (S2-6), but the counters are kept in memory and the caps come from `api/config/plans.json`, so a restart resets them ([decision](decisions.md)). |
 | Streaming | S6-10 | Only the JSON reply. |
