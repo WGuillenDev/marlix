@@ -4,7 +4,27 @@ Notable changes to marlix, one entry per sprint. The format follows [Keep a Chan
 
 ## [Unreleased]
 
-Sprint 3 — Chat app: talking to marlix from the phone.
+Sprint 4 — Data and memory: marlix remembers you.
+
+## Sprint 3 — Chat app (2026-10-15)
+
+Talking to marlix from the phone: the Flutter app chats with the backend, explains every failure without losing a message, and keeps 9-1-1 one tap away, even offline.
+
+### Added
+
+- Flutter app in `app/` (Android first) with Riverpod, the style guide's colors and the backend URL per environment, never in the code ([#74](https://github.com/WGuillenDev/marlix/pull/74)).
+- API service, the only code that talks to the backend, with typed errors for every contract code, network failures and timeouts ([#76](https://github.com/WGuillenDev/marlix/pull/76)).
+- Chat screen from the wireframe: bubbles, remaining messages, typing indicator, Nunito and Baloo 2 bundled with the app ([#78](https://github.com/WGuillenDev/marlix/pull/78)).
+- Chat states: a failed message stays in place with a retry, a "waking up" banner, the daily limit card and a prominent crisis card ([#80](https://github.com/WGuillenDev/marlix/pull/80)).
+- Help screen with 9-1-1 and the other lines, one tap away from the chat. Every button opens the dialer with the number loaded, and the list works offline ([#82](https://github.com/WGuillenDev/marlix/pull/82)).
+
+### Security
+
+- Render deploys a commit on `main` only after its CI checks pass ([#84](https://github.com/WGuillenDev/marlix/pull/84)).
+- Docker images pinned by tag and digest ([#86](https://github.com/WGuillenDev/marlix/pull/86)).
+- Secret protection reviewed and documented in `SECURITY.md`; generic patterns and validity checks are not available on a personal repository ([#88](https://github.com/WGuillenDev/marlix/pull/88)).
+- The CI also checks the app (format, analysis and tests), and the `main` ruleset requires it. Dependabot updates the Flutter packages ([#90](https://github.com/WGuillenDev/marlix/pull/90)).
+- The app holds no API key: the development token comes from a file ignored by Git, and a test fails if the app's code or config contains something that looks like a key ([#76](https://github.com/WGuillenDev/marlix/pull/76)).
 
 ## Sprint 2 — Security (2026-10-14)
 
