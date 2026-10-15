@@ -12,8 +12,8 @@ const LOOKALIKES: Record<string, string> = {
 
 /**
  * Reduces a text to lowercase letters and single spaces so that case,
- * accents, punctuation, look-alike characters and stretched letters do not
- * change the match. Signals are normalized the same way, so both sides
+ * accents, punctuation, look-alike characters, stretched letters and common
+ * spellings of "qu" do not change the match. Signals are normalized the same way, so both sides
  * always compare in the same form.
  */
 export function normalizeForMatching(text: string): string {
@@ -24,6 +24,8 @@ export function normalizeForMatching(text: string): string {
     .replace(/[013457@$]/g, (character) => LOOKALIKES[character] ?? character)
     .replace(/[^a-z]+/g, ' ')
     .replace(/([a-z])\1+/g, '$1')
+    // "kiero" and "qiero" are common ways of typing "quiero".
+    .replace(/[kq](?=[ei])/g, 'qu')
     .trim();
 }
 
