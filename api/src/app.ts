@@ -7,6 +7,10 @@ import { createChatRouter } from './routes/chat.js';
 import { healthRouter } from './routes/health.js';
 import { createHelpResourcesRouter } from './routes/help-resources.js';
 import { createChatService } from './services/chat-service.js';
+import {
+  createConsoleActivationLog,
+  type ActivationLog,
+} from './services/crisis/activation-log.js';
 import { createAmbiguousClassifier } from './services/crisis/classifier.js';
 import { createCrisisFilter } from './services/crisis/filter.js';
 import type { LlmProvider } from './services/llm/index.js';
@@ -19,6 +23,8 @@ export interface AppDependencies {
   devAccessToken: string;
   /** Crisis text and help resources; read from api/config/crisis.json by default. */
   crisisConfig?: CrisisConfig;
+  /** Where crisis activations are recorded (S2-5); the logs by default. */
+  activationLog?: ActivationLog;
 }
 
 /** Builds the Express app without listening, so tests can use it directly. */
@@ -27,6 +33,7 @@ export function createApp({
   crisisClassifier,
   devAccessToken,
   crisisConfig = loadCrisisConfig(),
+  activationLog = createConsoleActivationLog(),
 }: AppDependencies) {
   const app = express();
 
@@ -43,7 +50,7 @@ export function createApp({
   const crisisFilter = createCrisisFilter(
     crisisClassifier ? createAmbiguousClassifier(crisisClassifier) : undefined,
   );
-  const chatService = createChatService(llm, crisisFilter);
+  const chatService = createChatService(llm, crisisFilter, activationLog);
   app.use('/v1', requireDevToken(devAccessToken), createChatRouter(chatService, crisisConfig));
 
   app.use(notFoundHandler);
