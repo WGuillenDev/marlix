@@ -24,6 +24,14 @@ class HelpResource {
   final String phone;
   final String hours;
   final bool primary;
+
+  Map<String, Object?> toJson() => {
+    'id': id,
+    'name': name,
+    'phone': phone,
+    'hours': hours,
+    'primary': primary,
+  };
 }
 
 /// Response of `GET /v1/help-resources`.
@@ -37,4 +45,30 @@ class HelpResources {
 
   final DateTime updatedAt;
   final List<HelpResource> resources;
+
+  Map<String, Object?> toJson() => {
+    'updatedAt': updatedAt.toUtc().toIso8601String(),
+    'resources': [for (final resource in resources) resource.toJson()],
+  };
+
+  /// The line shown first: the one marked primary, or [emergencyLine].
+  HelpResource get primary =>
+      resources.where((resource) => resource.primary).firstOrNull ?? emergencyLine;
+
+  /// Every other line, in the backend's order.
+  List<HelpResource> get others => [
+    for (final resource in resources)
+      if (resource.phone != primary.phone) resource,
+  ];
 }
+
+/// Always available, even before the app ever reached the backend: the help
+/// screen must never be empty. The rest of the list comes from configuration
+/// (api/config/crisis.json).
+const emergencyLine = HelpResource(
+  id: '911',
+  name: '9-1-1, Despacho de Apoyo Psicológico',
+  phone: '911',
+  hours: '24/7, gratuito',
+  primary: true,
+);
