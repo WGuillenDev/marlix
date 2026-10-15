@@ -28,6 +28,21 @@ Out of scope:
 
 marlix is in early development. Only the latest version on `main` receives security fixes.
 
+## Secret protection
+
+The repository is public, so no key may ever reach it. GitHub checks every push:
+
+| Protection | State |
+|---|---|
+| Secret scanning (keys from known providers, such as Groq and Supabase) | On |
+| Push protection (a push that contains such a key is blocked) | On |
+| Generic patterns (passwords, connection strings, private keys) | Not available |
+| Validity checks (whether a detected key is still active) | Not available |
+
+The last two belong to GitHub Secret Protection, a paid product for organizations. Enabling them on this personal public repository was tried on 2026-10-15: GitHub accepted the request but left both off. If the repository moves to an organization with that product, they should be turned on.
+
+Keys live only in `api/.env` (local, ignored by Git) and in Render's dashboard. The app holds none; a test fails if its code or config contains something that looks like a key.
+
 ## Dependencies
 
 Dependabot sends security alerts and, every Monday, pull requests with new versions of the backend's npm packages, the Docker images and the GitHub Actions ([`.github/dependabot.yml`](.github/dependabot.yml)). Minor and patch npm updates come in one grouped PR. Every update goes through the [CI](.github/workflows/ci.yml) and is merged by hand only when it passes.
