@@ -1,6 +1,7 @@
 import { buildSystemPrompt, type ChatMode } from '../config/system-prompt.js';
 import type { CrisisFilter } from './crisis/filter.js';
 import type { LlmProvider } from './llm/index.js';
+import { reviewReply } from './review/reply-review.js';
 
 // Upper bound for one reply, reasoning included. Voice replies are one to
 // three short sentences, so they need less room.
@@ -21,8 +22,8 @@ export interface ChatService {
 /**
  * The crisis filter runs first, on every message and in both modes; a crisis
  * never reaches the model. Otherwise the personality system prompt goes first
- * on every call. There is no history or memory yet (Sprint 4), so the model
- * only sees the current message.
+ * on every call, and the reply is reviewed before it is returned. There is no
+ * history or memory yet (Sprint 4), so the model only sees the current message.
  */
 export function createChatService(llm: LlmProvider, crisisFilter: CrisisFilter): ChatService {
   return {
@@ -36,7 +37,10 @@ export function createChatService(llm: LlmProvider, crisisFilter: CrisisFilter):
         ],
         maxOutputTokens: MAX_OUTPUT_TOKENS[mode],
       });
-      return { type: 'reply', content: completion.content };
+      const review = reviewReply(completion.content);
+      // Only the rule is logged, never the reply.
+      if (review.replacedBy) console.warn(`Reply replaced by the review: ${review.replacedBy}`);
+      return { type: 'reply', content: review.content };
     },
   };
 }
