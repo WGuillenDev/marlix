@@ -28,6 +28,10 @@ Out of scope:
 
 marlix is in early development. Only the latest version on `main` receives security fixes.
 
+## Dependencies
+
+Dependabot sends security alerts and, every Monday, pull requests with new versions of the backend's npm packages, the Docker images and the GitHub Actions ([`.github/dependabot.yml`](.github/dependabot.yml)). Minor and patch npm updates come in one grouped PR. Every update goes through the [CI](.github/workflows/ci.yml) and is merged by hand only when it passes.
+
 ## Not a crisis line
 
 This channel is only for security reports. If you or someone you know is in danger, in Costa Rica call **9-1-1**.
