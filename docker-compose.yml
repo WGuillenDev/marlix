@@ -14,7 +14,9 @@ services:
     # schema (auth.users, auth.uid()) and the anon/authenticated/service_role
     # roles that docs/schema.sql needs. A plain `postgres` image lacks them.
     # The CI reads this line, so the version Dependabot bumps is the one tested.
-    image: supabase/postgres:17.11.0.003
+    # Pinned by digest: a tag can be republished, a digest cannot (S3-7).
+    # Dependabot updates the tag and the digest together.
+    image: supabase/postgres:17.11.0.003@sha256:7374d196da7e301512cc5329e18040e0f7bb856287b323777cdadecccbc6c7e4
     restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
@@ -33,8 +35,8 @@ services:
       retries: 30
 
   pgadmin:
-    # Exact version, so every machine runs the same pgAdmin. Update on purpose.
-    image: dpage/pgadmin4:9.18.0
+    # Exact version and digest, so every machine runs the same pgAdmin.
+    image: dpage/pgadmin4:9.18.0@sha256:c332c5f6dfba995d9ebc4af261d93506d6876085d712eaaa3defc8dd1a3f26de
     restart: unless-stopped
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:?Set PGADMIN_EMAIL in .env}
