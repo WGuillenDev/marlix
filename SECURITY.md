@@ -45,7 +45,7 @@ Keys live only in `api/.env` (local, ignored by Git) and in Render's dashboard. 
 
 ## Dependencies
 
-Dependabot sends security alerts and, every Monday, pull requests with new versions of the backend's npm packages, the Docker images and the GitHub Actions ([`.github/dependabot.yml`](.github/dependabot.yml)). Minor and patch npm updates come in one grouped PR. Every update goes through the [CI](.github/workflows/ci.yml) and is merged by hand only when it passes.
+Dependabot sends security alerts and, every Monday, pull requests with new versions of the backend's npm packages, the app's Flutter packages, the Docker images and the GitHub Actions ([`.github/dependabot.yml`](.github/dependabot.yml)). Minor and patch updates of npm and of Flutter packages each come in one grouped PR. Every update goes through the [CI](.github/workflows/ci.yml) and is merged by hand only when it passes.
 
 ## Not a crisis line
 

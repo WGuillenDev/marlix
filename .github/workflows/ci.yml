@@ -1,5 +1,5 @@
-# Continuous integration (S2-8): every PR and every push to main must pass
-# before it can be merged and deployed. No secrets: the tests use a fake LLM.
+# Continuous integration (S2-8, S3-9): every PR and every push to main must
+# pass before it can be merged and deployed. No secrets: the tests use fakes.
 
 name: CI
 
@@ -37,6 +37,29 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+
+  app:
+    name: App
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          # The version the app is developed with; update it on purpose.
+          channel: stable
+          flutter-version: 3.47.4
+          cache: true
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed lib test integration_test
+      - run: flutter analyze
+      # integration_test/ needs an emulator and the backend, so it stays manual.
+      - run: flutter test
 
   database:
     name: Database

@@ -69,7 +69,7 @@ flutter run --dart-define-from-file=config/production.json --dart-define-from-fi
 | Command (in `app/`) | What it does |
 |---|---|
 | `flutter analyze` | Checks the code with the project's lint rules. |
-| `flutter test` | Runs the automated tests. |
+| `flutter test` | Runs the automated tests. The [CI](.github/workflows/ci.yml) also runs them, with the format check and `flutter analyze`, on every pull request. |
 | `flutter test integration_test --dart-define-from-file=config/local.json --dart-define-from-file=config/dev-token.json` | Calls every backend endpoint from the app on the emulator. It sends two chat messages; one uses the Groq quota. |
 | `dart format lib test integration_test` | Formats the code (100 columns). |
 
