@@ -124,7 +124,7 @@ erDiagram
 
 ### One continuous chat, many sessions
 
-The user sees a single, continuous chat (decided in S0-5). `conversations` stores **internal sessions**, not separate chats: a session ends after a period of inactivity (`ended_at`), and that is when memory extraction runs (US-07). `memory_extracted_at` marks sessions whose memory was already distilled, so the background job can find pending ones.
+The user sees a single, continuous chat (decided in S0-5). `conversations` stores **internal sessions**, not separate chats: a session ends after a period of inactivity (`ended_at`), and that is when memory extraction runs (US-07). `memory_extracted_at` marks sessions whose memory was already distilled, so the background job can find pending ones. A session ends after 30 minutes without messages, and the function `close_idle_conversations` ends them ([how the memory is built](memory.md)).
 
 ### Ready to scale without migrations
 

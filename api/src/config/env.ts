@@ -27,6 +27,13 @@ const envSchema = z.object({
   // in pairs of message and reply. Every message costs tokens of Groq's free
   // quota, so lower it if the limit is reached.
   CHAT_CONTEXT_MESSAGES: z.coerce.number().int().min(2).max(40).default(DEFAULT_CONTEXT_MESSAGES),
+  // A conversation without messages for this long has ended, and that starts
+  // the extraction of its memory (S4-6).
+  CONVERSATION_IDLE_MINUTES: z.coerce.number().int().min(1).max(1440).default(30),
+  // Model that extracts the facts. A smaller one than the chat, so the
+  // extractions do not use the chat's quota.
+  MEMORY_EXTRACTOR_MODEL: z.string().trim().min(1).default('openai/gpt-oss-20b'),
+  MEMORY_EXTRACTOR_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120_000).default(30_000),
   // Supabase project (S4-1). Session tokens are checked against its public
   // keys (S4-3). The secret key has service_role rights and bypasses RLS:
   // only the backend holds it, never the app or a log.

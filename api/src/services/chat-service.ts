@@ -49,10 +49,14 @@ export function createChatService(
   messages: MessageStore,
   crisisReply: string,
   contextMessages: number,
+  endIdleConversation: (userId: string) => Promise<void>,
 ): ChatService {
   return {
     async reply({ message, mode, user, interruptedMessageId }) {
       const messageAt = new Date();
+      // First, so a message that comes after a long silence starts a new
+      // conversation, with its own window, and the old one gets its memory.
+      await endIdleConversation(user.id).catch(() => undefined);
       const decision = await crisisFilter.check(message);
       if (decision.crisis) {
         const { signal, layer } = decision;

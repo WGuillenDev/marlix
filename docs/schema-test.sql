@@ -1,4 +1,4 @@
--- marlix database tests: privileges, Row Level Security and sign-up (S0-6, S1-8, S4-2, S4-3, S4-5).
+-- marlix database tests: privileges, Row Level Security and sign-up (S0-6, S1-8, S4-2, S4-3, S4-5, S4-6).
 --
 -- Runs against the local database after docs/schema.sql was applied:
 --
@@ -326,6 +326,8 @@ select pg_temp.expect_denied('authenticated cannot truncate memories', 'truncate
 select pg_temp.expect_denied('authenticated cannot truncate messages', 'truncate public.messages');
 select pg_temp.expect_denied('authenticated cannot mark a message as crisis',
   'update public.messages set crisis = true');
+select pg_temp.expect_denied('authenticated cannot end conversations',
+  $sql$select public.close_idle_conversations(1800)$sql$);
 select pg_temp.expect_denied('authenticated cannot call the sign-up function',
   'select public.handle_new_auth_user()');
 
@@ -342,6 +344,40 @@ select pg_temp.expect('Beto''s memory was not changed or deleted by Ana',
 -- ---------------------------------------------------------------------------
 -- Account deletion in cascade (US-09)
 -- ---------------------------------------------------------------------------
+
+-- close_idle_conversations (S4-6): activity counts, not the start of the conversation.
+insert into public.conversations (id, user_id, avatar_id, started_at)
+select c.id, c.user_id, (select id from public.avatars where is_default), c.started_at
+from (values
+  ('00000000-0000-4000-8000-0000000000c3'::uuid, '00000000-0000-4000-8000-00000000000a'::uuid, now() - interval '3 hours'),
+  ('00000000-0000-4000-8000-0000000000c4'::uuid, '00000000-0000-4000-8000-00000000000a'::uuid, now() - interval '2 hours'),
+  ('00000000-0000-4000-8000-0000000000c5'::uuid, '00000000-0000-4000-8000-00000000000b'::uuid, now() - interval '4 hours')
+) as c(id, user_id, started_at);
+
+insert into public.messages (user_id, conversation_id, role, content, created_at) values
+  ('00000000-0000-4000-8000-00000000000a', '00000000-0000-4000-8000-0000000000c3', 'user', 'viejo', now() - interval '170 minutes'),
+  ('00000000-0000-4000-8000-00000000000a', '00000000-0000-4000-8000-0000000000c3', 'assistant', 'viejo', now() - interval '169 minutes'),
+  ('00000000-0000-4000-8000-00000000000a', '00000000-0000-4000-8000-0000000000c4', 'user', 'reciente', now() - interval '5 minutes');
+
+select pg_temp.expect('close_idle_conversations ends only the idle conversation of the user asked for',
+  (select count(*) from public.close_idle_conversations(1800, '00000000-0000-4000-8000-00000000000a')) = 1);
+select pg_temp.expect('it ends the conversation at its last message',
+  (select ended_at from public.conversations where id = '00000000-0000-4000-8000-0000000000c3')
+  = (select max(created_at) from public.messages
+     where conversation_id = '00000000-0000-4000-8000-0000000000c3'));
+select pg_temp.expect('a conversation with recent messages stays open, however old it started',
+  (select ended_at is null from public.conversations where id = '00000000-0000-4000-8000-0000000000c4'));
+select pg_temp.expect('another user''s idle conversation was not touched',
+  (select ended_at is null from public.conversations where id = '00000000-0000-4000-8000-0000000000c5'));
+select pg_temp.expect('without a user it ends everybody''s idle conversations',
+  (select count(*) from public.close_idle_conversations(1800)) = 1);
+select pg_temp.expect('an idle conversation without messages ends at its start',
+  (select ended_at = started_at from public.conversations
+   where id = '00000000-0000-4000-8000-0000000000c5'));
+select pg_temp.expect('a conversation already ended is not ended again',
+  (select count(*) from public.close_idle_conversations(1800)) = 0);
+select pg_temp.expect('the backend can execute close_idle_conversations',
+  has_function_privilege('service_role', 'public.close_idle_conversations(integer, uuid)', 'EXECUTE'));
 
 delete from auth.users where id = '00000000-0000-4000-8000-00000000000b';
 select pg_temp.expect('deleting Beto removes all his data',

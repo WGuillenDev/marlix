@@ -31,6 +31,21 @@ describe('parseEnv', () => {
     }
   });
 
+  it('ends a conversation after 30 idle minutes and extracts with the small model by default', () => {
+    const env = parseEnv(validEnv);
+    assert.equal(env.CONVERSATION_IDLE_MINUTES, 30);
+    assert.equal(env.MEMORY_EXTRACTOR_MODEL, 'openai/gpt-oss-20b');
+    assert.equal(env.MEMORY_EXTRACTOR_TIMEOUT_MS, 30_000);
+    assert.equal(parseEnv({ ...validEnv, CONVERSATION_IDLE_MINUTES: '45' }).CONVERSATION_IDLE_MINUTES, 45);
+    for (const minutes of ['0', '1441', 'mucho', '1.5']) {
+      assert.throws(
+        () => parseEnv({ ...validEnv, CONVERSATION_IDLE_MINUTES: minutes }),
+        EnvValidationError,
+        minutes,
+      );
+    }
+  });
+
   it('reads PORT as a number', () => {
     assert.equal(parseEnv({ ...validEnv, PORT: '8080' }).PORT, 8080);
   });

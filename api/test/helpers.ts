@@ -2,7 +2,7 @@ import type { AddressInfo } from 'node:net';
 
 import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT, type JWTPayload } from 'jose';
 
-import { createApp } from '../src/app.js';
+import { createApp, type AppDependencies } from '../src/app.js';
 import type { CrisisConfig } from '../src/config/crisis-config.js';
 import type { PlansConfig } from '../src/config/plans.js';
 import type { SessionCheck } from '../src/middleware/require-session.js';
@@ -92,6 +92,7 @@ export async function startApp({
   session = TEST_SESSION_CHECK,
   messages = createMemoryMessageStore().store,
   contextMessages,
+  memoryJob,
 }: {
   llm: LlmProvider;
   crisisClassifier?: LlmProvider;
@@ -101,6 +102,7 @@ export async function startApp({
   session?: SessionCheck;
   messages?: MessageStore;
   contextMessages?: number;
+  memoryJob?: AppDependencies['memoryJob'];
 }) {
   const app = createApp({
     llm,
@@ -111,6 +113,7 @@ export async function startApp({
     session,
     messages,
     ...(contextMessages ? { contextMessages } : {}),
+    ...(memoryJob ? { memoryJob } : {}),
   });
   const authHeader = { authorization: `Bearer ${await signSession()}` };
   const server = app.listen(0);

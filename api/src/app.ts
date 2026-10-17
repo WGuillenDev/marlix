@@ -19,6 +19,7 @@ import {
 import { createAmbiguousClassifier } from './services/crisis/classifier.js';
 import { createCrisisFilter } from './services/crisis/filter.js';
 import type { MessageStore } from './services/history/message-store.js';
+import type { MemoryJob } from './services/memory/memory-job.js';
 import type { LlmProvider } from './services/llm/index.js';
 import { createUsageLimiter } from './services/usage/usage-limiter.js';
 
@@ -32,6 +33,8 @@ export interface AppDependencies {
   messages: MessageStore;
   /** How many messages of the conversation the model sees (S4-5). */
   contextMessages?: number;
+  /** Ends idle conversations and extracts their memory (S4-6). Without it, nothing ends. */
+  memoryJob?: Pick<MemoryJob, 'endIdleConversation'>;
   /** Crisis text and help resources; read from api/config/crisis.json by default. */
   crisisConfig?: CrisisConfig;
   /** Where crisis activations are recorded (S2-5); the logs by default. */
@@ -47,6 +50,7 @@ export function createApp({
   session,
   messages,
   contextMessages = DEFAULT_CONTEXT_MESSAGES,
+  memoryJob,
   crisisConfig = loadCrisisConfig(),
   activationLog = createConsoleActivationLog(),
   plans = loadPlansConfig(),
@@ -76,6 +80,7 @@ export function createApp({
     messages,
     crisisConfig.reply,
     contextMessages,
+    (userId) => memoryJob?.endIdleConversation(userId) ?? Promise.resolve(),
   );
   app.use(
     '/v1',
