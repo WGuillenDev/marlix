@@ -118,4 +118,11 @@ void main() {
     final anonymous = MarlixApi(client: client, baseUrl: config.apiBaseUrl);
     await expectLater(anonymous.usage(), throwsA(isA<UnauthorizedException>()));
   });
+
+  // Never with the session: it would delete the test account. The deletion
+  // itself is covered by the backend and widget tests and was run by hand.
+  testWidgets('DELETE /v1/account without a session deletes nothing', (_) async {
+    final anonymous = MarlixApi(client: client, baseUrl: config.apiBaseUrl);
+    await expectLater(anonymous.deleteAccount(), throwsA(isA<UnauthorizedException>()));
+  });
 }

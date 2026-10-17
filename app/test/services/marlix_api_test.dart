@@ -288,6 +288,20 @@ void main() {
       expect(sent, ['DELETE /v1/memories/m1 Bearer $token', 'DELETE /v1/memories Bearer $token']);
     });
 
+    test('DELETE /v1/account with the token accepts 204', () async {
+      late http.Request sent;
+      final api = apiReturning((request) {
+        sent = request;
+        return http.Response('', 204);
+      });
+
+      await api.deleteAccount();
+
+      expect(sent.method, 'DELETE');
+      expect(sent.url.path, '/v1/account');
+      expect(sent.headers['Authorization'], 'Bearer $token');
+    });
+
     test('a failed DELETE still reads the error body', () async {
       final api = apiReturning((_) => errorResponse(500, 'INTERNAL_ERROR'));
 
@@ -296,6 +310,20 @@ void main() {
   });
 
   group('error codes', () {
+    test('REAUTHENTICATION_REQUIRED is not an ended session', () async {
+      final api = apiReturning((_) => errorResponse(401, 'REAUTHENTICATION_REQUIRED'));
+
+      await expectLater(
+        api.deleteAccount(),
+        throwsA(
+          allOf(
+            isA<ReauthenticationRequiredException>().having((e) => e.statusCode, 'statusCode', 401),
+            isNot(isA<UnauthorizedException>()),
+          ),
+        ),
+      );
+    });
+
     test('NOT_FOUND', () async {
       final api = apiReturning((_) => errorResponse(404, 'NOT_FOUND'));
 
