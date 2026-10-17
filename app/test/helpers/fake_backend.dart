@@ -70,6 +70,19 @@ class FakeBackend {
   /// Authorization headers of every request, in order.
   final authorizations = <String?>[];
 
+  /// What `GET /v1/history` serves, newest page first. The cursor of a page is
+  /// the index of the next one.
+  List<List<Map<String, Object?>>> historyPages = [];
+
+  /// `GET /v1/history` fails as if there were no connection.
+  bool historyOffline = false;
+
+  /// `GET /v1/history` answers when this completes; replace it to keep it pending.
+  Completer<void> historyGate = Completer()..complete();
+
+  /// The `before` of every `GET /v1/history`, in order (null for the first page).
+  final historyRequests = <String?>[];
+
   MarlixApi api(FakeAuthService auth) => MarlixApi(
     accessToken: () => auth.accessToken,
     client: MockClient((request) async {
@@ -77,6 +90,17 @@ class FakeBackend {
       if (request.url.path == '/v1/help-resources') {
         if (offline) throw http.ClientException('No connection');
         return jsonResponse({'updatedAt': '2026-10-14T00:00:00Z', 'resources': crisisResources});
+      }
+      if (request.url.path == '/v1/history') {
+        await historyGate.future;
+        if (historyOffline) throw http.ClientException('No connection');
+        final before = request.url.queryParameters['before'];
+        historyRequests.add(before);
+        final index = int.parse(before ?? '0');
+        return jsonResponse({
+          'messages': index < historyPages.length ? historyPages[index] : [],
+          'nextCursor': index + 1 < historyPages.length ? '${index + 1}' : null,
+        });
       }
       if (request.url.path == '/v1/usage') {
         return jsonResponse({'plan': 'personal', ...usageJson(remaining: usageRemaining)});

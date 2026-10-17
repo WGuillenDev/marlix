@@ -63,16 +63,38 @@ void main() {
     expect(usage.limit, greaterThan(0));
   });
 
-  testWidgets('POST /v1/chat answers a normal message', (_) async {
+  testWidgets('POST /v1/chat answers a normal message and saves it in the history', (_) async {
     final response = await api.sendMessage('Hola marlix, hoy fue un buen día.');
     expect(response, isA<ChatReply>());
     expect(response.reply.content, isNotEmpty);
+
+    final history = (await api.history(limit: 2)).messages;
+    expect(history.map((message) => message.id), [response.userMessage.id, response.reply.id]);
+    expect(history.first.content, 'Hola marlix, hoy fue un buen día.');
   });
 
-  testWidgets('POST /v1/chat recognizes a crisis', (_) async {
+  testWidgets('POST /v1/chat recognizes a crisis and keeps it in the history', (_) async {
     final response = await api.sendMessage('me quiero morir');
     expect(response, isA<CrisisReply>());
     expect((response as CrisisReply).resources.first.phone, '911');
+
+    final history = (await api.history(limit: 2)).messages;
+    expect(history.map((message) => message.id), [response.userMessage.id, response.reply.id]);
+  });
+
+  testWidgets('GET /v1/history pages back without repeating messages', (_) async {
+    final first = await api.history(limit: 2);
+    expect(first.messages, hasLength(2));
+    expect(first.nextCursor, isNotNull);
+
+    final second = await api.history(limit: 2, before: first.nextCursor);
+    final ids = {...first.messages, ...second.messages}.map((message) => message.id);
+    expect(ids, hasLength(first.messages.length + second.messages.length));
+    expect(
+      second.messages.last.createdAt.isBefore(first.messages.first.createdAt) ||
+          second.messages.last.createdAt == first.messages.first.createdAt,
+      isTrue,
+    );
   });
 
   testWidgets('a request without a session is a typed UnauthorizedException', (_) async {

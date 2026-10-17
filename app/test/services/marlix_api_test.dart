@@ -150,6 +150,44 @@ void main() {
       expect(result.resetsAt, DateTime.utc(2026, 10, 16, 6));
     });
 
+    test('GET /v1/history sends the token, the limit and the cursor, and parses a page', () async {
+      late http.Request sent;
+      final api = apiReturning((request) {
+        sent = request;
+        return jsonResponse({
+          'messages': [message('user', 'Hola'), message('assistant', '¡Hola!')],
+          'nextCursor': 'abc_-123',
+        }, 200);
+      });
+
+      final page = await api.history(before: 'previous', limit: 20);
+
+      expect(sent.method, 'GET');
+      expect(sent.url.path, '/v1/history');
+      expect(sent.url.queryParameters, {'limit': '20', 'before': 'previous'});
+      expect(sent.headers['Authorization'], 'Bearer $token');
+      expect(page.messages.map((m) => m.content), ['Hola', '¡Hola!']);
+      expect(page.messages.last.role, MessageRole.assistant);
+      expect(page.nextCursor, 'abc_-123');
+    });
+
+    test(
+      'GET /v1/history leaves out the cursor of the first page and reads the last one',
+      () async {
+        late http.Request sent;
+        final api = apiReturning((request) {
+          sent = request;
+          return jsonResponse({'messages': <Object?>[], 'nextCursor': null}, 200);
+        });
+
+        final page = await api.history();
+
+        expect(sent.url.queryParameters, {'limit': '50'});
+        expect(page.messages, isEmpty);
+        expect(page.nextCursor, isNull);
+      },
+    );
+
     test('sends no Authorization header without a token', () async {
       late http.Request sent;
       final api = apiReturning((request) {
