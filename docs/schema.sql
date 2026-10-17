@@ -245,6 +245,35 @@ create index messages_user_id_created_at_idx
 -- Supports the 90-day retention job.
 create index messages_created_at_idx on public.messages (created_at);
 
+-- Ends the conversations without activity for `p_idle_seconds` (S4-6), of one
+-- user or of everybody, and returns their ids. A conversation ends at its last
+-- message, not at the moment this runs, so `ended_at` says when it really
+-- stopped. Only the backend calls it; ending a conversation is what starts the
+-- memory extraction.
+create function public.close_idle_conversations(
+  p_idle_seconds integer,
+  p_user_id uuid default null
+)
+returns setof uuid
+language sql
+set search_path = ''
+as $$
+  update public.conversations c
+  set ended_at = last_activity.at
+  from (
+    select cv.id,
+           greatest(cv.started_at, coalesce(max(m.created_at), cv.started_at)) as at
+    from public.conversations cv
+    left join public.messages m on m.conversation_id = cv.id
+    where cv.ended_at is null
+      and (p_user_id is null or cv.user_id = p_user_id)
+    group by cv.id, cv.started_at
+  ) last_activity
+  where c.id = last_activity.id
+    and last_activity.at < now() - make_interval(secs => p_idle_seconds)
+  returning c.id;
+$$;
+
 -- ---------------------------------------------------------------------------
 -- memories: distilled memory (US-07, US-08)
 -- Key facts added to the system prompt. Never sensitive data.
@@ -377,6 +406,9 @@ revoke all on all sequences in schema public from anon, authenticated;
 -- Functions run only as triggers; nobody calls them directly. A trigger does
 -- not need EXECUTE on its function to fire.
 revoke execute on all functions in schema public from public, anon, authenticated;
+
+-- The backend ends idle conversations, which starts the memory extraction (S4-6).
+grant execute on function public.close_idle_conversations(integer, uuid) to service_role;
 
 -- authenticated: read what the policies allow.
 grant select on
