@@ -68,6 +68,7 @@ describe('createSupabaseMessageStore', () => {
       message: 'Hola',
       reply: '¡Hola!',
       messageAt: new Date('2026-10-01T12:00:00Z'),
+      crisis: false,
     });
 
     assert.equal(turn.userMessage.id, 'u');
@@ -88,6 +89,7 @@ describe('createSupabaseMessageStore', () => {
         conversation_id: CONVERSATION,
         role: 'user',
         content: 'Hola',
+        crisis: false,
         created_at: undefined,
       },
     );
@@ -104,12 +106,69 @@ describe('createSupabaseMessageStore', () => {
       return { body: [row('u', 'user', '2026-10-01T12:00:00Z'), row('a', 'assistant', '2026-10-01T12:00:01Z')] };
     });
 
-    await store.saveTurn(USER, { message: 'Hola', reply: 'Hola', messageAt: new Date() });
+    await store.saveTurn(USER, {
+      message: 'Hola',
+      reply: 'Hola',
+      messageAt: new Date(),
+      crisis: false,
+    });
 
     const created = calls.find((call) => call.table === 'conversations' && call.method === 'POST');
     assert.deepEqual(created!.body, { user_id: USER, avatar_id: AVATAR });
     const profile = calls.find((call) => call.table === 'users');
     assert.equal(profile!.params.get('id'), `eq.${USER}`);
+  });
+
+  it('marks both messages of a crisis turn', async () => {
+    const { store, calls } = fakeSupabase((call) =>
+      call.table === 'conversations'
+        ? { body: [{ id: CONVERSATION }] }
+        : { body: [row('u', 'user', '2026-10-01T12:00:00Z'), row('a', 'assistant', '2026-10-01T12:00:01Z')] },
+    );
+
+    await store.saveTurn(USER, { message: 'x', reply: 'y', messageAt: new Date(), crisis: true });
+
+    const inserted = calls.find((call) => call.method === 'POST')!.body as { crisis: boolean }[];
+    assert.deepEqual(
+      inserted.map((message) => message.crisis),
+      [true, true],
+    );
+  });
+
+  it('reads the context: the last messages of the open conversation, without crises', async () => {
+    const { store, calls } = fakeSupabase((call) =>
+      call.table === 'conversations'
+        ? { body: [{ id: CONVERSATION }] }
+        : {
+            body: [
+              { role: 'assistant', content: 'dos' },
+              { role: 'user', content: 'uno' },
+            ],
+          },
+    );
+
+    const recent = await store.recent(USER, 16);
+
+    assert.deepEqual(recent, [
+      { role: 'user', content: 'uno' },
+      { role: 'assistant', content: 'dos' },
+    ]);
+    const query = calls.find((call) => call.table === 'messages')!.params;
+    assert.equal(query.get('user_id'), `eq.${USER}`);
+    assert.equal(query.get('conversation_id'), `eq.${CONVERSATION}`);
+    assert.equal(query.get('crisis'), 'eq.false');
+    assert.equal(query.get('order'), 'created_at.desc,id.desc');
+    assert.equal(query.get('limit'), '16');
+  });
+
+  it('has no context before the first conversation, and does not create one', async () => {
+    const { store, calls } = fakeSupabase(() => ({ body: [] }));
+
+    assert.deepEqual(await store.recent(USER, 16), []);
+    assert.deepEqual(
+      calls.map((call) => `${call.method} ${call.table}`),
+      ['GET conversations'],
+    );
   });
 
   it('reads a page of the caller only, newest first, asking for one extra row', async () => {

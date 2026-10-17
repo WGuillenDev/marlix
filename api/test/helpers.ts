@@ -91,6 +91,7 @@ export async function startApp({
   plans = GENEROUS_PLANS,
   session = TEST_SESSION_CHECK,
   messages = createMemoryMessageStore().store,
+  contextMessages,
 }: {
   llm: LlmProvider;
   crisisClassifier?: LlmProvider;
@@ -99,6 +100,7 @@ export async function startApp({
   plans?: PlansConfig;
   session?: SessionCheck;
   messages?: MessageStore;
+  contextMessages?: number;
 }) {
   const app = createApp({
     llm,
@@ -108,6 +110,7 @@ export async function startApp({
     plans,
     session,
     messages,
+    ...(contextMessages ? { contextMessages } : {}),
   });
   const authHeader = { authorization: `Bearer ${await signSession()}` };
   const server = app.listen(0);

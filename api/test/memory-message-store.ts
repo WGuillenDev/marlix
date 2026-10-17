@@ -8,17 +8,18 @@ import {
 
 /** A MessageStore that keeps everything in memory, with the database's ordering rules. */
 export function createMemoryMessageStore() {
-  const rows: (StoredMessage & { userId: string })[] = [];
+  const rows: (StoredMessage & { userId: string; crisis: boolean })[] = [];
   let clock = Date.parse('2026-10-01T12:00:00.000Z');
   let failing = false;
 
   const store: MessageStore = {
-    async saveTurn(userId, { message, reply }) {
+    async saveTurn(userId, { message, reply, crisis }) {
       if (failing) throw new Error('store down');
       const make = (role: StoredMessage['role'], content: string) => {
         clock += 1000;
         const row = {
           userId,
+          crisis,
           id: randomUUID(),
           role,
           content,
@@ -29,6 +30,13 @@ export function createMemoryMessageStore() {
         return toMessage(row);
       };
       return { userMessage: make('user', message), reply: make('assistant', reply) };
+    },
+
+    async recent(userId, limit) {
+      return rows
+        .filter((row) => row.userId === userId && !row.crisis)
+        .slice(-limit)
+        .map(({ role, content }) => ({ role, content }));
     },
 
     async page(userId, { limit, before }) {
@@ -71,6 +79,10 @@ export function createMemoryMessageStore() {
   };
 }
 
-function toMessage({ userId: _userId, ...message }: StoredMessage & { userId: string }) {
+function toMessage({
+  userId: _userId,
+  crisis: _crisis,
+  ...message
+}: StoredMessage & { userId: string; crisis: boolean }) {
   return message;
 }

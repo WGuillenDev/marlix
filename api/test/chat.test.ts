@@ -36,11 +36,12 @@ describe('POST /v1/chat', () => {
     await app.postJson('/v1/chat', { message: 'Hola', mode: 'voice' });
     const { messages } = fake.requests.at(-1)!;
 
-    assert.equal(messages.length, 2);
+    // The conversation so far (S4-5) goes between the prompt and the new message.
     assert.equal(messages[0]!.role, 'system');
     assert.match(messages[0]!.content, /Sos marlix/);
     assert.match(messages[0]!.content, /por voz/);
-    assert.deepEqual(messages[1], { role: 'user', content: 'Hola' });
+    assert.deepEqual(messages.at(-1), { role: 'user', content: 'Hola' });
+    assert.equal(messages.filter((m) => m.role === 'system').length, 1);
   });
 
   it('accepts a 2,000-character message, counting emoji as one character', async () => {

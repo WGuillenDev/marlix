@@ -19,6 +19,18 @@ describe('parseEnv', () => {
     assert.equal(env.GROQ_MODEL, 'test-model');
   });
 
+  it('sends 16 messages of context by default, and the size can be changed', () => {
+    assert.equal(parseEnv(validEnv).CHAT_CONTEXT_MESSAGES, 16);
+    assert.equal(parseEnv({ ...validEnv, CHAT_CONTEXT_MESSAGES: '20' }).CHAT_CONTEXT_MESSAGES, 20);
+    for (const size of ['0', '1', '41', 'muchos', '15.5']) {
+      assert.throws(
+        () => parseEnv({ ...validEnv, CHAT_CONTEXT_MESSAGES: size }),
+        EnvValidationError,
+        size,
+      );
+    }
+  });
+
   it('reads PORT as a number', () => {
     assert.equal(parseEnv({ ...validEnv, PORT: '8080' }).PORT, 8080);
   });
