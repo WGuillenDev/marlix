@@ -1,7 +1,15 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { databaseFailure } from '../database-error.js';
-import type { Memory, MemoryStore } from './memory-store.js';
+import type { MemoryStore } from './memory-store.js';
+
+interface MemoryRow {
+  id: string;
+  fact: string;
+  category: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 /**
  * Reads and writes memories through the Supabase API with the secret key, so
@@ -12,11 +20,17 @@ export function createSupabaseMemoryStore(client: SupabaseClient): MemoryStore {
     async list(userId) {
       const { data, error } = await client
         .from('memories')
-        .select('id, fact, category')
+        .select('id, fact, category, created_at, updated_at')
         .eq('user_id', userId)
         .order('created_at', { ascending: true });
       if (error) throw databaseFailure('Reading memories', error);
-      return data as Memory[];
+      return (data as MemoryRow[]).map((row) => ({
+        id: row.id,
+        fact: row.fact,
+        category: row.category,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      }));
     },
 
     async add(userId, { fact, category, sourceConversationId }) {

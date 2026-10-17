@@ -2,6 +2,9 @@ export interface Memory {
   id: string;
   fact: string;
   category: string | null;
+  /** ISO 8601. */
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface MemoryStore {

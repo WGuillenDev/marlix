@@ -20,9 +20,10 @@ const database = createClient(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
+const memories = createSupabaseMemoryStore(database);
 const memoryJob = createMemoryJob({
   conversations: createSupabaseConversationStore(database),
-  memories: createSupabaseMemoryStore(database),
+  memories,
   extractor: createMemoryExtractor(
     createLlmProvider(env, {
       model: env.MEMORY_EXTRACTOR_MODEL,
@@ -42,6 +43,8 @@ const app = createApp({
   session: supabaseSessionCheck(env.SUPABASE_URL),
   contextMessages: env.CHAT_CONTEXT_MESSAGES,
   messages: createSupabaseMessageStore(database),
+  memories,
+  memoryFacts: env.CHAT_MEMORY_FACTS,
   memoryJob,
 });
 

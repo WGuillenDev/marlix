@@ -46,6 +46,18 @@ describe('parseEnv', () => {
     }
   });
 
+  it('puts 30 memories in the prompt by default, and the number can be changed', () => {
+    assert.equal(parseEnv(validEnv).CHAT_MEMORY_FACTS, 30);
+    assert.equal(parseEnv({ ...validEnv, CHAT_MEMORY_FACTS: '12' }).CHAT_MEMORY_FACTS, 12);
+    for (const size of ['0', '51', 'todas', '2.5']) {
+      assert.throws(
+        () => parseEnv({ ...validEnv, CHAT_MEMORY_FACTS: size }),
+        EnvValidationError,
+        size,
+      );
+    }
+  });
+
   it('reads PORT as a number', () => {
     assert.equal(parseEnv({ ...validEnv, PORT: '8080' }).PORT, 8080);
   });

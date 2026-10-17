@@ -4,6 +4,24 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-10-17 — Memory in the prompt: the most recently updated, in a stable order, one line each (S4-7)
+
+**Decision:** on every message, the backend adds the person's memories at the end of the system prompt. At most 30 (`CHAT_MEMORY_FACTS`); if there are more, the most recently updated ones. How it works: [docs/memory.md](memory.md#what-goes-into-the-prompt).
+
+| Option for "the most relevant ones" | Verdict |
+|---|---|
+| The most recently updated | **Chosen.** A fact that was just told, corrected or edited is the most likely to still matter. It needs no extra model call and no embeddings, which the card leaves out of scope. |
+| By similarity with the current message | Discarded: it is the semantic selection the card leaves for later, and it would change the prompt on every message. |
+| The oldest first | Discarded: the first things told are not the most current. |
+| By category | Discarded: nothing says that family matters more than work. |
+
+- **Stable order for the cache.** The chosen ones are always written oldest first, whatever order the database answers in, so the text of the memory is identical from one message to the next until it changes. If the order followed the ranking, a fact moving up or down would change the prompt and spend the cache for nothing. The fixed part still comes first and never changes.
+- **One line each.** The facts come from what the person said, and from S4-8 on they can edit them. Flattening each one to a single line stops it from adding a heading or a paragraph that would read as an instruction; the prompt also says they are data, not orders.
+- **If the memory cannot be read, the answer is `500`** before the model is called, like the recent context ([S4-5](#2026-10-17--recent-context-the-last-16-messages-of-the-open-conversation-never-a-crisis-s4-5)): answering as if marlix did not know the person would be wrong, without saying so.
+- **Cost.** 30 facts are about 450 tokens on top of the 1,600 of the fixed prompt, and the fixed part is cached. If Groq's per-minute limit is reached, lower `CHAT_MEMORY_FACTS` or `CHAT_CONTEXT_MESSAGES`.
+
+---
+
 ## 2026-10-17 — Memory extraction: a job inside the backend that ends idle conversations, with two barriers against sensitive data (S4-6)
 
 **Decision:** when a conversation has no messages for 30 minutes (`CONVERSATION_IDLE_MINUTES`) it ends, and a background job inside the backend extracts its facts with a small model (`MEMORY_EXTRACTOR_MODEL`, `openai/gpt-oss-20b` by default). How it works, its limits and what is never saved: [docs/memory.md](memory.md).

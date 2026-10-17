@@ -38,8 +38,8 @@ export interface ChatService {
  * counting. Then the usage limits apply. The personality system prompt goes
  * first on every call, the reply is reviewed before it is returned, and only
  * a successful reply counts. Every turn is saved in the history (S4-4); the
- * model sees only the last messages of the conversation (S4-5), never the
- * ones of a crisis.
+ * model sees the last messages of the conversation (S4-5), never the ones of
+ * a crisis, and what it remembers about the person (S4-7).
  */
 export function createChatService(
   llm: LlmProvider,
@@ -50,6 +50,7 @@ export function createChatService(
   crisisReply: string,
   contextMessages: number,
   endIdleConversation: (userId: string) => Promise<void>,
+  promptMemories: (userId: string) => Promise<string[]>,
 ): ChatService {
   return {
     async reply({ message, mode, user, interruptedMessageId }) {
@@ -77,11 +78,14 @@ export function createChatService(
       usageLimiter.reserveAttempt(user);
 
       // Before this turn is saved, so the new message is not in it twice.
-      const recent = await messages.recent(user.id, contextMessages);
+      const [recent, facts] = await Promise.all([
+        messages.recent(user.id, contextMessages),
+        promptMemories(user.id),
+      ]);
 
       const completion = await llm.complete({
         messages: [
-          { role: 'system', content: buildSystemPrompt(mode, []) },
+          { role: 'system', content: buildSystemPrompt(mode, facts) },
           ...recent,
           { role: 'user', content: message },
         ],
