@@ -4,6 +4,12 @@ export interface AuthenticatedUser {
   /** The Supabase Auth user id (`sub` of the session token). */
   id: string;
   plan: string;
+  /**
+   * When the person last entered their credentials, in seconds since the
+   * epoch (the newest `amr` entry of the token). A token refresh does not
+   * change it, which is what makes it a proof of a recent sign-in.
+   */
+  signedInAt?: number;
 }
 
 /** Set by the auth middleware; routes behind it can rely on it. */
