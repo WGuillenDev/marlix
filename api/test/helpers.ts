@@ -7,8 +7,10 @@ import type { CrisisConfig } from '../src/config/crisis-config.js';
 import type { PlansConfig } from '../src/config/plans.js';
 import type { SessionCheck } from '../src/middleware/require-session.js';
 import type { ActivationLog } from '../src/services/crisis/activation-log.js';
+import type { MessageStore } from '../src/services/history/message-store.js';
 import { LlmError } from '../src/services/llm/index.js';
 import type { LlmCompletionRequest, LlmProvider } from '../src/services/llm/index.js';
+import { createMemoryMessageStore } from './memory-message-store.js';
 
 /** An LlmProvider that records every request and answers with `respond`. */
 export function createFakeLlm(
@@ -88,6 +90,7 @@ export async function startApp({
   activationLog = { record: () => {} },
   plans = GENEROUS_PLANS,
   session = TEST_SESSION_CHECK,
+  messages = createMemoryMessageStore().store,
 }: {
   llm: LlmProvider;
   crisisClassifier?: LlmProvider;
@@ -95,6 +98,7 @@ export async function startApp({
   activationLog?: ActivationLog;
   plans?: PlansConfig;
   session?: SessionCheck;
+  messages?: MessageStore;
 }) {
   const app = createApp({
     llm,
@@ -103,6 +107,7 @@ export async function startApp({
     activationLog,
     plans,
     session,
+    messages,
   });
   const authHeader = { authorization: `Bearer ${await signSession()}` };
   const server = app.listen(0);
