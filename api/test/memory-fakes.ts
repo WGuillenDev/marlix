@@ -6,6 +6,7 @@ import type {
 } from '../src/services/conversations/conversation-store.js';
 import type { ContextMessage } from '../src/services/history/message-store.js';
 import type { MemoryChange, MemoryExtractor } from '../src/services/memory/extractor.js';
+import type { AccountStore } from '../src/services/account/account-store.js';
 import type { Memory, MemoryStore } from '../src/services/memory/memory-store.js';
 
 interface FakeConversation extends PendingConversation {
@@ -138,4 +139,15 @@ export function createFakeExtractor(
     },
   };
   return { extractor, calls };
+}
+
+/** Records the accounts that were deleted. */
+export function createFakeAccounts() {
+  const deleted: string[] = [];
+  const store: AccountStore = {
+    async deleteAccount(userId) {
+      deleted.push(userId);
+    },
+  };
+  return { store, deleted };
 }
