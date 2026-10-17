@@ -288,6 +288,8 @@ Checks that happen before the model (auth, validation, daily limit) still answer
 
 Both messages of a turn are saved before the reply is returned, and `userMessage.id` and `reply.id` are the ids the history gives them. A reply that cannot be saved is not returned: the answer is `500 INTERNAL_ERROR`, and nothing is counted. The one exception is a crisis, which is always answered with its fixed reply even if saving fails; in that case it is missing from the history. `interruptedMessageId` must be the id of one of the caller's own assistant messages, otherwise `404 NOT_FOUND`; that message is then marked `interrupted` in the history. A crisis ignores it.
 
+**What the model sees.** The system prompt, then the last messages of the user's open conversation (16 by default, `CHAT_CONTEXT_MESSAGES`), then the new message. The rest of the history is only for the app to show. The messages of a crisis, the user's and the fixed reply, are never part of it ([decision](decisions.md)). If the context cannot be read, the answer is `500 INTERNAL_ERROR` before the model is called.
+
 **Errors:** `400 VALIDATION_ERROR`, `401 UNAUTHORIZED`, `404 NOT_FOUND` (unknown `interruptedMessageId`), `500 INTERNAL_ERROR`, `429 DAILY_LIMIT_REACHED`, `429 RATE_LIMITED`, `503 LLM_UNAVAILABLE`. A `503` caused by Groq's quota comes with a `Retry-After` header in seconds.
 
 **Implementation status.** The endpoint is built in steps; until each card is done, it differs from the full contract like this:

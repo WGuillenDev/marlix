@@ -4,6 +4,25 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-10-17 — Recent context: the last 16 messages of the open conversation, never a crisis (S4-5)
+
+**Decision:** with each message, the model gets the system prompt, the last 16 messages of the user's open conversation and the new message. The size is `CHAT_CONTEXT_MESSAGES` (2 to 40, 16 by default), so it changes in Render without a deploy of new code.
+
+- **Why 16.** The card asks for 15 to 20. Messages travel in pairs (message and reply), so an even number keeps whole turns, and the system prompt already takes about 1,600 tokens of Groq's free quota (8,000 a minute). 16 is 8 turns: enough to hold the thread without using the quota in two or three messages. If the limit is reached, lower it.
+- **Within one conversation.** The window reads the open conversation (`ended_at is null`). Nothing closes a conversation yet; S4-6 does, when it extracts the memory, and from then on a new conversation starts with an empty window and the distilled memory instead.
+- **Crisis messages are left out.** [S0-8](#2026-09-30--chat-flow-crisis-filter-before-the-daily-cap-crisis-messages-kept-in-history-s0-8) says they stay in the history but never go to Groq. The history could not tell them apart, so `messages` has a `crisis` column, set by the backend for both messages of a crisis turn (migration `docs/migrations/2026-10-17-messages-crisis.sql`). The app does not read it. Crisis messages saved before the migration (only test accounts, since the history began in S4-4) keep `false`.
+
+| Option | Verdict |
+|---|---|
+| A `crisis` column | **Chosen.** One boolean that the database keeps, so it does not depend on text. |
+| Recognize the fixed crisis reply by its text and drop it with the message before it | Discarded. If the text in `crisis.json` changes, the old replies would no longer match and would go to the model. |
+| Do not save crisis messages | Discarded in S0-8: the person would return to a chat without what they wrote or the help they got. |
+
+- **Read before saving.** The context is read before the turn is saved, so the new message is not in the window and the model never gets it twice.
+- **If the context cannot be read,** the answer is `500` before calling the model, like a reply that cannot be saved (S4-4): answering without context would make marlix forget the thread without saying so.
+
+---
+
 ## 2026-10-17 — Chat history: saved by the backend through the Supabase API, paged with an opaque cursor (S4-4)
 
 **Decision:** the backend saves every turn (the message and marlix's reply) in `messages` through `@supabase/supabase-js` with the secret key, and `GET /v1/history` returns it newest page first.
