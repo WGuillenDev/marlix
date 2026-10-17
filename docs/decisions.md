@@ -4,6 +4,25 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-10-17 — Chat history: saved by the backend through the Supabase API, paged with an opaque cursor (S4-4)
+
+**Decision:** the backend saves every turn (the message and marlix's reply) in `messages` through `@supabase/supabase-js` with the secret key, and `GET /v1/history` returns it newest page first.
+
+| Option | Verdict |
+|---|---|
+| `@supabase/supabase-js` with the secret key | **Chosen.** No connection string or pool to manage, nothing new to configure in Render (the secret key is already there), and it works from a free instance that sleeps. Because that key bypasses RLS, every query filters by `user_id` itself, and the tests check it. |
+| `pg` with the database connection string | Discarded for now. It would need another secret and a connection pool; Supabase's pooler adds its own rules. |
+| The app writes its own messages (RLS) | Discarded. The backend must be the only writer so the crisis filter and the daily cap cannot be skipped ([schema](schema.sql)). |
+
+- **One insert per turn.** Both messages go in the same statement, so a turn is saved whole or not at all. The reply gets a later `created_at` than the message, so they never tie.
+- **Cursor, not offset.** Pages are ordered by `(created_at, id)` descending and the cursor holds the position of the page's oldest message. A new message cannot shift a page that is being read, and the cursor is checked (timestamp and UUID format) before it goes into the query filter. It is opaque for the app.
+- **A reply that cannot be saved is not delivered.** The history would miss a message the person has seen, and the daily count would not match. The answer is `500` and the app offers the retry it already has. **A crisis is the exception:** the 9-1-1 reply never waits on the database, so it is returned even if saving fails ([S0-8](#2026-09-30--chat-flow-crisis-filter-before-the-daily-cap-crisis-messages-kept-in-history-s0-8)).
+- **Nothing of the content in logs.** The database's error text and details can quote the row being written, so the store logs only the error code and throws an error without a message.
+- **Conversations.** A message belongs to the user's open conversation (`ended_at is null`), created on the first message. Closing it after inactivity belongs to S4-6, which needs it for the memory extraction. Two simultaneous first messages could open two conversations; that is harmless because the history is read by user, not by conversation, and the rate limit makes it very unlikely.
+- **Usage counters** stay in memory until S4-13, a card created for this because the contract assigned it to S4-4 but its criteria did not include it.
+
+---
+
 ## 2026-10-15 — Accounts: 18 or older, no email confirmation yet, sessions checked with the project's public keys (S4-3)
 
 **Decision:** people sign up in the app with email, password and birth date, against Supabase Auth. The backend checks the Supabase session on every `/v1` request, and the development token of S1-7 (`DEV_ACCESS_TOKEN`) is gone from the backend, the app and Render.
