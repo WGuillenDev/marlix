@@ -4,9 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 import 'help_screen.dart';
+import 'memories/memories_screen.dart';
 
 /// Settings (wireframe docs/diagrams/wireframes/screens/07a-settings.png).
-/// Memories (S4-8), account deletion (S4-9) and reminders add their rows.
+/// Account deletion (S4-9) and reminders add their rows.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -51,6 +52,12 @@ class SettingsScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
+            _SettingsCard(
+              title: 'Lo que marlix sabe de mí',
+              subtitle: 'Ver, editar o borrar recuerdos',
+              onTap: () => Navigator.of(context).push(MemoriesScreen.route()),
+            ),
+            const SizedBox(height: 12),
             _SettingsCard(
               title: 'Ayuda',
               subtitle: '9-1-1 y otros recursos',
