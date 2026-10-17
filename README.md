@@ -119,6 +119,7 @@ The server validates these variables when it starts. If a required one is missin
 | `CRISIS_CLASSIFIER_MODEL` | No | `openai/gpt-oss-20b` | Model that classifies ambiguous messages for the [crisis protocol](docs/crisis-protocol.md#the-second-layer). Different from the chat model, so it has its own quota. |
 | `CRISIS_CLASSIFIER_TIMEOUT_MS` | No | `5000` | Longest wait for that classification. A timeout counts as a crisis. |
 | `CHAT_CONTEXT_MESSAGES` | No | `16` | How many of the last messages of the conversation the model sees with each new one (2 to 40). Each one costs tokens of Groq's free quota: lower it if the limit is reached. |
+| `CHAT_MEMORY_FACTS` | No | `30` | How many of the person's saved [memories](docs/memory.md#what-goes-into-the-prompt) go into the prompt with each message (1 to 50); if there are more, the most recently updated ones. |
 | `CONVERSATION_IDLE_MINUTES` | No | `30` | A conversation without messages for this long has ended, and that starts the extraction of its [memory](docs/memory.md) (1 to 1440). |
 | `MEMORY_EXTRACTOR_MODEL` | No | `openai/gpt-oss-20b` | Model that extracts the facts of a finished conversation. Smaller than the chat model, so the extractions do not use the chat's quota. |
 | `MEMORY_EXTRACTOR_TIMEOUT_MS` | No | `30000` | Longest wait for one extraction. A failed one stays pending and is tried again. |

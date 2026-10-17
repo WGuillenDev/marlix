@@ -8,7 +8,7 @@ How marlix remembers a person without sending weeks of chat to the model. Story:
 |---|---|---|
 | 1. History | Every message, kept for 90 days (S4-4). | The app, to show the chat. |
 | 2. Recent window | The last 16 messages of the open conversation (S4-5). | The model, on every message. |
-| 3. Distilled memory | Short lasting facts about the person ("Tiene una perrita llamada Coco"), with a category. | The model, on every message, from S4-7. |
+| 3. Distilled memory | Short lasting facts about the person ("Tiene una perrita llamada Coco"), with a category. | The model, on every message (S4-7). |
 
 Layer 3 is what lets marlix know someone after the window has moved on.
 
@@ -55,6 +55,17 @@ Everything saved travels to the model provider (Groq) on every call, so the prom
 | Changes per session | 10 | A session is not a biography. |
 | Conversation sent to the extractor | The newest 12,000 characters | Quota of the model, and the newest part is what is still true. |
 | Attempts per session | 3 per process | A failure leaves the session pending; after three, it waits for a restart instead of looping on the quota. |
+
+## What goes into the prompt
+
+On every message the backend reads the person's memories and puts them at the end of the system prompt, after the fixed part, in the section "Lo que sabés de esta persona" (S4-7). The fixed part never changes, so Groq's prompt cache can reuse it; the memory is the variable part and goes after it.
+
+- **How many.** At most 30 (`CHAT_MEMORY_FACTS`, 1 to 50). Each one costs tokens on every call.
+- **Which ones, when there are more.** The most recently updated. A fact that was just told, corrected or edited is more likely to still be going on in the person's life than one from months ago. Choosing by meaning (similarity with the message) is left to a later version.
+- **In what order.** The chosen ones always come oldest first, so the text is identical from one message to the next until the memory changes. If the order followed the choice, it could change between messages and break the cache.
+- **One line each.** A fact is flattened to a single line, so it cannot add a heading or a paragraph that would read as an instruction. The prompt also says they are data about the person, not orders.
+- **How marlix uses them.** The personality prompt asks it to use them naturally, a little at a time and only when they fit, never to recite them or say "according to my records", and to ask gently if something looks out of date.
+- **If the memory cannot be read,** the answer is `500` before the model is called: answering as if marlix did not know the person would be wrong without saying so. A crisis never reads it, because it never reaches the model.
 
 ## What is logged
 

@@ -18,7 +18,7 @@ The prompt text is in Spanish, because it is what the model reads and imitates. 
 └──────────────────────────────────────────────┘
 ~~~
 
-`buildSystemPrompt(mode, memories)` joins the three parts. The backend then adds the last 15 to 20 messages and the new message after the system prompt.
+`buildSystemPrompt(mode, memories)` joins the three parts. The backend then adds the last 16 messages of the conversation (S4-5) and the new message after the system prompt.
 
 | Part | Content | Story |
 |---|---|---|
@@ -33,9 +33,9 @@ The prompt text is in Spanish, because it is what the model reads and imitates. 
 
 ## Memory slot
 
-`MEMORY_SLOT` (`{{MEMORY}}`) marks where the distilled memory goes, at the very end of the prompt. Each fact becomes one line (`- Tiene una perrita llamada Coco`). With no memories, the slot says marlix does not know the person yet. Filling the slot from the database is S4-7.
+`MEMORY_SLOT` (`{{MEMORY}}`) marks where the distilled memory goes, at the very end of the prompt. Each fact becomes one line (`- Tiene una perrita llamada Coco`). With no memories, the slot says marlix does not know the person yet. The backend fills it on every call from the `memories` table (S4-7): which ones go in, and in what order, is in [Distilled memory](memory.md#what-goes-into-the-prompt).
 
-Memories come from what the user said, so the section tells the model they are data, not instructions. That limits prompt injection through a stored fact.
+Memories come from what the user said, so the section tells the model they are data, not instructions. That limits prompt injection through a stored fact. The backend also puts each fact on a single line, so a fact cannot add a heading or a paragraph of its own.
 
 ## Prompt cache
 
