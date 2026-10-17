@@ -1,6 +1,7 @@
 import express from 'express';
 
 import { loadCrisisConfig, type CrisisConfig } from './config/crisis-config.js';
+import { DEFAULT_CONTEXT_MESSAGES } from './config/env.js';
 import { loadPlansConfig, type PlansConfig } from './config/plans.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
 import { requireSession, type SessionCheck } from './middleware/require-session.js';
@@ -29,6 +30,8 @@ export interface AppDependencies {
   session: SessionCheck;
   /** Where the chat history is saved (S4-4). */
   messages: MessageStore;
+  /** How many messages of the conversation the model sees (S4-5). */
+  contextMessages?: number;
   /** Crisis text and help resources; read from api/config/crisis.json by default. */
   crisisConfig?: CrisisConfig;
   /** Where crisis activations are recorded (S2-5); the logs by default. */
@@ -43,6 +46,7 @@ export function createApp({
   crisisClassifier,
   session,
   messages,
+  contextMessages = DEFAULT_CONTEXT_MESSAGES,
   crisisConfig = loadCrisisConfig(),
   activationLog = createConsoleActivationLog(),
   plans = loadPlansConfig(),
@@ -71,6 +75,7 @@ export function createApp({
     usageLimiter,
     messages,
     crisisConfig.reply,
+    contextMessages,
   );
   app.use(
     '/v1',

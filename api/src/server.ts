@@ -18,6 +18,7 @@ const app = createApp({
     retry: false,
   }),
   session: supabaseSessionCheck(env.SUPABASE_URL),
+  contextMessages: env.CHAT_CONTEXT_MESSAGES,
   messages: createSupabaseMessageStore(
     // No session to keep: the key identifies the backend on every call.
     createClient(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY, {
