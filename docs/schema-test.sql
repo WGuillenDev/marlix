@@ -1,4 +1,4 @@
--- marlix database tests: privileges, Row Level Security and sign-up (S0-6, S1-8, S4-2, S4-3).
+-- marlix database tests: privileges, Row Level Security and sign-up (S0-6, S1-8, S4-2, S4-3, S4-5).
 --
 -- Runs against the local database after docs/schema.sql was applied:
 --
@@ -248,6 +248,9 @@ insert into public.daily_usage (user_id, interactions) values
   ('00000000-0000-4000-8000-00000000000a', 3),
   ('00000000-0000-4000-8000-00000000000b', 5);
 
+select pg_temp.expect('messages are not marked as crisis unless the backend says so',
+  (select bool_and(not crisis) from public.messages));
+
 -- A message can never point to another user's session.
 do $$
 begin
@@ -321,6 +324,8 @@ select pg_temp.expect_denied('authenticated cannot change avatars', $sql$update 
 -- TRUNCATE skips RLS, so only the missing privilege stops it.
 select pg_temp.expect_denied('authenticated cannot truncate memories', 'truncate public.memories');
 select pg_temp.expect_denied('authenticated cannot truncate messages', 'truncate public.messages');
+select pg_temp.expect_denied('authenticated cannot mark a message as crisis',
+  'update public.messages set crisis = true');
 select pg_temp.expect_denied('authenticated cannot call the sign-up function',
   'select public.handle_new_auth_user()');
 

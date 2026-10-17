@@ -226,6 +226,7 @@ create table public.messages (
   role            text not null check (role in ('user', 'assistant')),
   content         text not null check (length(content) > 0),
   interrupted     boolean not null default false,
+  crisis          boolean not null default false,
   created_at      timestamptz not null default now(),
   foreign key (conversation_id, user_id)
     references public.conversations (id, user_id) on delete cascade,
@@ -234,6 +235,8 @@ create table public.messages (
 
 comment on column public.messages.interrupted is
   'True when the user interrupted the avatar while it was speaking (US-12).';
+comment on column public.messages.crisis is
+  'True for a message that the crisis filter caught and for its fixed reply (S4-5). They stay in the history but are never sent to the model.';
 
 create index messages_conversation_id_created_at_idx
   on public.messages (conversation_id, created_at);
