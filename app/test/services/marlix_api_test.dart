@@ -218,9 +218,90 @@ void main() {
 
       expect(sent, ['Bearer first-token', 'Bearer refreshed-token']);
     });
+
+    test('GET /v1/memories with the token, newest first as the backend sends them', () async {
+      late http.Request sent;
+      final api = apiReturning((request) {
+        sent = request;
+        return jsonResponse({
+          'memories': [
+            {
+              'id': 'm2',
+              'fact': 'Le gusta el café',
+              'category': null,
+              'createdAt': '2026-10-02T12:00:00Z',
+              'updatedAt': '2026-10-02T12:00:00Z',
+            },
+            {
+              'id': 'm1',
+              'fact': 'Tiene un perro llamado Coco',
+              'category': 'pets',
+              'createdAt': '2026-10-01T12:00:00Z',
+              'updatedAt': '2026-10-03T12:00:00Z',
+            },
+          ],
+        }, 200);
+      });
+
+      final memories = await api.memories();
+
+      expect(sent.method, 'GET');
+      expect(sent.url.path, '/v1/memories');
+      expect(sent.headers['Authorization'], 'Bearer $token');
+      expect(memories.map((m) => m.id), ['m2', 'm1']);
+      expect(memories.first.category, isNull);
+      expect(memories.last.category, 'pets');
+      expect(memories.last.updatedAt, DateTime.utc(2026, 10, 3, 12));
+    });
+
+    test('PATCH /v1/memories/:id sends only the text and returns the saved memory', () async {
+      late http.Request sent;
+      final api = apiReturning((request) {
+        sent = request;
+        return jsonResponse({
+          'id': 'm1',
+          'fact': 'Tiene una perrita llamada Coco',
+          'category': 'pets',
+          'createdAt': '2026-10-01T12:00:00Z',
+          'updatedAt': '2026-10-17T12:00:00Z',
+        }, 200);
+      });
+
+      final memory = await api.editMemory('m1', 'Tiene una perrita llamada Coco');
+
+      expect(sent.method, 'PATCH');
+      expect(sent.url.path, '/v1/memories/m1');
+      expect(jsonDecode(sent.body), {'fact': 'Tiene una perrita llamada Coco'});
+      expect(memory.fact, 'Tiene una perrita llamada Coco');
+    });
+
+    test('DELETE one memory or all of them accepts 204 without a body', () async {
+      final sent = <String>[];
+      final api = apiReturning((request) {
+        sent.add('${request.method} ${request.url.path} ${request.headers['Authorization']}');
+        return http.Response('', 204);
+      });
+
+      await api.deleteMemory('m1');
+      await api.deleteAllMemories();
+
+      expect(sent, ['DELETE /v1/memories/m1 Bearer $token', 'DELETE /v1/memories Bearer $token']);
+    });
+
+    test('a failed DELETE still reads the error body', () async {
+      final api = apiReturning((_) => errorResponse(500, 'INTERNAL_ERROR'));
+
+      await expectLater(api.deleteAllMemories(), throwsA(isA<UnexpectedApiException>()));
+    });
   });
 
   group('error codes', () {
+    test('NOT_FOUND', () async {
+      final api = apiReturning((_) => errorResponse(404, 'NOT_FOUND'));
+
+      await expectLater(api.deleteMemory('m9'), throwsA(isA<NotFoundException>()));
+    });
+
     test('DAILY_LIMIT_REACHED carries resetsAt', () async {
       final api = apiReturning(
         (_) => errorResponse(

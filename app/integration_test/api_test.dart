@@ -97,6 +97,23 @@ void main() {
     );
   });
 
+  // Leaves the account's memories as they were: deleting them is covered by
+  // the backend and widget tests, and checked by hand on the emulator.
+  testWidgets('GET, PATCH and DELETE /v1/memories', (_) async {
+    final memories = await api.memories();
+    for (var i = 1; i < memories.length; i++) {
+      expect(memories[i].createdAt.isAfter(memories[i - 1].createdAt), isFalse);
+    }
+    if (memories.isNotEmpty) {
+      final saved = await api.editMemory(memories.first.id, memories.first.fact);
+      expect(saved.fact, memories.first.fact);
+    }
+
+    const missing = '00000000-0000-4000-8000-000000000000';
+    await expectLater(api.editMemory(missing, 'x'), throwsA(isA<NotFoundException>()));
+    await expectLater(api.deleteMemory(missing), throwsA(isA<NotFoundException>()));
+  });
+
   testWidgets('a request without a session is a typed UnauthorizedException', (_) async {
     final anonymous = MarlixApi(client: client, baseUrl: config.apiBaseUrl);
     await expectLater(anonymous.usage(), throwsA(isA<UnauthorizedException>()));
