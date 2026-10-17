@@ -1,46 +1,18 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { createClient } from '@supabase/supabase-js';
-
 import { decodeCursor, HistoryStoreError } from '../src/services/history/message-store.js';
 import { createSupabaseMessageStore } from '../src/services/history/supabase-message-store.js';
+import { fakeSupabaseClient } from './fake-supabase.js';
 import { captureConsole } from './helpers.js';
 
 const USER = '00000000-0000-4000-8000-00000000000a';
 const CONVERSATION = '11111111-1111-4111-8111-111111111111';
 const AVATAR = '22222222-2222-4222-8222-222222222222';
 
-interface Call {
-  method: string;
-  table: string;
-  params: URLSearchParams;
-  body: unknown;
-}
-
-/** Stands in for the Supabase API: records each call and answers from `respond`. */
-function fakeSupabase(respond: (call: Call) => { status?: number; body: unknown }) {
-  const calls: Call[] = [];
-  const client = createClient('https://testproject.supabase.co', 'sb_secret_test', {
-    auth: { persistSession: false, autoRefreshToken: false },
-    global: {
-      fetch: async (input, init) => {
-        const url = new URL(input instanceof Request ? input.url : String(input));
-        const call: Call = {
-          method: init?.method ?? 'GET',
-          table: url.pathname.split('/').at(-1)!,
-          params: url.searchParams,
-          body: init?.body ? JSON.parse(String(init.body)) : undefined,
-        };
-        calls.push(call);
-        const { status = 200, body } = respond(call);
-        return new Response(JSON.stringify(body), {
-          status,
-          headers: { 'content-type': 'application/json' },
-        });
-      },
-    },
-  });
+/** The message store over a fake Supabase. */
+function fakeSupabase(respond: Parameters<typeof fakeSupabaseClient>[0]) {
+  const { client, calls } = fakeSupabaseClient(respond);
   return { store: createSupabaseMessageStore(client), calls };
 }
 
