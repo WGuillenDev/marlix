@@ -28,6 +28,10 @@ class ChatScreen extends ConsumerStatefulWidget {
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   static const slowReplyAfter = ChatScreen.slowReplyAfter;
 
+  /// How close to the oldest loaded message the scroll gets before the next
+  /// page is requested.
+  static const _loadOlderWithin = 400.0;
+
   final _input = TextEditingController();
   final _scroll = ScrollController();
   Timer? _slowTimer;
@@ -37,8 +41,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   void initState() {
     super.initState();
     _input.addListener(() => setState(() {}));
+    _scroll.addListener(_loadOlderNearTop);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(chatControllerProvider.notifier).loadUsage();
+      ref.read(chatControllerProvider.notifier)
+        ..loadHistory()
+        ..loadUsage();
       // So the help screen has the full list if the connection drops later.
       ref.read(helpResourcesProvider.notifier).refresh();
     });
@@ -57,6 +64,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     _input.clear();
     // A failure keeps the message in the chat with a retry, so nothing is lost.
     await ref.read(chatControllerProvider.notifier).send(text);
+  }
+
+  /// The list is reversed: the end of the scroll is the oldest message. After
+  /// a failure it waits for the retry button instead of asking again by itself.
+  void _loadOlderNearTop() {
+    final chat = ref.read(chatControllerProvider);
+    if (chat.historyStatus != HistoryStatus.idle || !chat.hasOlder) return;
+    final position = _scroll.position;
+    if (position.maxScrollExtent - position.pixels <= _loadOlderWithin) {
+      ref.read(chatControllerProvider.notifier).loadHistory();
+    }
   }
 
   void _openHelp() => Navigator.of(context).push(HelpScreen.route());
@@ -82,7 +100,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Widget build(BuildContext context) {
     final chat = ref.watch(chatControllerProvider);
     ref.listen(chatControllerProvider, (previous, next) {
-      if (previous?.entries.length != next.entries.length ||
+      // Older pages are added at the top: they must not pull the chat down.
+      if (previous?.entries.lastOrNull?.id != next.entries.lastOrNull?.id ||
           previous?.sending != next.sending ||
           previous?.limitReached != next.limitReached) {
         WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToLatest());
@@ -95,6 +114,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       if (chat.limitReached) DailyLimitCard(onHelp: _openHelp),
       if (chat.sending) const TypingIndicator(),
       for (final entry in chat.entries.reversed) _entry(entry, controller, chat.sending),
+      // The last item is the top of the chat.
+      if (chat.historyStatus == HistoryStatus.loading && chat.entries.isNotEmpty)
+        const HistoryLoadingNotice(),
+      if (chat.historyStatus == HistoryStatus.failed && chat.entries.isNotEmpty)
+        HistoryFailedNotice(onRetry: controller.loadHistory),
     ];
     final canSend = _input.text.trim().isNotEmpty && !chat.sending && !chat.limitReached;
 
@@ -111,7 +135,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               const Padding(padding: EdgeInsets.fromLTRB(16, 12, 16, 0), child: WakingUpBanner()),
             Expanded(
               child: items.isEmpty
-                  ? const _EmptyChat()
+                  ? _emptyChat(chat.historyStatus, controller)
                   : ListView.separated(
                       controller: _scroll,
                       reverse: true,
@@ -133,6 +157,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ),
     );
   }
+
+  /// Nothing to show yet: wait for the history before saying the chat is empty.
+  Widget _emptyChat(HistoryStatus status, ChatController controller) => switch (status) {
+    HistoryStatus.pending || HistoryStatus.loading => const Center(
+      child: HistoryLoadingNotice(message: 'Cargando tu conversación…'),
+    ),
+    HistoryStatus.failed => Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: HistoryFailedNotice(onRetry: controller.loadHistory),
+      ),
+    ),
+    HistoryStatus.idle => const _EmptyChat(),
+  };
 
   Widget _entry(ChatEntry entry, ChatController controller, bool sending) => switch (entry) {
     UserEntry(status: SendStatus.failed) => Column(

@@ -212,3 +212,72 @@ class SendFailedNotice extends StatelessWidget {
     );
   }
 }
+
+/// At the top of the chat while an earlier page of the history loads.
+class HistoryLoadingNotice extends StatelessWidget {
+  const HistoryLoadingNotice({super.key, this.message = 'Cargando mensajes anteriores…'});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      liveRegion: true,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox.square(
+              dimension: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                color: AppColors.tanDark,
+                backgroundColor: AppColors.tanLight,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Flexible(
+              child: Text(message, style: AppText.caption.copyWith(color: AppColors.textSecondary)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The history could not be loaded; the rest of the chat keeps working.
+class HistoryFailedNotice extends StatelessWidget {
+  const HistoryFailedNotice({super.key, required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      liveRegion: true,
+      child: Column(
+        children: [
+          const Text(
+            'No pudimos cargar tus mensajes anteriores. Revisá tu conexión a internet.',
+            textAlign: TextAlign.center,
+            style: AppText.caption,
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton(
+            onPressed: onRetry,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.tanDark,
+              side: const BorderSide(color: AppColors.tanDark, width: 2),
+              textStyle: AppText.button,
+              minimumSize: const Size(0, 48),
+              padding: const EdgeInsets.symmetric(horizontal: 28),
+            ),
+            child: const Text('Reintentar'),
+          ),
+        ],
+      ),
+    );
+  }
+}
