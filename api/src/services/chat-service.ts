@@ -1,6 +1,9 @@
+import { randomUUID } from 'node:crypto';
+
 import { buildSystemPrompt, type ChatMode } from '../config/system-prompt.js';
 import type { ActivationLog } from './crisis/activation-log.js';
 import type { CrisisFilter } from './crisis/filter.js';
+import { MessageNotFoundError, type MessageStore, type SavedTurn } from './history/message-store.js';
 import type { LlmProvider } from './llm/index.js';
 import { reviewReply } from './review/reply-review.js';
 import type { UsageLimiter, UsageUser } from './usage/usage-limiter.js';
@@ -13,14 +16,18 @@ export interface ChatInput {
   message: string;
   mode: ChatMode;
   user: UsageUser;
+  /** The reply of marlix the user cut off by talking (US-12). */
+  interruptedMessageId?: string | null | undefined;
 }
 
-export type ChatOutcome = { type: 'reply'; content: string } | { type: 'crisis' };
+/** What was said in this turn, with the ids the history gave it. */
+export type ChatOutcome = SavedTurn & { type: 'reply' | 'crisis' };
 
 export interface ChatService {
   /**
-   * Returns marlix's reply to one message, or a crisis. Fails with an
-   * LlmError or a UsageLimitExceededError.
+   * Returns marlix's reply to one message, or a crisis, already saved in the
+   * history. Fails with an LlmError, a UsageLimitExceededError, a
+   * MessageNotFoundError or a HistoryStoreError.
    */
   reply(input: ChatInput): Promise<ChatOutcome>;
 }
@@ -30,24 +37,37 @@ export interface ChatService {
  * never reaches the model and is answered even at the daily cap, without
  * counting. Then the usage limits apply. The personality system prompt goes
  * first on every call, the reply is reviewed before it is returned, and only
- * a successful reply counts. There is no history or memory yet (Sprint 4), so
- * the model only sees the current message.
+ * a successful reply counts. Every turn is saved in the history (S4-4), but
+ * the model only sees the current message until the recent window (S4-5).
  */
 export function createChatService(
   llm: LlmProvider,
   crisisFilter: CrisisFilter,
   activationLog: ActivationLog,
   usageLimiter: UsageLimiter,
+  messages: MessageStore,
+  crisisReply: string,
 ): ChatService {
   return {
-    async reply({ message, mode, user }) {
+    async reply({ message, mode, user, interruptedMessageId }) {
+      const messageAt = new Date();
       const decision = await crisisFilter.check(message);
       if (decision.crisis) {
         const { signal, layer } = decision;
         activationLog.record({ at: new Date().toISOString(), signal, layer });
-        return { type: 'crisis' };
+        // The help never waits on the database: if saving fails, the person
+        // still gets the 9-1-1 reply, only without it in their history.
+        const turn = await messages
+          .saveTurn(user.id, { message, reply: crisisReply, messageAt })
+          .catch(() => unsavedTurn(message, crisisReply, messageAt));
+        return { type: 'crisis', ...turn };
       }
 
+      if (interruptedMessageId) {
+        if (!(await messages.markInterrupted(user.id, interruptedMessageId))) {
+          throw new MessageNotFoundError();
+        }
+      }
       usageLimiter.reserveAttempt(user);
 
       const completion = await llm.complete({
@@ -60,8 +80,31 @@ export function createChatService(
       const review = reviewReply(completion.content);
       // Only the rule is logged, never the reply.
       if (review.replacedBy) console.warn(`Reply replaced by the review: ${review.replacedBy}`);
+      // A reply that cannot be saved is not delivered or counted: the history
+      // would miss a message the person has seen.
+      const turn = await messages.saveTurn(user.id, { message, reply: review.content, messageAt });
       usageLimiter.recordInteraction(user);
-      return { type: 'reply', content: review.content };
+      return { type: 'reply', ...turn };
+    },
+  };
+}
+
+function unsavedTurn(message: string, reply: string, messageAt: Date): SavedTurn {
+  const replyAt = new Date(Math.max(Date.now(), messageAt.getTime() + 1));
+  return {
+    userMessage: {
+      id: randomUUID(),
+      role: 'user',
+      content: message,
+      createdAt: messageAt.toISOString(),
+      interrupted: false,
+    },
+    reply: {
+      id: randomUUID(),
+      role: 'assistant',
+      content: reply,
+      createdAt: replyAt.toISOString(),
+      interrupted: false,
     },
   };
 }

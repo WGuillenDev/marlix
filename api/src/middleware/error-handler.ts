@@ -1,6 +1,7 @@
 // Central error handling (S1-6). Error bodies follow docs/api-contract.md#errors.
 import type { ErrorRequestHandler, RequestHandler } from 'express';
 
+import { MessageNotFoundError } from '../services/history/message-store.js';
 import { LlmError } from '../services/llm/index.js';
 import { UsageLimitExceededError } from '../services/usage/usage-limiter.js';
 
@@ -70,6 +71,10 @@ function toApiError(error: unknown): ApiError {
       undefined,
       error.retryAfterSeconds ? { 'Retry-After': String(error.retryAfterSeconds) } : {},
     );
+  }
+
+  if (error instanceof MessageNotFoundError) {
+    return new ApiError(404, 'NOT_FOUND', 'The message does not exist.');
   }
 
   if (error instanceof UsageLimitExceededError) {

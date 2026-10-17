@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../models/chat.dart';
 import '../models/help_resource.dart';
+import '../models/history.dart';
 import '../models/json_reader.dart';
 import '../models/usage.dart';
 import 'api_exception.dart';
@@ -52,6 +53,16 @@ class MarlixApi {
     parse: ChatResponse.fromJson,
   );
 
+  /// `GET /v1/history`: the newest page, or the one before [before], a cursor
+  /// from the previous page.
+  Future<HistoryPage> history({String? before, int limit = 50}) => _send(
+    'GET',
+    '/v1/history',
+    query: {'limit': '$limit', 'before': ?before},
+    authenticated: true,
+    parse: HistoryPage.fromJson,
+  );
+
   /// `GET /v1/usage`.
   Future<Usage> usage() => _send('GET', '/v1/usage', authenticated: true, parse: Usage.fromJson);
 
@@ -60,9 +71,10 @@ class MarlixApi {
     String path, {
     required T Function(Map<String, Object?> json) parse,
     Map<String, Object?>? body,
+    Map<String, String>? query,
     bool authenticated = false,
   }) async {
-    final request = http.Request(method, _baseUrl.resolve(path))
+    final request = http.Request(method, _baseUrl.resolve(path).replace(queryParameters: query))
       ..headers['Accept'] = 'application/json';
     if (authenticated) {
       if (_accessToken?.call() case final token?) {

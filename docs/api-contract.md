@@ -286,14 +286,16 @@ data: {"type":"reply","userMessage":{…},"reply":{…},"usage":{…}}
 
 Checks that happen before the model (auth, validation, daily limit) still answer with a normal JSON error and HTTP status, not with a stream. If a sentence fails the review, the stream sends an `error` or a safe fallback instead of that sentence; it never sends text that failed the review.
 
-**Errors:** `400 VALIDATION_ERROR`, `401 UNAUTHORIZED`, `404 NOT_FOUND` (unknown `interruptedMessageId`), `429 DAILY_LIMIT_REACHED`, `429 RATE_LIMITED`, `503 LLM_UNAVAILABLE`. A `503` caused by Groq's quota comes with a `Retry-After` header in seconds.
+Both messages of a turn are saved before the reply is returned, and `userMessage.id` and `reply.id` are the ids the history gives them. A reply that cannot be saved is not returned: the answer is `500 INTERNAL_ERROR`, and nothing is counted. The one exception is a crisis, which is always answered with its fixed reply even if saving fails; in that case it is missing from the history. `interruptedMessageId` must be the id of one of the caller's own assistant messages, otherwise `404 NOT_FOUND`; that message is then marked `interrupted` in the history. A crisis ignores it.
+
+**Errors:** `400 VALIDATION_ERROR`, `401 UNAUTHORIZED`, `404 NOT_FOUND` (unknown `interruptedMessageId`), `500 INTERNAL_ERROR`, `429 DAILY_LIMIT_REACHED`, `429 RATE_LIMITED`, `503 LLM_UNAVAILABLE`. A `503` caused by Groq's quota comes with a `Retry-After` header in seconds.
 
 **Implementation status.** The endpoint is built in steps; until each card is done, it differs from the full contract like this:
 
 | Part | Until | Meanwhile |
 |---|---|---|
-| Stored messages | S4-4 | `userMessage.id` and `reply.id` are generated per request and not stored. `interruptedMessageId` is validated but not checked against the history, so it never answers `404`. |
-| Usage counters in the database | S4-4 | `usage` and the limits work (S2-6), but the counters are kept in memory and the caps come from `api/config/plans.json`, so a restart resets them ([decision](decisions.md)). |
+| 90-day retention | S4-10 | Messages are kept until the retention job exists. |
+| Usage counters in the database | S4-13 | `usage` and the limits work (S2-6), but the counters are kept in memory and the caps come from `api/config/plans.json`, so a restart resets them ([decision](decisions.md)). |
 | Streaming | S6-10 | Only the JSON reply. |
 
 ---
@@ -307,7 +309,9 @@ Returns the user's messages, newest page first, for the single continuous chat (
 | Parameter | Rules |
 |---|---|
 | `limit` | Optional, 1 to 100, default 50. |
-| `before` | Optional cursor from `nextCursor` to load older messages. |
+| `before` | Optional cursor from `nextCursor` to load older messages. It is opaque: send it back as received. A value the API did not issue answers `400 VALIDATION_ERROR`. |
+
+Any other parameter answers `400 VALIDATION_ERROR` too.
 
 **Response `200`**
 
@@ -333,7 +337,7 @@ Returns the user's messages, newest page first, for the single continuous chat (
 }
 ~~~
 
-`messages` within a page are in chronological order (oldest first), ready to render. `nextCursor` is `null` when there are no older messages.
+`messages` within a page are in chronological order (oldest first), ready to render. `nextCursor` is `null` when there are no older messages. The first page (no `before`) holds the newest messages, so opening the chat loads that one and scrolling up loads the rest. Crisis messages and their fixed reply are part of the history. Nothing of the content is logged.
 
 ---
 

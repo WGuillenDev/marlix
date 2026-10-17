@@ -1,6 +1,4 @@
 // POST /v1/chat (S1-5). Contract: docs/api-contract.md#post-v1chat.
-import { randomUUID } from 'node:crypto';
-
 import { Router } from 'express';
 import { z } from 'zod';
 
@@ -23,8 +21,7 @@ const chatRequestSchema = z
         message: `Must be at most ${MAX_MESSAGE_LENGTH} characters`,
       }),
     mode: z.enum(['text', 'voice']).default('text'),
-    // Accepted and validated; it is checked against the history once
-    // messages are stored (S4-4).
+    // Must be one of the user's own replies; the chat service checks it.
     interruptedMessageId: z.uuid().nullable().optional(),
   })
   .strict();
@@ -49,28 +46,25 @@ export function createChatRouter(
       );
     }
 
-    const { message, mode } = parsed.data;
-    const userMessageCreatedAt = new Date().toISOString();
+    const { message, mode, interruptedMessageId } = parsed.data;
     const user = currentUser(res);
-    const outcome = await chatService.reply({ message, mode, user });
-    const isCrisis = outcome.type === 'crisis';
+    const { type, userMessage, reply } = await chatService.reply({
+      message,
+      mode,
+      user,
+      interruptedMessageId,
+    });
+    const isCrisis = type === 'crisis';
 
-    // IDs are generated per request until messages are stored (S4-4).
     res.status(200).json({
-      type: outcome.type,
+      type,
       userMessage: {
-        id: randomUUID(),
-        role: 'user',
-        content: message,
-        createdAt: userMessageCreatedAt,
+        id: userMessage.id,
+        role: userMessage.role,
+        content: userMessage.content,
+        createdAt: userMessage.createdAt,
       },
-      reply: {
-        id: randomUUID(),
-        role: 'assistant',
-        content: isCrisis ? crisis.reply : outcome.content,
-        createdAt: new Date().toISOString(),
-        interrupted: false,
-      },
+      reply,
       ...(isCrisis ? { resources: crisis.resources } : {}),
       usage: usageLimiter.snapshot(user),
     });

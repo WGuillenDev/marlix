@@ -57,11 +57,27 @@ class CrisisEntry extends ChatEntry {
   final List<HelpResource> resources;
 }
 
-class ChatState {
-  const ChatState({this.entries = const [], this.usage, this.limitResetsAt});
+/// What loading the history is doing; the screen shows each one differently.
+/// [pending] is before the first request, so the chat is not shown as empty
+/// for a moment.
+enum HistoryStatus { pending, idle, loading, failed }
 
-  /// Oldest first. Only this session's messages until the history exists (S4-4).
+class ChatState {
+  const ChatState({
+    this.entries = const [],
+    this.usage,
+    this.limitResetsAt,
+    this.historyStatus = HistoryStatus.pending,
+    this.hasOlder = true,
+  });
+
+  /// Oldest first: the loaded history followed by this session's messages.
   final List<ChatEntry> entries;
+
+  final HistoryStatus historyStatus;
+
+  /// False once the oldest message was loaded. True until the first page says so.
+  final bool hasOlder;
 
   /// Unknown until `GET /v1/usage` or the first reply answers.
   final Usage? usage;
@@ -81,21 +97,32 @@ class ChatState {
     return usage != null && usage.remaining == 0 && now.isBefore(usage.resetsAt);
   }
 
-  ChatState copyWith({List<ChatEntry>? entries, Usage? usage, DateTime? limitResetsAt}) =>
-      ChatState(
-        entries: entries ?? this.entries,
-        usage: usage ?? this.usage,
-        limitResetsAt: limitResetsAt ?? this.limitResetsAt,
-      );
+  ChatState copyWith({
+    List<ChatEntry>? entries,
+    Usage? usage,
+    DateTime? limitResetsAt,
+    HistoryStatus? historyStatus,
+    bool? hasOlder,
+  }) => ChatState(
+    entries: entries ?? this.entries,
+    usage: usage ?? this.usage,
+    limitResetsAt: limitResetsAt ?? this.limitResetsAt,
+    historyStatus: historyStatus ?? this.historyStatus,
+    hasOlder: hasOlder ?? this.hasOlder,
+  );
 }
 
 class ChatController extends Notifier<ChatState> {
   var _localIds = 0;
 
+  /// Where the next older page starts; null before the first page and at the end.
+  String? _olderCursor;
+
   /// Starts empty for every session: another account never sees these messages.
   @override
   ChatState build() {
     ref.watch(signedInUserProvider);
+    _olderCursor = null;
     return const ChatState();
   }
 
@@ -112,6 +139,38 @@ class ChatController extends Notifier<ChatState> {
       // The next reply carries the usage too.
     }
   }
+
+  /// Loads the newest page of the history, or the next older one if the chat
+  /// already has messages. A failure leaves the chat usable and can be retried.
+  Future<void> loadHistory() async {
+    if (state.historyStatus == HistoryStatus.loading || !state.hasOlder) return;
+    state = state.copyWith(historyStatus: HistoryStatus.loading);
+    try {
+      final page = await _api.history(before: _olderCursor);
+      if (!ref.mounted) return;
+      _olderCursor = page.nextCursor;
+      // A message sent while the page was loading can already be in it.
+      final known = {for (final entry in state.entries) entry.id};
+      state = state.copyWith(
+        entries: [
+          for (final message in page.messages)
+            if (!known.contains(message.id)) _entryOf(message),
+          ...state.entries,
+        ],
+        historyStatus: HistoryStatus.idle,
+        hasOlder: page.nextCursor != null,
+      );
+    } on UnauthorizedException {
+      if (ref.mounted) await _endSession();
+    } on ApiException {
+      if (ref.mounted) state = state.copyWith(historyStatus: HistoryStatus.failed);
+    }
+  }
+
+  static ChatEntry _entryOf(ChatMessage message) => switch (message.role) {
+    MessageRole.user => UserEntry(message.id, text: message.content, status: SendStatus.sent),
+    MessageRole.assistant => MarlixEntry(message),
+  };
 
   /// Shows the message right away and adds marlix's reply when it arrives.
   /// If sending fails, the message stays in the chat marked as failed, so
