@@ -69,6 +69,7 @@ erDiagram
         text role "user or assistant"
         text content
         boolean interrupted
+        boolean crisis "never sent to the model"
         timestamptz created_at
     }
 

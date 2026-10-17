@@ -1,6 +1,7 @@
 import type { PostgrestError, SupabaseClient } from '@supabase/supabase-js';
 
 import {
+  type ContextMessage,
   encodeCursor,
   HistoryStoreError,
   type MessageStore,
@@ -24,7 +25,7 @@ interface MessageRow {
  */
 export function createSupabaseMessageStore(client: SupabaseClient): MessageStore {
   return {
-    async saveTurn(userId, { message, reply, messageAt }) {
+    async saveTurn(userId, { message, reply, messageAt, crisis }) {
       const conversationId = await openConversation(client, userId);
       // The reply must sort after the message even within the same millisecond.
       const replyAt = new Date(Math.max(Date.now(), messageAt.getTime() + 1));
@@ -36,6 +37,7 @@ export function createSupabaseMessageStore(client: SupabaseClient): MessageStore
             conversation_id: conversationId,
             role: 'user',
             content: message,
+            crisis,
             created_at: messageAt.toISOString(),
           },
           {
@@ -43,6 +45,7 @@ export function createSupabaseMessageStore(client: SupabaseClient): MessageStore
             conversation_id: conversationId,
             role: 'assistant',
             content: reply,
+            crisis,
             created_at: replyAt.toISOString(),
           },
         ])
@@ -54,6 +57,23 @@ export function createSupabaseMessageStore(client: SupabaseClient): MessageStore
       const replyRow = rows.find((row) => row.role === 'assistant');
       if (!userRow || !replyRow) throw fail();
       return { userMessage: toMessage(userRow), reply: toMessage(replyRow) };
+    },
+
+    async recent(userId, limit) {
+      const conversationId = await findOpenConversation(client, userId);
+      if (!conversationId) return [];
+
+      const { data, error } = await client
+        .from('messages')
+        .select('role, content')
+        .eq('user_id', userId)
+        .eq('conversation_id', conversationId)
+        .eq('crisis', false)
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
+        .limit(limit);
+      if (error) throw fail(error);
+      return (data as ContextMessage[]).reverse();
     },
 
     async page(userId, { limit, before }) {
@@ -98,8 +118,10 @@ export function createSupabaseMessageStore(client: SupabaseClient): MessageStore
   };
 }
 
-/** The user's open conversation, or a new one with their avatar. */
-async function openConversation(client: SupabaseClient, userId: string): Promise<string> {
+async function findOpenConversation(
+  client: SupabaseClient,
+  userId: string,
+): Promise<string | undefined> {
   const open = await client
     .from('conversations')
     .select('id')
@@ -109,7 +131,13 @@ async function openConversation(client: SupabaseClient, userId: string): Promise
     .limit(1)
     .maybeSingle();
   if (open.error) throw fail(open.error);
-  if (open.data) return open.data.id as string;
+  return (open.data?.id as string | undefined) ?? undefined;
+}
+
+/** The user's open conversation, or a new one with their avatar. */
+async function openConversation(client: SupabaseClient, userId: string): Promise<string> {
+  const open = await findOpenConversation(client, userId);
+  if (open) return open;
 
   const profile = await client.from('users').select('avatar_id').eq('id', userId).single();
   if (profile.error) throw fail(profile.error);

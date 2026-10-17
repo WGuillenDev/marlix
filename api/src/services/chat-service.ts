@@ -37,8 +37,9 @@ export interface ChatService {
  * never reaches the model and is answered even at the daily cap, without
  * counting. Then the usage limits apply. The personality system prompt goes
  * first on every call, the reply is reviewed before it is returned, and only
- * a successful reply counts. Every turn is saved in the history (S4-4), but
- * the model only sees the current message until the recent window (S4-5).
+ * a successful reply counts. Every turn is saved in the history (S4-4); the
+ * model sees only the last messages of the conversation (S4-5), never the
+ * ones of a crisis.
  */
 export function createChatService(
   llm: LlmProvider,
@@ -47,6 +48,7 @@ export function createChatService(
   usageLimiter: UsageLimiter,
   messages: MessageStore,
   crisisReply: string,
+  contextMessages: number,
 ): ChatService {
   return {
     async reply({ message, mode, user, interruptedMessageId }) {
@@ -58,7 +60,7 @@ export function createChatService(
         // The help never waits on the database: if saving fails, the person
         // still gets the 9-1-1 reply, only without it in their history.
         const turn = await messages
-          .saveTurn(user.id, { message, reply: crisisReply, messageAt })
+          .saveTurn(user.id, { message, reply: crisisReply, messageAt, crisis: true })
           .catch(() => unsavedTurn(message, crisisReply, messageAt));
         return { type: 'crisis', ...turn };
       }
@@ -70,9 +72,13 @@ export function createChatService(
       }
       usageLimiter.reserveAttempt(user);
 
+      // Before this turn is saved, so the new message is not in it twice.
+      const recent = await messages.recent(user.id, contextMessages);
+
       const completion = await llm.complete({
         messages: [
           { role: 'system', content: buildSystemPrompt(mode, []) },
+          ...recent,
           { role: 'user', content: message },
         ],
         maxOutputTokens: MAX_OUTPUT_TOKENS[mode],
@@ -82,7 +88,12 @@ export function createChatService(
       if (review.replacedBy) console.warn(`Reply replaced by the review: ${review.replacedBy}`);
       // A reply that cannot be saved is not delivered or counted: the history
       // would miss a message the person has seen.
-      const turn = await messages.saveTurn(user.id, { message, reply: review.content, messageAt });
+      const turn = await messages.saveTurn(user.id, {
+        message,
+        reply: review.content,
+        messageAt,
+        crisis: false,
+      });
       usageLimiter.recordInteraction(user);
       return { type: 'reply', ...turn };
     },

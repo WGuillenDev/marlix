@@ -21,12 +21,25 @@ export interface SavedTurn {
   reply: StoredMessage;
 }
 
+export interface ContextMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 export interface MessageStore {
-  /** Saves the user's message and marlix's reply together, or neither. */
+  /**
+   * Saves the user's message and marlix's reply together, or neither. A
+   * `crisis` turn stays in the history but is never part of the context.
+   */
   saveTurn(
     userId: string,
-    turn: { message: string; reply: string; messageAt: Date },
+    turn: { message: string; reply: string; messageAt: Date; crisis: boolean },
   ): Promise<SavedTurn>;
+  /**
+   * The last `limit` messages of the user's open conversation, oldest first,
+   * without the ones of a crisis: those never go to the model (S0-8).
+   */
+  recent(userId: string, limit: number): Promise<ContextMessage[]>;
   /** Newest page first; `before` is a `nextCursor` already checked by `decodeCursor`. */
   page(userId: string, options: { limit: number; before?: Cursor }): Promise<HistoryPage>;
   /** Marks one of the user's own replies as interrupted; false if there is none with that id. */

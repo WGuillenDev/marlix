@@ -1,6 +1,8 @@
 // Environment configuration (S1-2), documented in api/.env.example and the README.
 import { z } from 'zod';
 
+export const DEFAULT_CONTEXT_MESSAGES = 16;
+
 // Validated once at startup. Error messages name the variable, never its
 // value, so a secret cannot end up in a log.
 const envSchema = z.object({
@@ -21,6 +23,10 @@ const envSchema = z.object({
   // so it has its own quota. A timeout counts as a crisis, so it stays short.
   CRISIS_CLASSIFIER_MODEL: z.string().trim().min(1).default('openai/gpt-oss-20b'),
   CRISIS_CLASSIFIER_TIMEOUT_MS: z.coerce.number().int().min(1000).max(30_000).default(5000),
+  // How much of the conversation the model sees (S4-5): the last N messages,
+  // in pairs of message and reply. Every message costs tokens of Groq's free
+  // quota, so lower it if the limit is reached.
+  CHAT_CONTEXT_MESSAGES: z.coerce.number().int().min(2).max(40).default(DEFAULT_CONTEXT_MESSAGES),
   // Supabase project (S4-1). Session tokens are checked against its public
   // keys (S4-3). The secret key has service_role rights and bypasses RLS:
   // only the backend holds it, never the app or a log.
