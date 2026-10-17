@@ -23,8 +23,11 @@ export interface MemoryChange {
   category: MemoryCategory;
 }
 
+/** What the extractor needs to know about a saved memory. */
+type SavedFact = Pick<Memory, 'id' | 'fact'>;
+
 export interface MemoryExtractor {
-  extract(input: { transcript: ContextMessage[]; existing: Memory[] }): Promise<MemoryChange[]>;
+  extract(input: { transcript: ContextMessage[]; existing: SavedFact[] }): Promise<MemoryChange[]>;
 }
 
 /** The model answered something that is not the expected JSON. */
@@ -61,7 +64,7 @@ export function createMemoryExtractor(llm: LlmProvider): MemoryExtractor {
   };
 }
 
-function describe(transcript: ContextMessage[], existing: Memory[]): string {
+function describe(transcript: ContextMessage[], existing: SavedFact[]): string {
   const saved = existing.length > 0 ? existing.map((m) => `[${m.id}] ${m.fact}`).join('\n') : '(none)';
 
   const lines: string[] = [];
@@ -81,7 +84,7 @@ function describe(transcript: ContextMessage[], existing: Memory[]): string {
  * facts get through, ids it made up count as new facts, and a fact that is
  * already saved is not a change.
  */
-export function parseChanges(content: string, existing: Memory[]): MemoryChange[] {
+export function parseChanges(content: string, existing: SavedFact[]): MemoryChange[] {
   const start = content.indexOf('{');
   const end = content.lastIndexOf('}');
   let parsed: z.infer<typeof answerSchema>;
