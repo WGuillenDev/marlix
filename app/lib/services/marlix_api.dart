@@ -92,6 +92,10 @@ class MarlixApi {
   Future<void> deleteAllMemories() =>
       _send('DELETE', '/v1/memories', authenticated: true, parse: null);
 
+  /// `DELETE /v1/account`: the account and all its data. Throws
+  /// [ReauthenticationRequiredException] if the last sign-in is too old.
+  Future<void> deleteAccount() => _send('DELETE', '/v1/account', authenticated: true, parse: null);
+
   /// With a null [parse] the answer is `204 No Content` and has no body.
   Future<T> _send<T>(
     String method,
@@ -160,6 +164,7 @@ class MarlixApi {
       return switch (code) {
         'VALIDATION_ERROR' => ValidationException(message: message, fields: _fields(details)),
         'UNAUTHORIZED' => UnauthorizedException(message: message),
+        'REAUTHENTICATION_REQUIRED' => ReauthenticationRequiredException(message: message),
         'NOT_FOUND' => NotFoundException(message: message),
         'DAILY_LIMIT_REACHED' => DailyLimitReachedException(
           message: message,

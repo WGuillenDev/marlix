@@ -60,7 +60,7 @@ The backend URL and the Supabase project are not in the code: they come from a f
 
 Plain `http` is only accepted in debug builds, for a backend on your computer; a release build always uses HTTPS.
 
-The app opens on the sign-in screen. Create an account there (you must be 18 or older); the session is kept, encrypted, until you sign out in **Ajustes**.
+The app opens on the sign-in screen. Create an account there (you must be 18 or older); the session is kept, encrypted, until you sign out in **Ajustes**. There you can also delete the account and all its data for good; it asks for your password again if you signed in more than 5 minutes ago.
 
 | Command (in `app/`) | What it does |
 |---|---|

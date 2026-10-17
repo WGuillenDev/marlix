@@ -3,11 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
+import 'account/delete_account.dart';
 import 'help_screen.dart';
 import 'memories/memories_screen.dart';
 
 /// Settings (wireframe docs/diagrams/wireframes/screens/07a-settings.png).
-/// Account deletion (S4-9) and reminders add their rows.
+/// Reminders add their row.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -65,6 +66,13 @@ class SettingsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             _SettingsCard(title: 'Cerrar sesión', onTap: () => _signOut(context, ref)),
+            const SizedBox(height: 28),
+            _SettingsCard(
+              title: 'Eliminar mi cuenta',
+              subtitle: 'Borra todos tus datos para siempre',
+              destructive: true,
+              onTap: () => deleteAccount(context, ref),
+            ),
           ],
         ),
       ),
@@ -73,11 +81,19 @@ class SettingsScreen extends ConsumerWidget {
 }
 
 class _SettingsCard extends StatelessWidget {
-  const _SettingsCard({required this.title, required this.onTap, this.subtitle});
+  const _SettingsCard({
+    required this.title,
+    required this.onTap,
+    this.subtitle,
+    this.destructive = false,
+  });
 
   final String title;
   final String? subtitle;
   final VoidCallback onTap;
+
+  /// For what cannot be undone: red, like the other irreversible actions.
+  final bool destructive;
 
   @override
   Widget build(BuildContext context) {
@@ -98,7 +114,13 @@ class _SettingsCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: AppText.heading.copyWith(fontSize: 19)),
+                    Text(
+                      title,
+                      style: AppText.heading.copyWith(
+                        fontSize: 19,
+                        color: destructive ? AppColors.crisis : null,
+                      ),
+                    ),
                     if (subtitle case final subtitle?) ...[
                       const SizedBox(height: 4),
                       Text(
@@ -112,7 +134,11 @@ class _SettingsCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary, size: 28),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: destructive ? AppColors.crisis : AppColors.textSecondary,
+                size: 28,
+              ),
             ],
           ),
         ),

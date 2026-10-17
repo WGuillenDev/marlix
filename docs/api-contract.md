@@ -446,11 +446,11 @@ The app reads `voiceConfig` for the on-device voice and `layersPath` for the SVG
 
 Deletes the account and all its data in cascade: profile, sessions, messages, memories and usage (US-09). It runs on the backend because it needs the service key. The app asks for confirmation before calling it and signs out after the response.
 
-**Requires a recent sign-in.** Deleting everything cannot be undone, so a stolen or forgotten-open session must not be enough. The backend checks the `iat` (issued at) claim of the access token: if it was issued more than **5 minutes** ago, it answers `401 REAUTHENTICATION_REQUIRED` and deletes nothing. The app then asks for the password again (a new Supabase sign-in, which issues a fresh token) and retries the call.
+**Requires a recent sign-in.** Deleting everything cannot be undone, so a stolen or forgotten-open session must not be enough. The backend checks when the person last entered their credentials: the newest `timestamp` of the access token's `amr` claim. If it is more than **5 minutes** old, or the token has none, it answers `401 REAUTHENTICATION_REQUIRED` and deletes nothing. The app then asks for the password again (a new Supabase sign-in, which puts a fresh time in the token) and retries the call. The `iat` claim is not used: Supabase renews it with every token refresh, so a refresh token would be enough to look like a recent sign-in ([decision](decisions.md)).
 
-**Response `204`**, no body. After it, the user cannot sign in with that account.
+**Response `204`**, no body. After it, the user cannot sign in with that account. Calling it again with a token that is still valid also answers `204`. Such a token keeps passing the session check until it expires (up to an hour), but there is nothing left to read, and anything it tries to write is refused by the database because the user no longer exists.
 
-**Errors:** `401 UNAUTHORIZED` (missing or invalid token), `401 REAUTHENTICATION_REQUIRED` (the token is older than 5 minutes).
+**Errors:** `401 UNAUTHORIZED` (missing or invalid token), `401 REAUTHENTICATION_REQUIRED` (the last sign-in is older than 5 minutes).
 
 ## Use cases covered
 

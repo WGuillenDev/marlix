@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 import { createApp } from './app.js';
 import { loadEnv } from './config/env.js';
 import { supabaseSessionCheck } from './middleware/require-session.js';
+import { createSupabaseAccountStore } from './services/account/supabase-account-store.js';
 import { createSupabaseConversationStore } from './services/conversations/supabase-conversation-store.js';
 import { createSupabaseMessageStore } from './services/history/supabase-message-store.js';
 import { createLlmProvider } from './services/llm/index.js';
@@ -46,6 +47,7 @@ const app = createApp({
   memories,
   memoryFacts: env.CHAT_MEMORY_FACTS,
   memoryJob,
+  accounts: createSupabaseAccountStore(database),
 });
 
 const server = app.listen(env.PORT, () => {

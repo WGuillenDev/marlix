@@ -4,6 +4,23 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-10-17 — Account deletion: the database cascades, and a recent sign-in is read from `amr`, not `iat` (S4-9)
+
+**Decision:** `DELETE /v1/account` deletes the user in Supabase Auth with the secret key (a hard delete), and `on delete cascade` removes the profile, conversations, messages, memories and usage. Before that it requires a sign-in from the last 5 minutes. The contract is [here](api-contract.md#delete-v1account).
+
+| Option for deleting the data | Verdict |
+|---|---|
+| Delete the Auth user and let the foreign keys cascade | **Chosen.** One call, one transaction in the database: nothing can be left half deleted, and a table added later is covered if it follows the same rule. |
+| The backend deletes table by table, then the user | Discarded. It repeats what the schema already says, and the next table someone adds would be forgotten. |
+| Soft delete (Supabase's `should_soft_delete`) | Discarded. The rows would stay, and the card asks for a real deletion. |
+
+- **Verified table by table, from the catalog.** `docs/schema-test.sql` fails if any foreign key to `auth.users` does not cascade, if a table in `public` (except the two catalogs) has no such key, or if any row is left pointing to a deleted user. A table that forgets the rule breaks the CI instead of surviving the account. Both guards were checked by creating a bad table.
+- **`amr`, not `iat`, proves a recent sign-in.** The contract first said `iat`. Checked on 2026-10-17 with a real token: a token refresh issues a new `iat` but keeps the original time in `amr[].timestamp`. With `iat`, anyone holding a stolen refresh token could get a fresh token and delete the account without the password. `amr` only moves when credentials are entered. A token without a usable `amr` is treated as an old session (it fails closed). This changes the contract's wording, not its behavior for the person: the app asks for the password and retries.
+- **Counters in memory.** The counters of the deleted user stay in the backend's memory until a restart. Nobody can use them: the id is gone and a new account gets a new one. S4-13 moves them to `daily_usage`, which the cascade already covers.
+- **Known limit.** The access token of a deleted account still passes the session check until it expires (at most an hour). It can read nothing, since the rows are gone, and the database refuses what it tries to write because the user no longer exists. If a memory extraction was running for that user, its insert is refused for the same reason.
+
+---
+
 ## 2026-10-17 — Managing memories: through the backend, deleting for real, and editing only the text (S4-8)
 
 **Decision:** the app lists, edits and deletes memories with `GET`, `PATCH` and `DELETE` on `/v1/memories` ([contract](api-contract.md#get-v1memories)), and the backend does it with the secret key, always filtering by the signed-in user. Deleting removes the row; editing changes only `fact`.

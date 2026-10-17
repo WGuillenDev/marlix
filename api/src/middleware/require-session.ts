@@ -57,7 +57,12 @@ export function requireSession({ issuer, keys }: SessionCheck): RequestHandler {
         next(unauthorized());
         return;
       }
-      setCurrentUser(res, { id: payload.sub, plan: V1_PLAN });
+      const signedInAt = lastSignInAt(payload.amr);
+      setCurrentUser(res, {
+        id: payload.sub,
+        plan: V1_PLAN,
+        ...(signedInAt === undefined ? {} : { signedInAt }),
+      });
       next();
     } catch (error) {
       // Not reaching Supabase for the keys is our failure, not a bad token.
@@ -66,6 +71,15 @@ export function requireSession({ issuer, keys }: SessionCheck): RequestHandler {
       next(error instanceof errors.JOSEError && !keysUnavailable ? unauthorized() : error);
     }
   };
+}
+
+/** The newest `timestamp` of the token's `amr` claim, if it has a valid one. */
+function lastSignInAt(amr: unknown): number | undefined {
+  if (!Array.isArray(amr)) return undefined;
+  const times = amr
+    .map((entry: unknown) => (entry as { timestamp?: unknown } | null)?.timestamp)
+    .filter((time): time is number => typeof time === 'number' && Number.isFinite(time));
+  return times.length > 0 ? Math.max(...times) : undefined;
 }
 
 function unauthorized() {

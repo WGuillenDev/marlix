@@ -124,10 +124,31 @@ class FakeBackend {
     return notFound;
   }
 
+  /// The session is too old to delete the account until the person signs in again.
+  bool sessionIsOld = false;
+
+  /// When set, `DELETE /v1/account` fails with it.
+  http.Response? Function()? accountFailure;
+
+  /// Authorization header of every `DELETE /v1/account`, in order.
+  final accountDeletions = <String?>[];
+
+  http.Response _deleteAccount(http.Request request, FakeAuthService auth) {
+    accountDeletions.add(request.headers['Authorization']);
+    if (accountFailure?.call() case final failure?) return failure;
+    if (sessionIsOld && auth.signInCalls == 0) {
+      return jsonResponse({
+        'error': {'code': 'REAUTHENTICATION_REQUIRED', 'message': 'Sign in again.'},
+      }, 401);
+    }
+    return http.Response('', 204);
+  }
+
   MarlixApi api(FakeAuthService auth) => MarlixApi(
     accessToken: () => auth.accessToken,
     client: MockClient((request) async {
       authorizations.add(request.headers['Authorization']);
+      if (request.url.path == '/v1/account') return _deleteAccount(request, auth);
       if (request.url.path.startsWith('/v1/memories')) return _memories(request);
       if (request.url.path == '/v1/help-resources') {
         if (offline) throw http.ClientException('No connection');
@@ -203,6 +224,9 @@ class FakeAuthService implements AuthService {
   /// When set, the next sign-in or sign-up fails with it.
   AuthFailure? nextFailure;
 
+  /// How many sign-ins succeeded.
+  int signInCalls = 0;
+
   /// Completes sign-in and sign-up; replace it to keep them pending.
   Completer<void> gate = Completer()..complete();
 
@@ -210,6 +234,9 @@ class FakeAuthService implements AuthService {
 
   @override
   String? userId;
+
+  @override
+  String? get email => userId?.replaceFirst('user-', '');
 
   @override
   String? get accessToken => userId == null ? null : 'token-of-$userId';
@@ -236,6 +263,7 @@ class FakeAuthService implements AuthService {
     if (accounts[email.trim()] != password) {
       throw const AuthFailureException(AuthFailure.invalidCredentials);
     }
+    signInCalls++;
     _setUser('user-${email.trim()}');
   }
 

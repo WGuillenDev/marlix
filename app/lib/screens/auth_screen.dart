@@ -74,6 +74,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       }
       // The app switches to the chat on its own when the session starts.
       ref.read(sessionEndedProvider.notifier).set(false);
+      ref.read(accountDeletedProvider.notifier).set(false);
     } on AuthFailureException catch (error) {
       if (!mounted) return;
       setState(() => _showFailure(error.failure));
@@ -132,6 +133,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   Widget build(BuildContext context) {
     final signUp = _mode == _Mode.signUp;
     final sessionEnded = ref.watch(sessionEndedProvider);
+    final accountDeleted = ref.watch(accountDeletedProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -148,6 +150,10 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     const SizedBox(height: 24),
                     if (sessionEnded) ...[
                       const _Notice(text: 'Tu sesión terminó. Volvé a entrar para seguir.'),
+                      const SizedBox(height: 16),
+                    ],
+                    if (accountDeleted) ...[
+                      const _Notice(text: 'Tu cuenta y todos tus datos se eliminaron.'),
                       const SizedBox(height: 16),
                     ],
                     _ModeSwitch(mode: _mode, onChanged: _switchMode),

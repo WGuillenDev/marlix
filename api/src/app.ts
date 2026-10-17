@@ -9,6 +9,7 @@ import { noStore, securityHeaders } from './middleware/security-headers.js';
 import { createChatRouter } from './routes/chat.js';
 import { healthRouter } from './routes/health.js';
 import { createHelpResourcesRouter } from './routes/help-resources.js';
+import { createAccountRouter } from './routes/account.js';
 import { createHistoryRouter } from './routes/history.js';
 import { createMemoriesRouter } from './routes/memories.js';
 import { createUsageRouter } from './routes/usage.js';
@@ -19,6 +20,7 @@ import {
 } from './services/crisis/activation-log.js';
 import { createAmbiguousClassifier } from './services/crisis/classifier.js';
 import { createCrisisFilter } from './services/crisis/filter.js';
+import type { AccountStore } from './services/account/account-store.js';
 import type { MessageStore } from './services/history/message-store.js';
 import type { MemoryJob } from './services/memory/memory-job.js';
 import type { MemoryStore } from './services/memory/memory-store.js';
@@ -42,6 +44,8 @@ export interface AppDependencies {
   memoryFacts?: number;
   /** Ends idle conversations and extracts their memory (S4-6). Without it, nothing ends. */
   memoryJob?: Pick<MemoryJob, 'endIdleConversation'>;
+  /** Deletes the person's account and, in cascade, all their data (S4-9). */
+  accounts: AccountStore;
   /** Crisis text and help resources; read from api/config/crisis.json by default. */
   crisisConfig?: CrisisConfig;
   /** Where crisis activations are recorded (S2-5); the logs by default. */
@@ -60,6 +64,7 @@ export function createApp({
   memories,
   memoryFacts = DEFAULT_MEMORY_FACTS,
   memoryJob,
+  accounts,
   crisisConfig = loadCrisisConfig(),
   activationLog = createConsoleActivationLog(),
   plans = loadPlansConfig(),
@@ -98,6 +103,7 @@ export function createApp({
     createChatRouter(chatService, crisisConfig, usageLimiter),
     createHistoryRouter(messages),
     createMemoriesRouter(memories),
+    createAccountRouter(accounts),
     createUsageRouter(usageLimiter),
   );
 
