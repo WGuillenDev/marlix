@@ -44,6 +44,10 @@ abstract interface class AuthService {
   /// The signed-in user's id, or null when there is no session.
   String? get userId;
 
+  /// The signed-in user's email, to confirm the password before an action
+  /// that cannot be undone.
+  String? get email;
+
   /// The current session token, sent to the backend as `Authorization: Bearer`.
   String? get accessToken;
 
@@ -85,6 +89,9 @@ class SupabaseAuthService implements AuthService {
 
   @override
   String? get userId => _auth.currentUser?.id;
+
+  @override
+  String? get email => _auth.currentUser?.email;
 
   @override
   String? get accessToken => _auth.currentSession?.accessToken;
@@ -204,4 +211,15 @@ class SessionEnded extends Notifier<bool> {
   bool build() => false;
 
   void set(bool ended) => state = ended;
+}
+
+/// True after the person deleted their account, so the sign-in screen can
+/// confirm it. Cleared on the next sign-in or sign-up.
+final accountDeletedProvider = NotifierProvider<AccountDeleted, bool>(AccountDeleted.new);
+
+class AccountDeleted extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void set(bool deleted) => state = deleted;
 }

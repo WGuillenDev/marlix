@@ -51,6 +51,13 @@ class UnauthorizedException extends ApiErrorException {
     : super(statusCode: 401, code: 'UNAUTHORIZED');
 }
 
+/// `401 REAUTHENTICATION_REQUIRED`: the last sign-in is too old for an action
+/// that cannot be undone. The person types the password again and retries.
+class ReauthenticationRequiredException extends ApiErrorException {
+  const ReauthenticationRequiredException({required super.message})
+    : super(statusCode: 401, code: 'REAUTHENTICATION_REQUIRED');
+}
+
 /// `404 NOT_FOUND`: the memory or message does not exist, or is not the person's.
 class NotFoundException extends ApiErrorException {
   const NotFoundException({required super.message}) : super(statusCode: 404, code: 'NOT_FOUND');
