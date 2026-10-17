@@ -10,6 +10,7 @@ import { createChatRouter } from './routes/chat.js';
 import { healthRouter } from './routes/health.js';
 import { createHelpResourcesRouter } from './routes/help-resources.js';
 import { createHistoryRouter } from './routes/history.js';
+import { createMemoriesRouter } from './routes/memories.js';
 import { createUsageRouter } from './routes/usage.js';
 import { createChatService } from './services/chat-service.js';
 import {
@@ -35,7 +36,7 @@ export interface AppDependencies {
   messages: MessageStore;
   /** How many messages of the conversation the model sees (S4-5). */
   contextMessages?: number;
-  /** The distilled memory the prompt is built from (S4-7). */
+  /** The distilled memory: the prompt is built from it (S4-7) and the person manages it (S4-8). */
   memories: MemoryStore;
   /** How many memories go into the prompt (S4-7). */
   memoryFacts?: number;
@@ -96,6 +97,7 @@ export function createApp({
     requireSession(session),
     createChatRouter(chatService, crisisConfig, usageLimiter),
     createHistoryRouter(messages),
+    createMemoriesRouter(memories),
     createUsageRouter(usageLimiter),
   );
 

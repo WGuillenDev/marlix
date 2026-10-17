@@ -106,6 +106,21 @@ export function createFakeMemories(
       if (row) Object.assign(row, { fact, category, updatedAt: tick() });
       return row !== undefined;
     },
+    async edit(userId, id, fact) {
+      const row = rows.find((r) => r.id === id && r.userId === userId);
+      if (!row) return null;
+      Object.assign(row, { fact, updatedAt: tick() });
+      const { userId: _userId, ...memory } = row;
+      return memory;
+    },
+    async remove(userId, id) {
+      const index = rows.findIndex((r) => r.id === id && r.userId === userId);
+      if (index >= 0) rows.splice(index, 1);
+      return index >= 0;
+    },
+    async removeAll(userId) {
+      for (let i = rows.length - 1; i >= 0; i--) if (rows[i]!.userId === userId) rows.splice(i, 1);
+    },
   };
 
   return { store, rows };

@@ -143,11 +143,10 @@ describe('the memory in POST /v1/chat', () => {
     const app = await startApp({
       llm: fake.llm,
       memories: {
+        ...createFakeMemories().store,
         list: async () => {
           throw new Error('database down');
         },
-        add: async () => {},
-        update: async () => false,
       },
     });
     try {
@@ -166,12 +165,11 @@ describe('the memory in POST /v1/chat', () => {
     const app = await startApp({
       llm: createFakeLlm().llm,
       memories: {
+        ...createFakeMemories().store,
         list: async () => {
           reads += 1;
           return [];
         },
-        add: async () => {},
-        update: async () => false,
       },
     });
     try {

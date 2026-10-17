@@ -10,6 +10,7 @@ import '../models/chat.dart';
 import '../models/help_resource.dart';
 import '../models/history.dart';
 import '../models/json_reader.dart';
+import '../models/memory.dart';
 import '../models/usage.dart';
 import 'api_exception.dart';
 import 'auth_service.dart';
@@ -66,10 +67,36 @@ class MarlixApi {
   /// `GET /v1/usage`.
   Future<Usage> usage() => _send('GET', '/v1/usage', authenticated: true, parse: Usage.fromJson);
 
+  /// `GET /v1/memories`, newest first.
+  Future<List<Memory>> memories() => _send(
+    'GET',
+    '/v1/memories',
+    authenticated: true,
+    parse: (json) => json.requireList('memories', Memory.fromJson),
+  );
+
+  /// `PATCH /v1/memories/:id`: rewrites the text; the backend keeps the rest.
+  Future<Memory> editMemory(String id, String fact) => _send(
+    'PATCH',
+    '/v1/memories/$id',
+    body: {'fact': fact},
+    authenticated: true,
+    parse: Memory.fromJson,
+  );
+
+  /// `DELETE /v1/memories/:id`.
+  Future<void> deleteMemory(String id) =>
+      _send('DELETE', '/v1/memories/$id', authenticated: true, parse: null);
+
+  /// `DELETE /v1/memories`: everything marlix remembers.
+  Future<void> deleteAllMemories() =>
+      _send('DELETE', '/v1/memories', authenticated: true, parse: null);
+
+  /// With a null [parse] the answer is `204 No Content` and has no body.
   Future<T> _send<T>(
     String method,
     String path, {
-    required T Function(Map<String, Object?> json) parse,
+    required T Function(Map<String, Object?> json)? parse,
     Map<String, Object?>? body,
     Map<String, String>? query,
     bool authenticated = false,
@@ -97,12 +124,12 @@ class MarlixApi {
       throw NetworkException('$method $path: ${error.message}');
     }
 
+    final failed = response.statusCode < 200 || response.statusCode >= 300;
+    if (parse == null && !failed) return null as T;
     final json = _decode(response, '$method $path');
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw _toError(response, json);
-    }
+    if (failed) throw _toError(response, json);
     try {
-      return parse(json);
+      return parse!(json);
     } on InvalidJsonException catch (error) {
       throw InvalidResponseException('$method $path: $error');
     }
@@ -133,6 +160,7 @@ class MarlixApi {
       return switch (code) {
         'VALIDATION_ERROR' => ValidationException(message: message, fields: _fields(details)),
         'UNAUTHORIZED' => UnauthorizedException(message: message),
+        'NOT_FOUND' => NotFoundException(message: message),
         'DAILY_LIMIT_REACHED' => DailyLimitReachedException(
           message: message,
           resetsAt: details.requireDateTime('resetsAt'),

@@ -51,6 +51,11 @@ class UnauthorizedException extends ApiErrorException {
     : super(statusCode: 401, code: 'UNAUTHORIZED');
 }
 
+/// `404 NOT_FOUND`: the memory or message does not exist, or is not the person's.
+class NotFoundException extends ApiErrorException {
+  const NotFoundException({required super.message}) : super(statusCode: 404, code: 'NOT_FOUND');
+}
+
 /// `429 DAILY_LIMIT_REACHED`. The help screen stays available.
 class DailyLimitReachedException extends ApiErrorException {
   const DailyLimitReachedException({required super.message, required this.resetsAt})
@@ -77,7 +82,7 @@ class LlmUnavailableException extends ApiErrorException {
   final Duration? retryAfter;
 }
 
-/// Any other error code: `NOT_FOUND`, `INTERNAL_ERROR` or one added to the
+/// Any other error code: `INTERNAL_ERROR` or one added to the
 /// contract after this build.
 class UnexpectedApiException extends ApiErrorException {
   const UnexpectedApiException({

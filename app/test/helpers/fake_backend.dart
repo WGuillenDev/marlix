@@ -83,10 +83,52 @@ class FakeBackend {
   /// The `before` of every `GET /v1/history`, in order (null for the first page).
   final historyRequests = <String?>[];
 
+  /// What `/v1/memories` holds, newest first, as `{id, fact}`.
+  List<Map<String, String>> memories = [];
+
+  /// When set, every `/v1/memories` request fails with it.
+  http.Response? Function()? memoriesFailure;
+
+  /// `METHOD path body` of every `/v1/memories` request, in order.
+  final memoryRequests = <String>[];
+
+  http.Response _memories(http.Request request) {
+    memoryRequests.add('${request.method} ${request.url.path} ${request.body}'.trim());
+    if (memoriesFailure?.call() case final failure?) return failure;
+    final id = request.url.pathSegments.length > 2 ? request.url.pathSegments[2] : null;
+    final found = memories.where((m) => m['id'] == id).firstOrNull;
+    Map<String, Object?> json(Map<String, String> m) => {
+      ...m,
+      'category': null,
+      'createdAt': '2026-10-15T18:00:00Z',
+      'updatedAt': '2026-10-15T18:00:00Z',
+    };
+    final notFound = jsonResponse({
+      'error': {'code': 'NOT_FOUND', 'message': 'The memory does not exist.'},
+    }, 404);
+    switch ((request.method, id)) {
+      case ('GET', null):
+        return jsonResponse({'memories': memories.map(json).toList()});
+      case ('DELETE', null):
+        memories = [];
+        return http.Response('', 204);
+      case ('PATCH', _):
+        if (found == null) return notFound;
+        found['fact'] = (jsonDecode(request.body) as Map)['fact'] as String;
+        return jsonResponse(json(found));
+      case ('DELETE', _):
+        if (found == null) return notFound;
+        memories = [...memories]..remove(found);
+        return http.Response('', 204);
+    }
+    return notFound;
+  }
+
   MarlixApi api(FakeAuthService auth) => MarlixApi(
     accessToken: () => auth.accessToken,
     client: MockClient((request) async {
       authorizations.add(request.headers['Authorization']);
+      if (request.url.path.startsWith('/v1/memories')) return _memories(request);
       if (request.url.path == '/v1/help-resources') {
         if (offline) throw http.ClientException('No connection');
         return jsonResponse({'updatedAt': '2026-10-14T00:00:00Z', 'resources': crisisResources});
