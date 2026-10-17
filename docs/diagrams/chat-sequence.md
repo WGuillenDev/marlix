@@ -103,7 +103,7 @@ Decided on 2026-09-30:
 - **The crisis filter runs even when the daily cap is reached.** The usage is read in step 2, but a reached cap is only applied to messages without risk. A person in crisis is never told "limit reached" instead of getting help. Crisis replies do not count against the cap.
 - **Crisis messages are saved in the user's own history,** together with the fixed reply, so the user sees the help they got when they come back. They are protected by RLS and the 90-day retention, and they never go to Groq or to the logs. The activation log (S2-5) still has no content.
 - **Nothing is saved or counted when the LLM fails.** The app keeps the text so the user can retry without retyping it (US-15).
-- **Sessions:** if the user's last session had no activity for a while, it is closed and a new one starts. Closing a session is what triggers memory distillation in the background (US-07); that job is not part of this request.
+- **Sessions:** if the user's last session had no activity for a while, it is closed and a new one starts. Closing a session is what triggers memory distillation in the background (US-07, [how it works](../memory.md)); that job is not part of this request.
 
 ## Out of scope
 

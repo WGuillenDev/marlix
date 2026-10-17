@@ -119,6 +119,9 @@ The server validates these variables when it starts. If a required one is missin
 | `CRISIS_CLASSIFIER_MODEL` | No | `openai/gpt-oss-20b` | Model that classifies ambiguous messages for the [crisis protocol](docs/crisis-protocol.md#the-second-layer). Different from the chat model, so it has its own quota. |
 | `CRISIS_CLASSIFIER_TIMEOUT_MS` | No | `5000` | Longest wait for that classification. A timeout counts as a crisis. |
 | `CHAT_CONTEXT_MESSAGES` | No | `16` | How many of the last messages of the conversation the model sees with each new one (2 to 40). Each one costs tokens of Groq's free quota: lower it if the limit is reached. |
+| `CONVERSATION_IDLE_MINUTES` | No | `30` | A conversation without messages for this long has ended, and that starts the extraction of its [memory](docs/memory.md) (1 to 1440). |
+| `MEMORY_EXTRACTOR_MODEL` | No | `openai/gpt-oss-20b` | Model that extracts the facts of a finished conversation. Smaller than the chat model, so the extractions do not use the chat's quota. |
+| `MEMORY_EXTRACTOR_TIMEOUT_MS` | No | `30000` | Longest wait for one extraction. A failed one stays pending and is tried again. |
 | `SUPABASE_URL` | Yes | — | The Supabase project URL, `https://<project-ref>.supabase.co`, without the `/rest/v1` that Project Settings → Data API shows. Session tokens are checked against this project's public signing keys. |
 | `SUPABASE_SECRET_KEY` | Yes | — | Supabase secret key, starting with `sb_secret_` (Project Settings → API Keys). It has `service_role` rights and bypasses RLS: only the backend holds it. Never share it. |
 
@@ -209,6 +212,7 @@ Design documents for v1, in the order they are usually read:
 | [Chat sequence](docs/diagrams/chat-sequence.md) | Every step of sending a message, including the crisis filter and the daily limit. |
 | [API contract](docs/api-contract.md) | Every v1 endpoint with its request, response, errors and examples. |
 | [System prompt](docs/system-prompt.md) | marlix's personality, how memory is injected and the test conversations. |
+| [Distilled memory](docs/memory.md) | How a finished conversation becomes lasting facts about the person, what is never saved and the limits. |
 | [Crisis protocol](docs/crisis-protocol.md) | How the crisis filter classifies each message before the model, and what the crisis reply contains. |
 | [Technical decisions](docs/decisions.md) | Each choice between technical options, what was discarded and why. |
 

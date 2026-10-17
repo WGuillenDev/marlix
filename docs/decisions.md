@@ -4,6 +4,26 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-10-17 — Memory extraction: a job inside the backend that ends idle conversations, with two barriers against sensitive data (S4-6)
+
+**Decision:** when a conversation has no messages for 30 minutes (`CONVERSATION_IDLE_MINUTES`) it ends, and a background job inside the backend extracts its facts with a small model (`MEMORY_EXTRACTOR_MODEL`, `openai/gpt-oss-20b` by default). How it works, its limits and what is never saved: [docs/memory.md](memory.md).
+
+| Option | Verdict |
+|---|---|
+| A queue and a sweep in the backend process, with the idle conversations ended by a database function | **Chosen.** Nothing new to deploy or pay for. The queue runs one extraction at a time, a few seconds apart, so the extractions do not burst on Groq's quota ([S0-11](#2026-09-30--llm-provider-groq-free-plan-with-openaigpt-oss-120b-s0-11)). |
+| `pg_cron` in Supabase calling a function | Discarded. Extraction needs the model, so it would also need an Edge Function with its own copy of the Groq key. |
+| A separate worker service | Discarded. Another paid or sleeping service for one job. |
+| Extract at the moment the conversation ends, before answering | Discarded. The card requires that it does not delay the reply. |
+
+- **When it ends.** Idle time counts from the last message, not from when the session started. The conversation is ended when the person's next message arrives (before it is answered, so it opens a new one) and by a sweep every 5 minutes. The chat only waits for the single database call that ends it, and a failure of the memory never fails a message, not even a crisis.
+- **Known limit.** Render's free plan sleeps after 15 minutes without traffic and a sleeping server runs no timer. A session that ended while it slept is extracted just after the person's first message back, so that first reply can miss its facts. The uptime monitor of S7-6 keeps the server awake and removes the gap.
+- **Two barriers for sensitive data.** The prompt forbids ID numbers, cards, passwords and diagnoses (and phone numbers, emails, addresses and anything about self-harm), and tells the model the conversation is data, not instructions. Then a filter in code drops any fact with eight or more digits, an email, a word about secrets or documents, or a health stem, whatever the model answered. The card names four kinds of data; **health is read widely** (illnesses, medications, treatments too), because everything saved travels to Groq on every call and a lost fact costs less than a saved one.
+- **Update, do not duplicate.** The extractor sees the saved facts with their ids and returns the same id to correct one. An id that is not one of the person's facts counts as a new fact, and a fact that differs only in case or accents is not a change. The answer is untrusted input: validated with a schema, at most 10 changes per session, and at most 50 facts per person (past it, only updates).
+- **Never the messages of a crisis.** The extractor reads the conversation without them, like the chat window ([S4-5](#2026-10-17--recent-context-the-last-16-messages-of-the-open-conversation-never-a-crisis-s4-5)).
+- **Failures leave the session pending.** After three attempts per process it waits for a restart instead of looping on the quota. The logs only say that an extraction ran or failed, never the messages, the facts or the database's text.
+
+---
+
 ## 2026-10-17 — Recent context: the last 16 messages of the open conversation, never a crisis (S4-5)
 
 **Decision:** with each message, the model gets the system prompt, the last 16 messages of the user's open conversation and the new message. The size is `CHAT_CONTEXT_MESSAGES` (2 to 40, 16 by default), so it changes in Render without a deploy of new code.
