@@ -150,4 +150,59 @@ describe('createSupabaseMemoryStore', () => {
       false,
     );
   });
+
+  it('edits only the text of a memory of that user and returns it', async () => {
+    const row = { id: 'm1', fact: 'Tiene una perrita', category: 'pets', created_at: 'c', updated_at: 'u' };
+    const { client, calls } = fakeSupabaseClient(() => ({ body: [row] }));
+    const store = createSupabaseMemoryStore(client);
+
+    assert.deepEqual(await store.edit(USER, 'm1', 'Tiene una perrita'), {
+      id: 'm1',
+      fact: 'Tiene una perrita',
+      category: 'pets',
+      createdAt: 'c',
+      updatedAt: 'u',
+    });
+    assert.equal(calls[0]!.method, 'PATCH');
+    assert.deepEqual(calls[0]!.body, { fact: 'Tiene una perrita' });
+    assert.equal(calls[0]!.params.get('id'), 'eq.m1');
+    assert.equal(calls[0]!.params.get('user_id'), `eq.${USER}`);
+
+    const missing = fakeSupabaseClient(() => ({ body: [] }));
+    assert.equal(await createSupabaseMemoryStore(missing.client).edit(USER, 'm9', 'x'), null);
+  });
+
+  it('deletes one memory of that user, or all of them, and says if there was none', async () => {
+    const found = fakeSupabaseClient(() => ({ body: [{ id: 'm1' }] }));
+    assert.equal(await createSupabaseMemoryStore(found.client).remove(USER, 'm1'), true);
+    assert.equal(found.calls[0]!.method, 'DELETE');
+    assert.equal(found.calls[0]!.params.get('id'), 'eq.m1');
+    assert.equal(found.calls[0]!.params.get('user_id'), `eq.${USER}`);
+
+    const missing = fakeSupabaseClient(() => ({ body: [] }));
+    assert.equal(await createSupabaseMemoryStore(missing.client).remove(USER, 'm9'), false);
+
+    const all = fakeSupabaseClient(() => ({ body: [] }));
+    await createSupabaseMemoryStore(all.client).removeAll(USER);
+    assert.equal(all.calls[0]!.method, 'DELETE');
+    assert.equal(all.calls[0]!.params.get('user_id'), `eq.${USER}`);
+    assert.equal(all.calls[0]!.params.get('id'), null);
+  });
+
+  it('fails without quoting the database when editing or deleting', async () => {
+    const { client } = fakeSupabaseClient(() => ({
+      status: 400,
+      body: { code: '42501', message: 'denied', details: 'Mi perro se llama Coco' },
+    }));
+    const store = createSupabaseMemoryStore(client);
+
+    const { result, output } = await captureConsole(async () => [
+      await store.edit(USER, 'm1', 'x').catch((error: unknown) => error),
+      await store.remove(USER, 'm1').catch((error: unknown) => error),
+      await store.removeAll(USER).catch((error: unknown) => error),
+    ]);
+
+    for (const error of result) assert.ok(error instanceof DatabaseError);
+    assert.doesNotMatch(output, /Coco|denied/);
+  });
 });
