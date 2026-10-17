@@ -1,4 +1,4 @@
--- marlix database tests: privileges, Row Level Security and sign-up (S0-6, S1-8, S4-2, S4-3, S4-5, S4-6).
+-- marlix database tests: privileges, Row Level Security and sign-up (S0-6, S1-8, S4-2, S4-3, S4-5, S4-6, S4-9).
 --
 -- Runs against the local database after docs/schema.sql was applied:
 --
@@ -386,6 +386,45 @@ select pg_temp.expect('deleting Beto removes all his data',
   and not exists (select 1 from public.messages where user_id = '00000000-0000-4000-8000-00000000000b')
   and not exists (select 1 from public.memories where user_id = '00000000-0000-4000-8000-00000000000b')
   and not exists (select 1 from public.daily_usage where user_id = '00000000-0000-4000-8000-00000000000b'));
+
+-- Table by table (S4-9), from the catalog, so a table added later cannot be
+-- left out of the cascade.
+
+-- Every foreign key to a user deletes with the user.
+select pg_temp.expect(format('%s deletes in cascade with the user', c.conname),
+  c.confdeltype = 'c')
+from pg_constraint c
+where c.contype = 'f' and c.confrelid = 'auth.users'::regclass;
+
+-- Every table in public, but the two catalogs, belongs to a user through such a key.
+select pg_temp.expect(format('public.%s has a foreign key to auth.users, or it would outlive the account', t.relname),
+  exists (select 1 from pg_constraint c
+          where c.contype = 'f' and c.conrelid = t.oid and c.confrelid = 'auth.users'::regclass))
+from pg_class t
+where t.relnamespace = 'public'::regnamespace
+  and t.relkind = 'r'
+  and t.relname not in ('plan_limits', 'avatars');
+
+-- After the deletions above, no row points to a user that no longer exists.
+do $$
+declare
+  link record;
+  orphans bigint;
+begin
+  for link in
+    select c.conrelid::regclass as table_name, a.attname as column_name
+    from pg_constraint c
+    join pg_attribute a on a.attrelid = c.conrelid and a.attnum = c.conkey[1]
+    where c.contype = 'f' and c.confrelid = 'auth.users'::regclass
+  loop
+    execute format(
+      'select count(*) from %s t where not exists (select 1 from auth.users u where u.id = t.%I)',
+      link.table_name, link.column_name
+    ) into orphans;
+    perform pg_temp.expect(format('%s has no orphan rows', link.table_name), orphans = 0);
+  end loop;
+end;
+$$;
 
 \echo 'All database tests passed.'
 
