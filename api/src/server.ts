@@ -1,9 +1,12 @@
 // Loads api/.env into process.env before anything reads it.
 import 'dotenv/config';
 
+import { createClient } from '@supabase/supabase-js';
+
 import { createApp } from './app.js';
 import { loadEnv } from './config/env.js';
 import { supabaseSessionCheck } from './middleware/require-session.js';
+import { createSupabaseMessageStore } from './services/history/supabase-message-store.js';
 import { createLlmProvider } from './services/llm/index.js';
 
 const env = loadEnv();
@@ -15,6 +18,12 @@ const app = createApp({
     retry: false,
   }),
   session: supabaseSessionCheck(env.SUPABASE_URL),
+  messages: createSupabaseMessageStore(
+    // No session to keep: the key identifies the backend on every call.
+    createClient(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    }),
+  ),
 });
 
 const server = app.listen(env.PORT, () => {
