@@ -78,21 +78,32 @@ export function said(...texts: string[]): ContextMessage[] {
 }
 
 /** Memories in memory, with the same ownership rules as the database. */
-export function createFakeMemories(initial: (Memory & { userId: string })[] = []) {
-  const rows = [...initial];
+type FakeMemory = Memory & { userId: string };
+
+export function createFakeMemories(
+  initial: (Pick<Memory, 'id' | 'fact' | 'category'> & { userId: string })[] = [],
+) {
+  let clock = Date.parse('2026-10-01T12:00:00.000Z');
+  const tick = () => new Date((clock += 1000)).toISOString();
+  const rows: FakeMemory[] = initial.map((row) => ({
+    ...row,
+    createdAt: tick(),
+    updatedAt: tick(),
+  }));
 
   const store: MemoryStore = {
     async list(userId) {
       return rows
         .filter((row) => row.userId === userId)
-        .map(({ id, fact, category }) => ({ id, fact, category }));
+        .map(({ userId: _userId, ...memory }) => memory);
     },
     async add(userId, { fact, category }) {
-      rows.push({ id: randomUUID(), userId, fact, category });
+      const now = tick();
+      rows.push({ id: randomUUID(), userId, fact, category, createdAt: now, updatedAt: now });
     },
     async update(userId, id, { fact, category }) {
       const row = rows.find((r) => r.id === id && r.userId === userId);
-      if (row) Object.assign(row, { fact, category });
+      if (row) Object.assign(row, { fact, category, updatedAt: tick() });
       return row !== undefined;
     },
   };

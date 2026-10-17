@@ -64,9 +64,10 @@ describe('memory job', () => {
 
     await job.sweep();
 
-    assert.deepEqual(model.calls[0]!.existing, [
-      { id: 'm1', fact: 'Tiene un perro', category: 'pets' },
-    ]);
+    assert.deepEqual(
+      model.calls[0]!.existing.map(({ id, fact }) => ({ id, fact })),
+      [{ id: 'm1', fact: 'Tiene un perro' }],
+    );
     assert.equal(stored.rows.length, 1);
     assert.equal(stored.rows[0]!.fact, 'Tiene una perrita llamada Coco');
   });

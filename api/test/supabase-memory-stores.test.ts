@@ -91,12 +91,28 @@ describe('createSupabaseConversationStore', () => {
 describe('createSupabaseMemoryStore', () => {
   it('lists the memories of that user only', async () => {
     const { client, calls } = fakeSupabaseClient(() => ({
-      body: [{ id: 'm1', fact: 'Tiene un perro', category: 'pets' }],
+      body: [
+        {
+          id: 'm1',
+          fact: 'Tiene un perro',
+          category: 'pets',
+          created_at: '2026-10-01T12:00:00+00:00',
+          updated_at: '2026-10-02T12:00:00+00:00',
+        },
+      ],
     }));
 
     const memories = await createSupabaseMemoryStore(client).list(USER);
 
-    assert.deepEqual(memories, [{ id: 'm1', fact: 'Tiene un perro', category: 'pets' }]);
+    assert.deepEqual(memories, [
+      {
+        id: 'm1',
+        fact: 'Tiene un perro',
+        category: 'pets',
+        createdAt: '2026-10-01T12:00:00+00:00',
+        updatedAt: '2026-10-02T12:00:00+00:00',
+      },
+    ]);
     assert.equal(calls[0]!.params.get('user_id'), `eq.${USER}`);
   });
 
