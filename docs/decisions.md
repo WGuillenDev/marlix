@@ -4,6 +4,23 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-10-17 — Managing memories: through the backend, deleting for real, and editing only the text (S4-8)
+
+**Decision:** the app lists, edits and deletes memories with `GET`, `PATCH` and `DELETE` on `/v1/memories` ([contract](api-contract.md#get-v1memories)), and the backend does it with the secret key, always filtering by the signed-in user. Deleting removes the row; editing changes only `fact`.
+
+| Option | Verdict |
+|---|---|
+| Through the backend, as the contract says | **Chosen.** One place checks the session, validates the text and decides the order and the 404s, and the app keeps a single client for everything. |
+| The app straight to Supabase, relying on the RLS policies and the `update (fact)` grant that already exist | Discarded for now. It works, but the rules (500 characters, trimmed text) would live in the app and in the database, and it would be the only data the app reads without the backend. The policies stay as a second barrier. |
+| Mark the memory as deleted and hide it | Discarded. The person asked for it to be gone, and a hidden copy still counts as data kept (Law 8968). |
+
+- **Immediate effect.** The prompt is built from the database on every message ([S4-7](#2026-10-17--memory-in-the-prompt-the-most-recently-updated-in-a-stable-order-one-line-each-s4-7)), so a deleted memory is not sent from the very next message, and an edited one goes with its new text. A test checks it end to end.
+- **Editing keeps the category and the source conversation.** The person fixes the wording, not the classification; the extractor may later rewrite the fact if the person says something new. An edit also counts as the most recent update, so it is favored when there are more than 30 memories.
+- **The edit is not run through the extractor's sensitive-data filter.** It is the person writing about themselves, on a screen that shows them exactly what is stored. They are limited to 500 characters and one line when it reaches the prompt ([S4-7](#2026-10-17--memory-in-the-prompt-the-most-recently-updated-in-a-stable-order-one-line-each-s4-7)).
+- **An id that is not a UUID is a `404`,** like one that does not exist or belongs to someone else: no one can tell the three apart, and the database never sees a malformed value.
+
+---
+
 ## 2026-10-17 — Memory in the prompt: the most recently updated, in a stable order, one line each (S4-7)
 
 **Decision:** on every message, the backend adds the person's memories at the end of the system prompt. At most 30 (`CHAT_MEMORY_FACTS`); if there are more, the most recently updated ones. How it works: [docs/memory.md](memory.md#what-goes-into-the-prompt).

@@ -67,6 +67,10 @@ On every message the backend reads the person's memories and puts them at the en
 - **How marlix uses them.** The personality prompt asks it to use them naturally, a little at a time and only when they fit, never to recite them or say "according to my records", and to ask gently if something looks out of date.
 - **If the memory cannot be read,** the answer is `500` before the model is called: answering as if marlix did not know the person would be wrong without saying so. A crisis never reads it, because it never reaches the model.
 
+## Seeing, editing and deleting (S4-8)
+
+The "Lo que marlix sabe de mí" screen (Settings) lists every memory, newest first, with its text, and lets the person edit one, delete one or delete them all after a confirmation. It uses `/v1/memories` ([contract](api-contract.md#get-v1memories)). Nothing is cached in the backend: the prompt reads the database on every message, so what the person deletes or rewrites changes the very next reply. Deleting removes the row, it does not hide it. The reasons are in [decisions.md](decisions.md).
+
 ## What is logged
 
 Only that an extraction ran (`Memory extracted: 1 added, 0 updated`) or failed, and the kind of failure. Never the messages or the facts. The database's own error text is never logged either: it can quote the row.
@@ -74,4 +78,5 @@ Only that an extraction ran (`Memory extracted: 1 added, 0 updated`) or failed, 
 ## Known limits
 
 - **Render's free plan sleeps after 15 minutes without traffic**, and a sleeping server runs no timer. A session that ends while it sleeps is ended when the person comes back, so its memory is extracted just after their first message: the first reply of the new session can miss the last session's facts. Once the uptime monitor (S7-6) calls `/health` every 10 minutes the server stays awake and the sweep does it on time.
-- The extractor is a language model: it can miss a fact or keep a minor one. S4-8 lets the person see, edit and delete what marlix remembers.
+- **A deleted fact can come back once.** If the person deletes a memory while the conversation where they told it is still open, its extraction runs when it ends and can save the fact again. Facts from conversations that were already extracted never come back.
+- The extractor is a language model: it can miss a fact or keep a minor one. the screen of S4-8 lets the person see, edit and delete what marlix remembers.

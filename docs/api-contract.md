@@ -397,13 +397,13 @@ Edits the text of one memory. The change is used from the next message on.
 
 **Response `200`**: the updated memory, same shape as in `GET /v1/memories`.
 
-**Errors:** `400 VALIDATION_ERROR`, `404 NOT_FOUND`.
+**Errors:** `400 VALIDATION_ERROR`, `404 NOT_FOUND`. The `404` is also the answer for an id that is not a UUID or belongs to another user.
 
 ---
 
 ### `DELETE /v1/memories/:id`
 
-Deletes one memory. It is no longer used in later conversations.
+Deletes one memory for good. It is no longer sent to the model from the next message on.
 
 **Response `204`**, no body. **Errors:** `404 NOT_FOUND`.
 
