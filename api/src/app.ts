@@ -1,7 +1,7 @@
 import express from 'express';
 
 import { loadCrisisConfig, type CrisisConfig } from './config/crisis-config.js';
-import { DEFAULT_CONTEXT_MESSAGES } from './config/env.js';
+import { DEFAULT_CONTEXT_MESSAGES, DEFAULT_MEMORY_FACTS } from './config/env.js';
 import { loadPlansConfig, type PlansConfig } from './config/plans.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
 import { requireSession, type SessionCheck } from './middleware/require-session.js';
@@ -20,6 +20,8 @@ import { createAmbiguousClassifier } from './services/crisis/classifier.js';
 import { createCrisisFilter } from './services/crisis/filter.js';
 import type { MessageStore } from './services/history/message-store.js';
 import type { MemoryJob } from './services/memory/memory-job.js';
+import type { MemoryStore } from './services/memory/memory-store.js';
+import { selectForPrompt } from './services/memory/prompt-memories.js';
 import type { LlmProvider } from './services/llm/index.js';
 import { createUsageLimiter } from './services/usage/usage-limiter.js';
 
@@ -33,6 +35,10 @@ export interface AppDependencies {
   messages: MessageStore;
   /** How many messages of the conversation the model sees (S4-5). */
   contextMessages?: number;
+  /** The distilled memory the prompt is built from (S4-7). */
+  memories: MemoryStore;
+  /** How many memories go into the prompt (S4-7). */
+  memoryFacts?: number;
   /** Ends idle conversations and extracts their memory (S4-6). Without it, nothing ends. */
   memoryJob?: Pick<MemoryJob, 'endIdleConversation'>;
   /** Crisis text and help resources; read from api/config/crisis.json by default. */
@@ -50,6 +56,8 @@ export function createApp({
   session,
   messages,
   contextMessages = DEFAULT_CONTEXT_MESSAGES,
+  memories,
+  memoryFacts = DEFAULT_MEMORY_FACTS,
   memoryJob,
   crisisConfig = loadCrisisConfig(),
   activationLog = createConsoleActivationLog(),
@@ -81,6 +89,7 @@ export function createApp({
     crisisConfig.reply,
     contextMessages,
     (userId) => memoryJob?.endIdleConversation(userId) ?? Promise.resolve(),
+    async (userId) => selectForPrompt(await memories.list(userId), memoryFacts),
   );
   app.use(
     '/v1',
