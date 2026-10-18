@@ -31,6 +31,7 @@ void main() {
     await openSettings(tester);
 
     expect(find.text('Borra todos tus datos para siempre'), findsOneWidget);
+    expect(find.textContaining('se borran solos a los 90 días'), findsOneWidget);
     await startDeleting(tester);
     expect(find.text('¿Eliminar tu cuenta?'), findsOneWidget);
     expect(find.textContaining('No se puede deshacer'), findsOneWidget);
