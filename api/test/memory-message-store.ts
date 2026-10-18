@@ -67,6 +67,13 @@ export function createMemoryMessageStore() {
       if (row) row.interrupted = true;
       return row !== undefined;
     },
+
+    async deleteOlderThan(cutoff) {
+      const kept = rows.filter((row) => Date.parse(row.createdAt) >= cutoff.getTime());
+      const deleted = rows.length - kept.length;
+      rows.splice(0, rows.length, ...kept);
+      return deleted;
+    },
   };
 
   return {

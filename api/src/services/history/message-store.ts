@@ -44,6 +44,8 @@ export interface MessageStore {
   page(userId: string, options: { limit: number; before?: Cursor }): Promise<HistoryPage>;
   /** Marks one of the user's own replies as interrupted; false if there is none with that id. */
   markInterrupted(userId: string, messageId: string): Promise<boolean>;
+  /** Deletes the messages of everybody created before `cutoff` (S4-10) and returns how many. */
+  deleteOlderThan(cutoff: Date): Promise<number>;
 }
 
 /** Where a page ends: the position of its oldest message. */

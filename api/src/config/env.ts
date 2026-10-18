@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 export const DEFAULT_CONTEXT_MESSAGES = 16;
 export const DEFAULT_MEMORY_FACTS = 30;
+export const DEFAULT_RETENTION_DAYS = 90;
 
 // Validated once at startup. Error messages name the variable, never its
 // value, so a secret cannot end up in a log.
@@ -38,6 +39,9 @@ const envSchema = z.object({
   // How many of the saved memories go into the prompt (S4-7). Each one costs
   // tokens on every call; past this, the most recently updated ones are chosen.
   CHAT_MEMORY_FACTS: z.coerce.number().int().min(1).max(50).default(DEFAULT_MEMORY_FACTS),
+  // Raw messages older than this are deleted (S4-10). The distilled memory is
+  // not touched: it lasts as long as the account.
+  MESSAGE_RETENTION_DAYS: z.coerce.number().int().min(1).max(3650).default(DEFAULT_RETENTION_DAYS),
   // Supabase project (S4-1). Session tokens are checked against its public
   // keys (S4-3). The secret key has service_role rights and bypasses RLS:
   // only the backend holds it, never the app or a log.
