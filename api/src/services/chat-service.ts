@@ -6,7 +6,7 @@ import type { CrisisFilter } from './crisis/filter.js';
 import { MessageNotFoundError, type MessageStore, type SavedTurn } from './history/message-store.js';
 import type { LlmProvider } from './llm/index.js';
 import { reviewReply } from './review/reply-review.js';
-import type { UsageLimiter, UsageUser } from './usage/usage-limiter.js';
+import type { UsageLimiter, UsageSnapshot, UsageUser } from './usage/usage-limiter.js';
 
 // Upper bound for one reply, reasoning included. Voice replies are one to
 // three short sentences, so they need less room.
@@ -20,14 +20,21 @@ export interface ChatInput {
   interruptedMessageId?: string | null | undefined;
 }
 
-/** What was said in this turn, with the ids the history gave it. */
-export type ChatOutcome = SavedTurn & { type: 'reply' | 'crisis' };
+/**
+ * What was said in this turn, with the ids the history gave it. `usage` is
+ * missing when the database could not be read after the reply: the person
+ * still gets it, and the app keeps the last usage it knew.
+ */
+export type ChatOutcome = SavedTurn & {
+  type: 'reply' | 'crisis';
+  usage?: UsageSnapshot | undefined;
+};
 
 export interface ChatService {
   /**
    * Returns marlix's reply to one message, or a crisis, already saved in the
    * history. Fails with an LlmError, a UsageLimitExceededError, a
-   * MessageNotFoundError or a HistoryStoreError.
+   * MessageNotFoundError, a HistoryStoreError or a UsageStoreError.
    */
   reply(input: ChatInput): Promise<ChatOutcome>;
 }
@@ -67,7 +74,9 @@ export function createChatService(
         const turn = await messages
           .saveTurn(user.id, { message, reply: crisisReply, messageAt, crisis: true })
           .catch(() => unsavedTurn(message, crisisReply, messageAt));
-        return { type: 'crisis', ...turn };
+        // Not counted, and not worth failing the help over: usage is optional.
+        const usage = await usageLimiter.snapshot(user).catch(() => undefined);
+        return { type: 'crisis', ...turn, usage };
       }
 
       if (interruptedMessageId) {
@@ -75,7 +84,7 @@ export function createChatService(
           throw new MessageNotFoundError();
         }
       }
-      usageLimiter.reserveAttempt(user);
+      await usageLimiter.reserveAttempt(user);
 
       // Before this turn is saved, so the new message is not in it twice.
       const [recent, facts] = await Promise.all([
@@ -102,8 +111,8 @@ export function createChatService(
         messageAt,
         crisis: false,
       });
-      usageLimiter.recordInteraction(user);
-      return { type: 'reply', ...turn };
+      const usage = await usageLimiter.recordInteraction(user);
+      return { type: 'reply', ...turn, usage };
     },
   };
 }

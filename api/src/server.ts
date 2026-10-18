@@ -14,6 +14,7 @@ import { createMemoryExtractor } from './services/memory/extractor.js';
 import { createMemoryJob } from './services/memory/memory-job.js';
 import { createSupabaseMemoryStore } from './services/memory/supabase-memory-store.js';
 import { createRetentionJob } from './services/retention/retention-job.js';
+import { createSupabaseUsageStore } from './services/usage/supabase-usage-store.js';
 
 const env = loadEnv();
 
@@ -55,6 +56,7 @@ const app = createApp({
   memoryFacts: env.CHAT_MEMORY_FACTS,
   memoryJob,
   accounts: createSupabaseAccountStore(database),
+  usage: createSupabaseUsageStore(database),
 });
 
 const server = app.listen(env.PORT, () => {

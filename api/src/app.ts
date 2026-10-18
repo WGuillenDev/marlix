@@ -27,6 +27,7 @@ import type { MemoryStore } from './services/memory/memory-store.js';
 import { selectForPrompt } from './services/memory/prompt-memories.js';
 import type { LlmProvider } from './services/llm/index.js';
 import { createUsageLimiter } from './services/usage/usage-limiter.js';
+import type { UsageStore } from './services/usage/usage-store.js';
 
 export interface AppDependencies {
   llm: LlmProvider;
@@ -46,11 +47,13 @@ export interface AppDependencies {
   memoryJob?: Pick<MemoryJob, 'endIdleConversation'>;
   /** Deletes the person's account and, in cascade, all their data (S4-9). */
   accounts: AccountStore;
+  /** Where the daily counters and caps are (S4-13). */
+  usage: UsageStore;
   /** Crisis text and help resources; read from api/config/crisis.json by default. */
   crisisConfig?: CrisisConfig;
   /** Where crisis activations are recorded (S2-5); the logs by default. */
   activationLog?: ActivationLog;
-  /** Usage limits per plan (S2-6); read from api/config/plans.json by default. */
+  /** Burst limits per plan (S2-6); read from api/config/plans.json by default. */
   plans?: PlansConfig;
 }
 
@@ -65,6 +68,7 @@ export function createApp({
   memoryFacts = DEFAULT_MEMORY_FACTS,
   memoryJob,
   accounts,
+  usage,
   crisisConfig = loadCrisisConfig(),
   activationLog = createConsoleActivationLog(),
   plans = loadPlansConfig(),
@@ -85,7 +89,7 @@ export function createApp({
   const crisisFilter = createCrisisFilter(
     crisisClassifier ? createAmbiguousClassifier(crisisClassifier) : undefined,
   );
-  const usageLimiter = createUsageLimiter(plans);
+  const usageLimiter = createUsageLimiter(plans, usage);
   const chatService = createChatService(
     llm,
     crisisFilter,
@@ -100,7 +104,7 @@ export function createApp({
   app.use(
     '/v1',
     requireSession(session),
-    createChatRouter(chatService, crisisConfig, usageLimiter),
+    createChatRouter(chatService, crisisConfig),
     createHistoryRouter(messages),
     createMemoriesRouter(memories),
     createAccountRouter(accounts),
