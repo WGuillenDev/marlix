@@ -320,6 +320,21 @@ create trigger daily_usage_set_updated_at
   before update on public.daily_usage
   for each row execute function public.set_updated_at();
 
+-- Counts one interaction for a user on a day and returns the new total, in a
+-- single statement: two messages at the same time cannot count as one. Called
+-- only by the backend (S4-13), with the day on the Costa Rica calendar.
+create function public.record_interaction(p_user_id uuid, p_day date)
+returns integer
+language sql
+set search_path = ''
+as $$
+  insert into public.daily_usage (user_id, usage_date, interactions)
+  values (p_user_id, p_day, 1)
+  on conflict (user_id, usage_date)
+  do update set interactions = public.daily_usage.interactions + 1
+  returning interactions;
+$$;
+
 -- ---------------------------------------------------------------------------
 -- Row Level Security
 -- Every table has RLS enabled. Policies use (select auth.uid()) so the value
@@ -409,6 +424,8 @@ revoke execute on all functions in schema public from public, anon, authenticate
 
 -- The backend ends idle conversations, which starts the memory extraction (S4-6).
 grant execute on function public.close_idle_conversations(integer, uuid) to service_role;
+-- The one function the backend calls: it counts the daily interactions (S4-13).
+grant execute on function public.record_interaction(uuid, date) to service_role;
 
 -- authenticated: read what the policies allow.
 grant select on
