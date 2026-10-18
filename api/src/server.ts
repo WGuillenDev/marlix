@@ -13,6 +13,7 @@ import { createLlmProvider } from './services/llm/index.js';
 import { createMemoryExtractor } from './services/memory/extractor.js';
 import { createMemoryJob } from './services/memory/memory-job.js';
 import { createSupabaseMemoryStore } from './services/memory/supabase-memory-store.js';
+import { createRetentionJob } from './services/retention/retention-job.js';
 
 const env = loadEnv();
 
@@ -34,6 +35,12 @@ const memoryJob = createMemoryJob({
   idleSeconds: env.CONVERSATION_IDLE_MINUTES * 60,
 });
 
+const messages = createSupabaseMessageStore(database);
+const retentionJob = createRetentionJob({
+  messages,
+  retentionDays: env.MESSAGE_RETENTION_DAYS,
+});
+
 const app = createApp({
   llm: createLlmProvider(env),
   crisisClassifier: createLlmProvider(env, {
@@ -43,7 +50,7 @@ const app = createApp({
   }),
   session: supabaseSessionCheck(env.SUPABASE_URL),
   contextMessages: env.CHAT_CONTEXT_MESSAGES,
-  messages: createSupabaseMessageStore(database),
+  messages,
   memories,
   memoryFacts: env.CHAT_MEMORY_FACTS,
   memoryJob,
@@ -53,11 +60,13 @@ const app = createApp({
 const server = app.listen(env.PORT, () => {
   console.log(`marlix api listening on http://localhost:${env.PORT}`);
   memoryJob.start();
+  retentionJob.start();
 });
 
 // Render sends SIGTERM before replacing the instance on each deploy: finish
 // the requests in flight instead of cutting them.
 process.on('SIGTERM', () => {
   memoryJob.stop();
+  retentionJob.stop();
   server.close(() => process.exit(0));
 });

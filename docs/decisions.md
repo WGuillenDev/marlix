@@ -4,6 +4,23 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-10-17 — Message retention: an hourly delete inside the backend, 90 days by default (S4-10)
+
+**Decision:** a job inside the backend deletes every message older than `MESSAGE_RETENTION_DAYS` (90 by default) when the server starts and then every hour. It deletes only rows of `messages`: conversations and memories stay, so the distilled memory lasts as long as the account. The policy is in [docs/memory.md](memory.md#how-long-messages-are-kept) and, for the person, at the bottom of the Settings screen.
+
+| Option | Verdict |
+|---|---|
+| A timer in the backend process, one `DELETE ... WHERE created_at < cutoff` through the Supabase API | **Chosen.** Same pattern as the memory sweep (S4-6), no migration and nothing new to deploy. The delete is idempotent, so a missed run is made up by the next one, and `messages_created_at_idx` serves it. |
+| `pg_cron` in Supabase | Discarded. One more place where the period lives, outside the environment variables and the tests. |
+| Filter old messages out when reading and never delete | Discarded. The goal is to hold less data, not to hide it. |
+| A database function called by RPC | Discarded. It needs a migration for a single statement. |
+
+- **Hourly, not at midnight.** Render's free plan sleeps, so a fixed hour could be missed every day. A sweep at start and every hour deletes within an hour of the deadline whenever the server is awake.
+- **The period is not in the app.** The text in Settings says 90 days; if `MESSAGE_RETENTION_DAYS` is changed in production, update that text with it.
+- **Logs.** Only how many messages were deleted, never their content.
+
+---
+
 ## 2026-10-17 — Account deletion: the database cascades, and a recent sign-in is read from `amr`, not `iat` (S4-9)
 
 **Decision:** `DELETE /v1/account` deletes the user in Supabase Auth with the secret key (a hard delete), and `on delete cascade` removes the profile, conversations, messages, memories and usage. Before that it requires a sign-in from the last 5 minutes. The contract is [here](api-contract.md#delete-v1account).

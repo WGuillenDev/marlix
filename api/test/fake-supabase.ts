@@ -8,7 +8,9 @@ export interface Call {
 }
 
 /** Stands in for the Supabase API: records each call and answers from `respond`. */
-export function fakeSupabaseClient(respond: (call: Call) => { status?: number; body: unknown }) {
+export function fakeSupabaseClient(
+  respond: (call: Call) => { status?: number; body: unknown; headers?: Record<string, string> },
+) {
   const calls: Call[] = [];
   const client = createClient('https://testproject.supabase.co', 'sb_secret_test', {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -22,10 +24,10 @@ export function fakeSupabaseClient(respond: (call: Call) => { status?: number; b
           body: init?.body ? JSON.parse(String(init.body)) : undefined,
         };
         calls.push(call);
-        const { status = 200, body } = respond(call);
-        return new Response(JSON.stringify(body), {
+        const { status = 200, body, headers = {} } = respond(call);
+        return new Response(status === 204 ? null : JSON.stringify(body), {
           status,
-          headers: { 'content-type': 'application/json' },
+          headers: { 'content-type': 'application/json', ...headers },
         });
       },
     },

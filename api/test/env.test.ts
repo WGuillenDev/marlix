@@ -46,6 +46,18 @@ describe('parseEnv', () => {
     }
   });
 
+  it('keeps raw messages for 90 days by default, and the period can be changed', () => {
+    assert.equal(parseEnv(validEnv).MESSAGE_RETENTION_DAYS, 90);
+    assert.equal(parseEnv({ ...validEnv, MESSAGE_RETENTION_DAYS: '30' }).MESSAGE_RETENTION_DAYS, 30);
+    for (const days of ['0', '3651', 'mucho', '1.5']) {
+      assert.throws(
+        () => parseEnv({ ...validEnv, MESSAGE_RETENTION_DAYS: days }),
+        EnvValidationError,
+        days,
+      );
+    }
+  });
+
   it('puts 30 memories in the prompt by default, and the number can be changed', () => {
     assert.equal(parseEnv(validEnv).CHAT_MEMORY_FACTS, 30);
     assert.equal(parseEnv({ ...validEnv, CHAT_MEMORY_FACTS: '12' }).CHAT_MEMORY_FACTS, 12);

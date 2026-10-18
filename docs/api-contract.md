@@ -296,7 +296,6 @@ Both messages of a turn are saved before the reply is returned, and `userMessage
 
 | Part | Until | Meanwhile |
 |---|---|---|
-| 90-day retention | S4-10 | Messages are kept until the retention job exists. |
 | Usage counters in the database | S4-13 | `usage` and the limits work (S2-6), but the counters are kept in memory and the caps come from `api/config/plans.json`, so a restart resets them ([decision](decisions.md)). |
 | Streaming | S6-10 | Only the JSON reply. |
 
@@ -304,7 +303,7 @@ Both messages of a turn are saved before the reply is returned, and `userMessage
 
 ### `GET /v1/history`
 
-Returns the user's messages, newest page first, for the single continuous chat (US-06). Messages older than 90 days no longer exist.
+Returns the user's messages, newest page first, for the single continuous chat (US-06). Messages older than 90 days no longer exist: a job deletes them every hour ([policy](memory.md#how-long-messages-are-kept)), so one can still show for up to an hour after its deadline.
 
 **Query parameters**
 

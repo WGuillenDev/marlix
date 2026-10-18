@@ -115,6 +115,15 @@ export function createSupabaseMessageStore(client: SupabaseClient): MessageStore
       if (error) throw fail(error);
       return data.length > 0;
     },
+
+    async deleteOlderThan(cutoff) {
+      const { count, error } = await client
+        .from('messages')
+        .delete({ count: 'exact' })
+        .lt('created_at', cutoff.toISOString());
+      if (error) throw fail(error);
+      return count ?? 0;
+    },
   };
 }
 

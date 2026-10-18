@@ -6,7 +6,7 @@ How marlix remembers a person without sending weeks of chat to the model. Story:
 
 | Layer | What it is | Who reads it |
 |---|---|---|
-| 1. History | Every message, kept for 90 days (S4-4). | The app, to show the chat. |
+| 1. History | Every message, kept for [90 days](#how-long-messages-are-kept) (S4-4, S4-10). | The app, to show the chat. |
 | 2. Recent window | The last 16 messages of the open conversation (S4-5). | The model, on every message. |
 | 3. Distilled memory | Short lasting facts about the person ("Tiene una perrita llamada Coco"), with a category. | The model, on every message (S4-7). |
 
@@ -71,9 +71,13 @@ On every message the backend reads the person's memories and puts them at the en
 
 The "Lo que marlix sabe de mí" screen (Settings) lists every memory, newest first, with its text, and lets the person edit one, delete one or delete them all after a confirmation. It uses `/v1/memories` ([contract](api-contract.md#get-v1memories)). Nothing is cached in the backend: the prompt reads the database on every message, so what the person deletes or rewrites changes the very next reply. Deleting removes the row, it does not hide it. The reasons are in [decisions.md](decisions.md).
 
+## How long messages are kept
+
+Raw messages are deleted **90 days** after they were written (`MESSAGE_RETENTION_DAYS`, 1 to 3650). A job inside the backend deletes them when the server starts and then every hour (S4-10). It only touches `messages`: the distilled memory and the account are not affected, so what marlix remembers lasts as long as the account does (or until the person deletes it from the memories screen). The person reads this policy at the bottom of the Settings screen. A conversation that was never extracted and has lost its messages is simply marked as extracted, with nothing to remember.
+
 ## What is logged
 
-Only that an extraction ran (`Memory extracted: 1 added, 0 updated`) or failed, and the kind of failure. Never the messages or the facts. The database's own error text is never logged either: it can quote the row.
+Only that an extraction ran (`Memory extracted: 1 added, 0 updated`) or failed, how many messages the retention job deleted, and the kind of failure. Never the messages or the facts. The database's own error text is never logged either: it can quote the row.
 
 ## Known limits
 

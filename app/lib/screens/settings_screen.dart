@@ -58,6 +58,17 @@ class SettingsScreen extends ConsumerWidget {
               subtitle: 'Ver, editar o borrar recuerdos',
               onTap: () => Navigator.of(context).push(MemoriesScreen.route()),
             ),
+            const SizedBox(height: 10),
+            // Policy of S4-10 (docs/memory.md); keep the days in step with the backend's
+            // MESSAGE_RETENTION_DAYS.
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                'Tus mensajes se borran solos a los 90 días. Lo que marlix recuerda de ti '
+                'se queda mientras tengas cuenta, y puedes borrarlo cuando quieras.',
+                style: AppText.caption,
+              ),
+            ),
             const SizedBox(height: 12),
             _SettingsCard(
               title: 'Ayuda',

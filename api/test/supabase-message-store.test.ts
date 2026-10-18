@@ -231,4 +231,19 @@ describe('createSupabaseMessageStore', () => {
     assert.match(output, /23514/);
     assert.doesNotMatch(output, /solo|constraint/);
   });
+
+  it('deletes only the messages created before the cutoff and counts them', async () => {
+    const { store, calls } = fakeSupabase(() => ({
+      body: null,
+      status: 204,
+      headers: { 'content-range': '*/3' },
+    }));
+
+    assert.equal(await store.deleteOlderThan(new Date('2026-07-01T00:00:00.000Z')), 3);
+
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0]!.method, 'DELETE');
+    assert.equal(calls[0]!.table, 'messages');
+    assert.equal(calls[0]!.params.get('created_at'), 'lt.2026-07-01T00:00:00.000Z');
+  });
 });
