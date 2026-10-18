@@ -260,6 +260,8 @@ Sends a message to marlix and returns the reply. It runs the full flow of the [s
 }
 ~~~
 
+`usage` is missing from a response when the database cannot be read right after the reply or the crisis was produced: the person still gets it, and the app keeps the last usage it knew.
+
 The reply is the fixed crisis text from configuration. `resources` has the same shape as in `GET /v1/help-resources`, so the app can show a button that dials directly. The message never reached the conversation model.
 
 **Streaming** (`Accept: text/event-stream`)
@@ -296,7 +298,6 @@ Both messages of a turn are saved before the reply is returned, and `userMessage
 
 | Part | Until | Meanwhile |
 |---|---|---|
-| Usage counters in the database | S4-13 | `usage` and the limits work (S2-6), but the counters are kept in memory and the caps come from `api/config/plans.json`, so a restart resets them ([decision](decisions.md)). |
 | Streaming | S6-10 | Only the JSON reply. |
 
 ---
@@ -353,6 +354,8 @@ Returns today's usage, so the app can show the interactions left (US-10).
 ~~~
 
 `resetsAt` is the next midnight in Costa Rica time, expressed in UTC.
+
+The count is the `daily_usage` row of the user for the Costa Rica day and the cap is the `daily_interactions` of their plan in `plan_limits` ([decision](decisions.md#2026-10-17--usage-in-the-database-an-atomic-function-and-a-cap-read-every-minute-s4-13)). A restart or a deploy does not reset it, and a cap changed in `plan_limits` applies within a minute, with no deploy. If the database cannot be read the answer is `500 INTERNAL_ERROR`.
 
 ---
 
