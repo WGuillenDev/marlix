@@ -6,7 +6,6 @@ import type { CrisisConfig } from '../config/crisis-config.js';
 import { currentUser } from '../middleware/current-user.js';
 import { ApiError } from '../middleware/error-handler.js';
 import type { ChatService } from '../services/chat-service.js';
-import type { UsageLimiter } from '../services/usage/usage-limiter.js';
 
 const MAX_MESSAGE_LENGTH = 2000;
 
@@ -26,11 +25,7 @@ const chatRequestSchema = z
   })
   .strict();
 
-export function createChatRouter(
-  chatService: ChatService,
-  crisis: CrisisConfig,
-  usageLimiter: UsageLimiter,
-): Router {
+export function createChatRouter(chatService: ChatService, crisis: CrisisConfig): Router {
   const router = Router();
 
   // Errors (invalid body, LLM failures) go to the central error handler.
@@ -48,7 +43,7 @@ export function createChatRouter(
 
     const { message, mode, interruptedMessageId } = parsed.data;
     const user = currentUser(res);
-    const { type, userMessage, reply } = await chatService.reply({
+    const { type, userMessage, reply, usage } = await chatService.reply({
       message,
       mode,
       user,
@@ -66,7 +61,7 @@ export function createChatRouter(
       },
       reply,
       ...(isCrisis ? { resources: crisis.resources } : {}),
-      usage: usageLimiter.snapshot(user),
+      ...(usage ? { usage } : {}),
     });
   });
 

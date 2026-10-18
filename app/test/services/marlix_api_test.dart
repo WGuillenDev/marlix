@@ -116,7 +116,22 @@ void main() {
       expect(response, isA<ChatReply>());
       expect(response.reply.content, '¡Qué dicha!');
       expect(response.reply.role, MessageRole.assistant);
-      expect(response.usage.remaining, 87);
+      expect(response.usage?.remaining, 87);
+    });
+
+    test('POST /v1/chat parses a reply without usage, when the count could not be read', () async {
+      final api = apiReturning(
+        (_) => jsonResponse({
+          'type': 'reply',
+          'userMessage': message('user', 'Hola'),
+          'reply': message('assistant', '¡Qué dicha!'),
+        }, 200),
+      );
+
+      final response = await api.sendMessage('Hola');
+
+      expect(response, isA<ChatReply>());
+      expect(response.usage, isNull);
     });
 
     test('POST /v1/chat recognizes a crisis reply with its resources', () async {

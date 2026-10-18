@@ -1,6 +1,6 @@
-// Usage limits per plan (S2-6), read from api/config/plans.json. It mirrors the
-// plan_limits table (docs/schema.sql) until the backend reads that table in
-// Sprint 4. A paid plan (V2-2) is a new entry, not new code.
+// Burst limits per plan (S2-6), read from api/config/plans.json. The daily cap
+// is not here: it lives in the plan_limits table (S4-13), so changing it needs
+// no deploy. A paid plan (V2-2) is a new entry, not new code.
 import { readFileSync } from 'node:fs';
 
 import { z } from 'zod';
@@ -9,8 +9,6 @@ const DEFAULT_PATH = new URL('../../config/plans.json', import.meta.url);
 
 const planLimitsSchema = z
   .object({
-    /** Successful replies per day; the day follows Costa Rica time. */
-    dailyInteractions: z.number().int().min(1),
     /** Burst protection: at most `requests` messages to the model per window. */
     rateLimit: z
       .object({

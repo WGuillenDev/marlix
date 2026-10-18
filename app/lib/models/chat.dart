@@ -39,12 +39,13 @@ class ChatMessage {
 /// Response of `POST /v1/chat`. A crisis is a reply, not an error: the app
 /// must show it right away and never offer a retry.
 sealed class ChatResponse {
-  const ChatResponse({required this.userMessage, required this.reply, required this.usage});
+  const ChatResponse({required this.userMessage, required this.reply, this.usage});
 
   factory ChatResponse.fromJson(Map<String, Object?> json) {
     final userMessage = ChatMessage.fromJson(json.requireObject('userMessage'));
     final reply = ChatMessage.fromJson(json.requireObject('reply'));
-    final usage = Usage.fromJson(json.requireObject('usage'));
+    final usageJson = json['usage'];
+    final usage = usageJson == null ? null : Usage.fromJson(json.requireObject('usage'));
     return switch (json.requireString('type')) {
       'reply' => ChatReply(userMessage: userMessage, reply: reply, usage: usage),
       'crisis' => CrisisReply(
@@ -59,11 +60,13 @@ sealed class ChatResponse {
 
   final ChatMessage userMessage;
   final ChatMessage reply;
-  final Usage usage;
+
+  /// Missing when the backend could not read the count; the app keeps the last one.
+  final Usage? usage;
 }
 
 class ChatReply extends ChatResponse {
-  const ChatReply({required super.userMessage, required super.reply, required super.usage});
+  const ChatReply({required super.userMessage, required super.reply, super.usage});
 }
 
 /// The crisis filter detected risk: [reply] is the fixed crisis text and
@@ -72,7 +75,7 @@ class CrisisReply extends ChatResponse {
   const CrisisReply({
     required super.userMessage,
     required super.reply,
-    required super.usage,
+    super.usage,
     required this.resources,
   });
 

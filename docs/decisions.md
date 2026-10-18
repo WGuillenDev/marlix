@@ -4,6 +4,25 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-10-17 — Usage in the database: an atomic function, and a cap read every minute (S4-13)
+
+**Decision:** the daily count is the `daily_usage` row of the person for the Costa Rica day, and the cap is `plan_limits.daily_interactions` of their plan. `plans.json` keeps only the per-minute limit. This replaces the in-memory counters of [S2-6](#2026-10-14--usage-limits-configuration-file-and-in-memory-counters-until-sprint-4-s2-6).
+
+| Option for counting | Verdict |
+|---|---|
+| A database function `record_interaction(user, day)` that inserts or adds 1 in one statement (`insert ... on conflict do update`) and returns the new total | **Chosen.** Two messages at the same time cannot count as one, because the row is locked during the update. The `schema-test.sql` checks that it counts up and keeps users and days apart. |
+| Read the count, add 1 in the backend and write it back | Discarded. Two simultaneous replies read the same number and one is lost. |
+| `upsert` through the REST API | Discarded. It can only replace the value, not add to it. |
+
+- **The cap is cached for a minute.** It is read on every message and changes rarely, so each backend process keeps it for 60 seconds. A new cap applies within that minute with no deploy. If the database fails and the cap is already known, the chat keeps using it.
+- **A count that cannot be read stops the message** (`500`, before the model): letting it through would give the cap away. **A count that cannot be saved does not stop the reply**: the person already has it, and failing would only make them resend it. The cost is one uncounted reply, logged by its error code.
+- **A crisis ignores the database.** It is answered even if the count cannot be read; its response just has no `usage`.
+- **The per-minute limit stays in memory.** It is a window of seconds: a restart only gives more room.
+- **Order of deploy.** The function is created by [a migration](migrations/2026-10-17-record-interaction.sql) that runs in the SQL Editor **before** the backend that calls it is deployed.
+- **The cascade already covers it.** `daily_usage` references `auth.users` with `on delete cascade`, so deleting an account (S4-9) removes its counters.
+
+---
+
 ## 2026-10-17 — Message retention: an hourly delete inside the backend, 90 days by default (S4-10)
 
 **Decision:** a job inside the backend deletes every message older than `MESSAGE_RETENTION_DAYS` (90 by default) when the server starts and then every hour. It deletes only rows of `messages`: conversations and memories stay, so the distilled memory lasts as long as the account. The policy is in [docs/memory.md](memory.md#how-long-messages-are-kept) and, for the person, at the bottom of the Settings screen.
@@ -33,7 +52,7 @@ Every time the project picks between two technical options, the decision is reco
 
 - **Verified table by table, from the catalog.** `docs/schema-test.sql` fails if any foreign key to `auth.users` does not cascade, if a table in `public` (except the two catalogs) has no such key, or if any row is left pointing to a deleted user. A table that forgets the rule breaks the CI instead of surviving the account. Both guards were checked by creating a bad table.
 - **`amr`, not `iat`, proves a recent sign-in.** The contract first said `iat`. Checked on 2026-10-17 with a real token: a token refresh issues a new `iat` but keeps the original time in `amr[].timestamp`. With `iat`, anyone holding a stolen refresh token could get a fresh token and delete the account without the password. `amr` only moves when credentials are entered. A token without a usable `amr` is treated as an old session (it fails closed). This changes the contract's wording, not its behavior for the person: the app asks for the password and retries.
-- **Counters in memory.** The counters of the deleted user stay in the backend's memory until a restart. Nobody can use them: the id is gone and a new account gets a new one. S4-13 moves them to `daily_usage`, which the cascade already covers.
+- **Usage counters.** They are in `daily_usage` since S4-13, so the cascade removes them with the account.
 - **Known limit.** The access token of a deleted account still passes the session check until it expires (at most an hour). It can read nothing, since the rows are gone, and the database refuses what it tries to write because the user no longer exists. If a memory extraction was running for that user, its insert is refused for the same reason.
 
 ---
@@ -127,7 +146,7 @@ Every time the project picks between two technical options, the decision is reco
 - **A reply that cannot be saved is not delivered.** The history would miss a message the person has seen, and the daily count would not match. The answer is `500` and the app offers the retry it already has. **A crisis is the exception:** the 9-1-1 reply never waits on the database, so it is returned even if saving fails ([S0-8](#2026-09-30--chat-flow-crisis-filter-before-the-daily-cap-crisis-messages-kept-in-history-s0-8)).
 - **Nothing of the content in logs.** The database's error text and details can quote the row being written, so the store logs only the error code and throws an error without a message.
 - **Conversations.** A message belongs to the user's open conversation (`ended_at is null`), created on the first message. Closing it after inactivity belongs to S4-6, which needs it for the memory extraction. Two simultaneous first messages could open two conversations; that is harmless because the history is read by user, not by conversation, and the rate limit makes it very unlikely.
-- **Usage counters** stay in memory until S4-13, a card created for this because the contract assigned it to S4-4 but its criteria did not include it.
+- **Usage counters** moved to the database in S4-13, a card created for this because the contract assigned it to S4-4 but its criteria did not include it.
 
 ---
 
@@ -316,6 +335,8 @@ The public endpoints are unchanged: `GET /health` and `GET /v1/help-resources`.
 ---
 
 ## 2026-10-14 — Usage limits: configuration file and in-memory counters until Sprint 4 (S2-6)
+
+> **Replaced by [S4-13](#2026-10-17--usage-in-the-database-an-atomic-function-and-a-cap-read-every-minute-s4-13):** the daily count and cap are now in the database. What follows is the original decision.
 
 **Decision:** the caps per plan live in [`api/config/plans.json`](../api/config/plans.json) and the counters in memory. In Sprint 4, when the backend uses the database, they move to the `plan_limits` and `daily_usage` tables of the [schema](schema.sql).
 

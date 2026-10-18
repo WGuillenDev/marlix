@@ -1,4 +1,4 @@
--- marlix database tests: privileges, Row Level Security and sign-up (S0-6, S1-8, S4-2, S4-3, S4-5, S4-6, S4-9).
+-- marlix database tests: privileges, Row Level Security and sign-up (S0-6, S1-8, S4-2, S4-3, S4-5, S4-6, S4-9, S4-13).
 --
 -- Runs against the local database after docs/schema.sql was applied:
 --
@@ -330,6 +330,8 @@ select pg_temp.expect_denied('authenticated cannot end conversations',
   $sql$select public.close_idle_conversations(1800)$sql$);
 select pg_temp.expect_denied('authenticated cannot call the sign-up function',
   'select public.handle_new_auth_user()');
+select pg_temp.expect_denied('authenticated cannot count interactions',
+  $sql$select public.record_interaction('00000000-0000-4000-8000-00000000000a', current_date)$sql$);
 
 -- Ana deletes her own memory.
 delete from public.memories where id = '00000000-0000-4000-8000-0000000000e1';
@@ -378,6 +380,18 @@ select pg_temp.expect('a conversation already ended is not ended again',
   (select count(*) from public.close_idle_conversations(1800)) = 0);
 select pg_temp.expect('the backend can execute close_idle_conversations',
   has_function_privilege('service_role', 'public.close_idle_conversations(integer, uuid)', 'EXECUTE'));
+-- record_interaction (S4-13): one count per call, kept apart by user and day.
+-- Each call is its own statement, so the order is guaranteed.
+select pg_temp.expect('record_interaction starts a day at 1',
+  public.record_interaction('00000000-0000-4000-8000-00000000000a', date '2026-10-14') = 1);
+select pg_temp.expect('record_interaction counts up',
+  public.record_interaction('00000000-0000-4000-8000-00000000000a', date '2026-10-14') = 2);
+select pg_temp.expect('record_interaction keeps another day apart',
+  public.record_interaction('00000000-0000-4000-8000-00000000000a', date '2026-10-15') = 1);
+select pg_temp.expect('record_interaction keeps another user apart',
+  public.record_interaction('00000000-0000-4000-8000-00000000000b', date '2026-10-14') = 1);
+select pg_temp.expect('the backend can execute record_interaction',
+  has_function_privilege('service_role', 'public.record_interaction(uuid, date)', 'EXECUTE'));
 
 delete from auth.users where id = '00000000-0000-4000-8000-00000000000b';
 select pg_temp.expect('deleting Beto removes all his data',

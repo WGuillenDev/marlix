@@ -1,6 +1,5 @@
 {
   "personal": {
-    "dailyInteractions": 100,
     "rateLimit": { "requests": 5, "windowSeconds": 60 }
   }
 }

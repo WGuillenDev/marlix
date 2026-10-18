@@ -12,6 +12,7 @@ import { LlmError } from '../src/services/llm/index.js';
 import type { LlmCompletionRequest, LlmProvider } from '../src/services/llm/index.js';
 import { createFakeAccounts, createFakeMemories } from './memory-fakes.js';
 import { createMemoryMessageStore } from './memory-message-store.js';
+import { createMemoryUsageStore } from './memory-usage-store.js';
 
 /** An LlmProvider that records every request and answers with `respond`. */
 export function createFakeLlm(
@@ -39,7 +40,7 @@ export function failingLlm(error: LlmError): LlmProvider {
 
 // Tests send many messages to one app; the real limits are tested on their own.
 const GENEROUS_PLANS: PlansConfig = {
-  personal: { dailyInteractions: 1000, rateLimit: { requests: 1000, windowSeconds: 60 } },
+  personal: { rateLimit: { requests: 1000, windowSeconds: 60 } },
 };
 
 // A stand-in for the Supabase project: its own signing key and issuer.
@@ -99,6 +100,7 @@ export async function startApp({
   memoryFacts,
   memoryJob,
   accounts = createFakeAccounts().store,
+  usage = createMemoryUsageStore().store,
 }: {
   llm: LlmProvider;
   crisisClassifier?: LlmProvider;
@@ -112,6 +114,7 @@ export async function startApp({
   memoryFacts?: number;
   memoryJob?: AppDependencies['memoryJob'];
   accounts?: AppDependencies['accounts'];
+  usage?: AppDependencies['usage'];
 }) {
   const app = createApp({
     llm,
@@ -126,6 +129,7 @@ export async function startApp({
     ...(memoryFacts ? { memoryFacts } : {}),
     ...(memoryJob ? { memoryJob } : {}),
     accounts,
+    usage,
   });
   const authHeader = { authorization: `Bearer ${await signSession()}` };
   const server = app.listen(0);
