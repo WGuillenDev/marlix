@@ -4,7 +4,36 @@ Notable changes to marlix, one entry per sprint. The format follows [Keep a Chan
 
 ## [Unreleased]
 
-Sprint 4 — Data and memory: marlix remembers you.
+Sprint 5 — Avatars: the avatar comes to life.
+
+## Sprint 4 — Data and memory (2026-10-15 to 2026-10-18)
+
+marlix knows who you are: accounts with Supabase, a saved history, a distilled memory the person can see and edit, and data that is deleted when it should be.
+
+### Added
+
+- Supabase project with the schema applied, and the migrations folder for later changes ([#95](https://github.com/WGuillenDev/marlix/pull/95)).
+- Sign up and sign in: the app has an auth screen (18 or older) and a sign-out button, and `/v1` checks the Supabase session instead of the development token ([#103](https://github.com/WGuillenDev/marlix/pull/103)).
+- Chat history saved by the backend and `GET /v1/history`, paged with an opaque cursor ([#105](https://github.com/WGuillenDev/marlix/pull/105)).
+- The model sees the last 16 messages of the open conversation, never the ones of a crisis ([#108](https://github.com/WGuillenDev/marlix/pull/108)).
+- Distilled memory: a background job ends idle conversations and extracts lasting facts with a small model, with two barriers against sensitive data ([#110](https://github.com/WGuillenDev/marlix/pull/110)).
+- The saved memories go into the system prompt, the most recently updated first ([#112](https://github.com/WGuillenDev/marlix/pull/112)).
+- "Lo que marlix sabe de mí" screen to see, edit and delete memories, with `/v1/memories` ([#114](https://github.com/WGuillenDev/marlix/pull/114)).
+- Account deletion in cascade after a recent sign-in, with `DELETE /v1/account` ([#116](https://github.com/WGuillenDev/marlix/pull/116)).
+- Raw messages are deleted after 90 days (`MESSAGE_RETENTION_DAYS`) by an hourly job, and the policy is shown in Settings ([#118](https://github.com/WGuillenDev/marlix/pull/118)).
+
+### Changed
+
+- The daily usage count and cap moved from memory to the `daily_usage` and `plan_limits` tables, so a restart does not reset the count and a new cap needs no deploy. The app accepts a chat reply without `usage` ([#119](https://github.com/WGuillenDev/marlix/pull/119)).
+
+### Security
+
+- Row Level Security enabled on every table, with tests that act as two different users and a guard that fails if a table forgets it ([#97](https://github.com/WGuillenDev/marlix/pull/97)).
+- The app is not backed up to Android's cloud ([#99](https://github.com/WGuillenDev/marlix/pull/99)).
+- A release build rejects the development token ([#101](https://github.com/WGuillenDev/marlix/pull/101)).
+- The development token no longer exists in the code: every request needs a Supabase session ([#103](https://github.com/WGuillenDev/marlix/pull/103)).
+- Deleting an account requires a sign-in from the last 5 minutes, read from `amr` and not `iat`, so a stolen refresh token cannot delete it ([#116](https://github.com/WGuillenDev/marlix/pull/116)).
+- Less data kept: messages expire after 90 days, and memories last only as long as the account or until the person deletes them ([#118](https://github.com/WGuillenDev/marlix/pull/118)).
 
 ## Sprint 3 — Chat app (2026-10-15)
 
