@@ -6,6 +6,7 @@ import type { CrisisFilter } from './crisis/filter.js';
 import { MessageNotFoundError, type MessageStore, type SavedTurn } from './history/message-store.js';
 import type { LlmProvider } from './llm/index.js';
 import { reviewReply } from './review/reply-review.js';
+import { detectTone, type MessageTone } from './tone/message-tone.js';
 import type { UsageLimiter, UsageSnapshot, UsageUser } from './usage/usage-limiter.js';
 
 // Upper bound for one reply, reasoning included. Voice replies are one to
@@ -23,10 +24,12 @@ export interface ChatInput {
 /**
  * What was said in this turn, with the ids the history gave it. `usage` is
  * missing when the database could not be read after the reply: the person
- * still gets it, and the app keeps the last usage it knew.
+ * still gets it, and the app keeps the last usage it knew. `tone` is what the
+ * avatar reacts to (S5-4); a crisis is always neutral.
  */
 export type ChatOutcome = SavedTurn & {
   type: 'reply' | 'crisis';
+  tone: MessageTone;
   usage?: UsageSnapshot | undefined;
 };
 
@@ -76,7 +79,7 @@ export function createChatService(
           .catch(() => unsavedTurn(message, crisisReply, messageAt));
         // Not counted, and not worth failing the help over: usage is optional.
         const usage = await usageLimiter.snapshot(user).catch(() => undefined);
-        return { type: 'crisis', ...turn, usage };
+        return { type: 'crisis', tone: 'neutral', ...turn, usage };
       }
 
       if (interruptedMessageId) {
@@ -112,7 +115,7 @@ export function createChatService(
         crisis: false,
       });
       const usage = await usageLimiter.recordInteraction(user);
-      return { type: 'reply', ...turn, usage };
+      return { type: 'reply', tone: detectTone(message), ...turn, usage };
     },
   };
 }
