@@ -26,8 +26,11 @@ void main() {
     for (final name in _layers) {
       final file = File('$_dir/$name.svg');
       expect(file.existsSync(), isTrue, reason: '$name.svg is missing');
-      expect(file.readAsStringSync(), contains('viewBox="0 0 512 512"'),
-          reason: '$name.svg uses a different canvas');
+      expect(
+        file.readAsStringSync(),
+        contains('viewBox="0 0 512 512"'),
+        reason: '$name.svg uses a different canvas',
+      );
     }
   });
 
