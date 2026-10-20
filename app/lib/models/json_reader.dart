@@ -29,6 +29,17 @@ extension JsonReader on Map<String, Object?> {
 
   int requireInt(String key) => _require<int>(key);
 
+  List<String> requireStringList(String key) {
+    final items = _require<List<Object?>>(key);
+    return [
+      for (final item in items)
+        if (item is String)
+          item
+        else
+          throw InvalidJsonException('"$key" must only contain strings'),
+    ];
+  }
+
   Map<String, Object?> requireObject(String key) => _require<Map<String, Object?>>(key);
 
   DateTime requireDateTime(String key) {
