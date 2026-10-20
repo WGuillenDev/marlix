@@ -597,3 +597,17 @@ Alternatives, in order: another Groq model, a paid provider such as DeepSeek, or
 **Only the app deletes.** The run needs a recent sign-in for the deletion, so it signs in again right before deleting instead of trusting the sign-up token. The account's cascade (S4-9) removes profile, messages, memories and usage; the backend suite uses fakes and never touches production.
 
 **Production cleanup.** The old accounts (`@marlix.test`) are removed by the owner in the Supabase SQL Editor with `delete from auth.users where email like '%@marlix.test'`, which the same foreign keys cascade.
+
+
+## 2026-10-20 — The avatar folder travels in `GET /v1/me` (S5-7)
+
+**Decision:** `GET /v1/me` (and `POST /v1/onboarding`, which returns the same profile) adds `avatar.layersPath`, read from `avatars.layers_path` in the same query that already joined the avatar. The app reads it with the profile, before the chat opens, and `avatarFolderProvider` turns it into the widget's folder. No new endpoint and no migration.
+
+| Alternative | Why not |
+| --- | --- |
+| `GET /v1/avatars` | It lists every avatar (v2) and the app would need a second request and a second loading state; the user's avatar is already part of the profile it must read before showing anything. It stays in the contract for the v2 selection screen. |
+| Hard-coding the folder in the app | It is what S5-2 did; the card asks for the folder in the database to be the source. |
+
+**Fallback.** The chat never waits for or breaks on the avatar: if the profile is loading, failed, or the backend (an older one) sends no `layersPath`, the folder is marlix's. A path that does not start with `assets/avatars/` or has `..` is ignored too: the app only loads bundled files, and an unknown folder would draw an empty avatar (the widget hides a missing layer).
+
+**Trap: the seed's trailing slash.** `schema.sql` stores `assets/avatars/marlix/`, and the widget builds `$folder/cola.svg`, which would become `marlix//cola.svg` and silently draw nothing. The app trims trailing slashes instead of editing the seed, so databases that already exist need no migration.
