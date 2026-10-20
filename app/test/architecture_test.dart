@@ -55,6 +55,17 @@ void main() {
     expect(offenders, isEmpty, reason: 'Screens go through ReminderScheduler');
   });
 
+  test('only lib/services/ asks the system for permissions', () {
+    final offenders = [
+      for (final file in sources)
+        if (!relative(file).startsWith('lib/services/') &&
+            file.readAsStringSync().contains('package:permission_handler/'))
+          relative(file),
+    ];
+
+    expect(offenders, isEmpty, reason: 'Screens go through MicrophonePermission');
+  });
+
   test('the app holds no API key', () {
     // Groq keys, Supabase secret keys and JWTs such as the service_role key.
     final keyPattern = RegExp(r'gsk_[A-Za-z0-9]{20,}|sb_secret_|eyJ[A-Za-z0-9_-]{20,}\.');
