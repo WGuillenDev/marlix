@@ -33,7 +33,12 @@ describe('GET /v1/me and POST /v1/onboarding', () => {
     assert.deepEqual(await response.json(), {
       id: USER,
       plan: 'personal',
-      avatar: { id: '0b8e5d2a-7c41-4f0e-8d2b-3a9c1e7f6b54', slug: 'marlix', name: 'marlix' },
+      avatar: {
+        id: '0b8e5d2a-7c41-4f0e-8d2b-3a9c1e7f6b54',
+        slug: 'marlix',
+        name: 'marlix',
+        layersPath: 'assets/avatars/marlix/',
+      },
       onboardingCompleted: false,
       dataConsentAt: null,
       settings: { remindersEnabled: false },

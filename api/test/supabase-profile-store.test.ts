@@ -14,7 +14,7 @@ const ROW = {
   data_consent_at: null,
   onboarding_completed_at: null,
   reminders_enabled: false,
-  avatar: { id: 'a1', slug: 'marlix', name: 'marlix' },
+  avatar: { id: 'a1', slug: 'marlix', name: 'marlix', layers_path: 'assets/avatars/marlix/' },
 };
 
 describe('createSupabaseProfileStore', () => {
@@ -25,7 +25,7 @@ describe('createSupabaseProfileStore', () => {
     assert.deepEqual(profile, {
       id: USER,
       plan: 'personal',
-      avatar: { id: 'a1', slug: 'marlix', name: 'marlix' },
+      avatar: { id: 'a1', slug: 'marlix', name: 'marlix', layersPath: 'assets/avatars/marlix/' },
       onboardingCompleted: false,
       dataConsentAt: null,
       settings: { remindersEnabled: false },
@@ -33,7 +33,7 @@ describe('createSupabaseProfileStore', () => {
     const query = calls[0]!.params;
     assert.equal(calls[0]!.table, 'users');
     assert.equal(query.get('id'), `eq.${USER}`);
-    assert.match(query.get('select') ?? '', /avatar:avatars\(id,slug,name\)/);
+    assert.match(query.get('select') ?? '', /avatar:avatars\(id,slug,name,layers_path\)/);
   });
 
   it('says onboarding is done when onboarding_completed_at is set', async () => {

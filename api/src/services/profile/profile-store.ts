@@ -1,7 +1,13 @@
 export interface Profile {
   id: string;
   plan: string;
-  avatar: { id: string; slug: string; name: string };
+  avatar: {
+    id: string;
+    slug: string;
+    name: string;
+    /** Folder of the avatar's SVG layers in the app's assets (S5-7). */
+    layersPath: string;
+  };
   onboardingCompleted: boolean;
   /** When the person gave the explicit data consent; null until they do. */
   dataConsentAt: string | null;
