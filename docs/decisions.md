@@ -507,4 +507,23 @@ Alternatives, in order: another Groq model, a paid provider such as DeepSeek, or
 
 **Origin:** the character is original, inspired by the author's own dog; it copies no existing character. The art is public and editable with any SVG editor.
 
-**Test:** `app/test/avatar/marlix_layers_test.dart` checks the 12 files and the shared canvas, and stacks them with `flutter_svg`, the dependency S5-2 needs anyway.
+**Test:** `app/test/avatar/marlix_layers_test.dart` checks the layer files and the shared canvas, and stacks them with `flutter_svg`, the dependency S5-2 needs anyway.
+
+
+## 2026-10-19 — Avatar widget: English names, folder as parameter, drawn effects (S5-2)
+
+**English names in the code.** `AvatarMarlix(state, volume, folder)`, `AvatarState { idle, listening, thinking, speaking, happy }` and `mouthForVolume`, instead of the Spanish names first written on the card. The layer file names stay as the template fixes them (`oreja_izq`, `boca_0`...), because they are the public contract of every avatar (`docs/avatar.md`).
+
+**The folder is a parameter.** The widget works with any folder that follows the template. Reading `avatars.layers_path` needs a backend endpoint, since the app never queries the database directly (`docs/architecture.md`); it is the new card S5-7.
+
+**Animation in code, no Rive.** Rive's free plan cannot export for the app, and an open source project cannot require a paid tool to edit the avatar. A single `AnimationController` of 12 s drives the periodic movements and a `TweenAnimationBuilder` eases between poses.
+
+| Alternative | Why not |
+| --- | --- |
+| One `AnimationController` per movement | More objects and more ticks for the same result on old phones. |
+| Animating with `AnimatedSwitcher` between states | A state change would cut instead of ease: the card asks for no jumps. |
+| Baking effects (waves, hearts, cloud) as SVG layers | They would break the fixed layer template and every new avatar would have to redraw them. |
+
+**Artwork redrawn against the prototype (found in S5-2).** The first layers of S5-1 were drawn from the card alone and did not look like the validated prototype (`docs/diagrams/wireframes/style-guide/avatar.png`): they lacked the white eye rings, the "marlix" coat, arms, tail and feet. The layers were redrawn measuring over the prototype and the template grew to 19 layers (`cola`, `pies`, `brazo_izq`, `brazo_der`, `cabeza`, `pupilas` and `boca_pensando` are new; `panza` is the coat). The open mouths have the flat top of the prototype, so Speaking visibly opens the mouth even at low volume, and the doubtful mouth of Thinking is its own layer instead of sharing `boca_1`. `pupilas` is apart from `ojos_abiertos` so the pupils can look up inside their rings. The lettering is outlined from the bundled Baloo 2 because `flutter_svg` does not draw text. Lesson: check the artwork against the validated reference before delivering, not only against the card.
+
+**Debug-only test screen.** "Probar el avatar" is shown in Settings only when `kDebugMode`, so release builds do not carry a developer row.
