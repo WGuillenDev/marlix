@@ -26,7 +26,7 @@ User stories for the marlix MVP. Every feature in the v1 scope is backed by at l
 | US-11 | Voice conversation | User | Must |
 | US-12 | Interrupt the avatar | User | Should |
 | US-13 | Animated avatar | User | Must |
-| US-14 | Inactivity reminders | User | Should |
+| US-14 | Daily reminders | User | Should |
 | US-15 | Clear errors and waiting states | User | Must |
 
 ---
@@ -57,7 +57,7 @@ User stories for the marlix MVP. Every feature in the v1 scope is backed by at l
 - [ ] A notice states that marlix is not therapy and does not replace professional care
 - [ ] It explains what data is stored and asks for explicit consent before continuing
 - [ ] It asks for microphone permission and explains what it is for
-- [ ] It offers to turn on inactivity reminders (US-14); saying no has no consequences
+- [ ] It offers to turn on daily reminders (US-14); saying no has no consequences
 - [ ] It shows how to reach the help screen (US-05)
 - [ ] It is shown only once per account
 
@@ -222,14 +222,14 @@ User stories for the marlix MVP. Every feature in the v1 scope is backed by at l
 
 ---
 
-## US-14 — Inactivity reminders
+## US-14 — Daily reminders
 
-**As a** user **I want** marlix to say hi when I have not opened the app for a while **so that** I remember it is there, without feeling pressured.
+**As a** user **I want** marlix to say hi once a day **so that** I remember to talk with it a little every day, without feeling pressured.
 
 **Priority:** Should
 
 **Acceptance criteria**
-- [ ] Reminders are sent after 2, 5 and 10 days without opening the app, then they stop until I come back
+- [ ] One reminder a day at the time I choose (19:00 by default), with a different text each day of the week
 - [ ] Messages never use guilt, streaks or day counters
 - [ ] Messages never include my memories or personal data (they show on the lock screen)
 - [ ] They are only active if I opted in, and I can turn them off in settings

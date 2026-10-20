@@ -14,7 +14,9 @@ Future<void> openSettings(WidgetTester tester) async {
 }
 
 Future<void> startDeleting(WidgetTester tester) async {
+  await tester.scrollUntilVisible(find.text('Eliminar mi cuenta'), 200);
   await tester.ensureVisible(find.text('Eliminar mi cuenta'));
+  await tester.pumpAndSettle();
   await tester.tap(find.text('Eliminar mi cuenta'));
   await tester.pumpAndSettle();
 }
@@ -30,9 +32,9 @@ void main() {
     final backend = await openChat(tester, auth: auth);
     await openSettings(tester);
 
-    expect(find.text('Borra todos tus datos para siempre'), findsOneWidget);
     expect(find.textContaining('se borran solos a los 90 días'), findsOneWidget);
     await startDeleting(tester);
+    expect(find.text('Borra todos tus datos para siempre'), findsOneWidget);
     expect(find.text('¿Eliminar tu cuenta?'), findsOneWidget);
     expect(find.textContaining('No se puede deshacer'), findsOneWidget);
 
