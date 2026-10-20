@@ -6,11 +6,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/usage.dart';
 import '../../services/help_resources.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/avatar_marlix.dart';
 import '../../widgets/chat_states.dart';
 import '../../widgets/message_bubble.dart';
 import '../../widgets/typing_indicator.dart';
 import '../help_screen.dart';
 import '../settings_screen.dart';
+import 'avatar_controller.dart';
 import 'chat_controller.dart';
 
 /// Main screen (wireframes docs/diagrams/wireframes/screens/03a to 03d).
@@ -127,6 +129,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         child: Column(
           children: [
             _Header(
+              // Read here: the Scaffold hides the keyboard from its body.
+              compact: MediaQuery.viewInsetsOf(context).bottom > 0,
               onHelp: _openHelp,
               onSettings: () => Navigator.of(context).push(SettingsScreen.route()),
             ),
@@ -207,8 +211,36 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   };
 }
 
+/// The animated avatar; the name next to it already says who it is.
+class _HeaderAvatar extends ConsumerWidget {
+  const _HeaderAvatar({required this.compact});
+
+  /// With the keyboard open there is little height left for the messages.
+  final bool compact;
+
+  static const size = 64.0;
+
+  static const compactSize = 48.0;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ExcludeSemantics(
+      child: SizedBox.square(
+        dimension: compact ? compactSize : size,
+        child: AvatarMarlix(
+          state: ref.watch(avatarStateProvider),
+          folder: ref.watch(avatarFolderProvider),
+        ),
+      ),
+    );
+  }
+}
+
 class _Header extends StatelessWidget {
-  const _Header({required this.onHelp, required this.onSettings});
+  const _Header({required this.onHelp, required this.onSettings, required this.compact});
+
+  /// Smaller avatar, for when the keyboard is open.
+  final bool compact;
 
   final VoidCallback onHelp;
   final VoidCallback onSettings;
@@ -223,14 +255,8 @@ class _Header extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
         child: Row(
           children: [
-            ExcludeSemantics(
-              child: CircleAvatar(
-                radius: 24,
-                backgroundColor: AppColors.tanLight,
-                foregroundImage: const AssetImage('assets/avatar/marlix.png'),
-              ),
-            ),
-            const SizedBox(width: 12),
+            _HeaderAvatar(compact: compact),
+            const SizedBox(width: 8),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
