@@ -40,7 +40,7 @@ The diagram is a `.drawio.svg` file: GitHub renders it as an image, and it can b
 | UC-14 | Check crisis signals | US-04 |
 | UC-15 | Show crisis response | US-04 |
 | UC-16 | Distill memory | US-07 |
-| UC-17 | Send inactivity reminder | US-14 |
+| UC-17 | Send daily reminder | US-14 |
 | UC-18 | Delete messages older than 90 days | US-06 |
 
 ## Relationships

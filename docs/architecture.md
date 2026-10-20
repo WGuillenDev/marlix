@@ -61,7 +61,7 @@ Thick arrows are the path of a normal chat message. Dotted arrows are background
 | Flutter app | Phone | Chat and voice screens, animated avatar, help screen, onboarding and settings. Talks only to the backend and to Supabase Auth. |
 | Speech recognizer | Phone | Turns the user's voice into text (`speech_to_text`). Free and understands Costa Rican Spanish. |
 | Avatar voice | Phone | Turns marlix's reply into speech with Supertonic 3; the native voice (`flutter_tts`) is the fallback. Free, offline and private. |
-| Local reminders | Phone | Inactivity reminders scheduled on the phone (`flutter_local_notifications`). No server, no push. |
+| Local reminders | Phone | Daily reminders scheduled on the phone (`flutter_local_notifications`). No server, no push. |
 | Backend | Render (free plan) | The only component that talks to the LLM and writes to the database. Checks the session, the daily limit and the crisis filter, builds the prompt with memory, calls Groq and reviews the reply before returning it. |
 | Supabase Auth | Supabase | Sign-up, sign-in and sessions. |
 | PostgreSQL | Supabase | Profiles, sessions, messages, memories and usage, with RLS on every table. |
