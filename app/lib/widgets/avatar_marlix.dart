@@ -61,9 +61,21 @@ class _AvatarMarlixState extends State<AvatarMarlix> with SingleTickerProviderSt
   late final AnimationController _clock = AnimationController(
     vsync: this,
     duration: const Duration(seconds: _cycleSeconds),
-  )..repeat();
+  );
 
   late _Layers _layers = _Layers(widget.folder);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // With "remove animations" on, the avatar keeps its pose and only eases
+    // between states: no floating, blinking or wagging.
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _clock.stop();
+    } else if (!_clock.isAnimating) {
+      _clock.repeat();
+    }
+  }
 
   @override
   void didUpdateWidget(AvatarMarlix oldWidget) {
