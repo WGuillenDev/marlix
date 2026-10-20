@@ -548,3 +548,20 @@ Alternatives, in order: another Groq model, a paid provider such as DeepSeek, or
 | Exact alarms (`SCHEDULE_EXACT_ALARM`) | A greeting does not need the exact minute, and the permission adds a prompt and store scrutiny. |
 
 **Details:** the time zone is read from the phone (`flutter_timezone`) so the hour follows the local clock, daylight saving time included; the app reschedules on every opening, which also follows a time zone change. Reboots are covered by the plugin's boot receiver (`RECEIVE_BOOT_COMPLETED`), and the plugin needs core library desugaring in `build.gradle.kts`. The time picker uses the 24-hour clock because the app has no Spanish localizations and the 12-hour one would show AM/PM in English.
+
+
+## 2026-10-19 — The avatar follows the conversation: one controller and a tone from the backend (S5-4)
+
+**One controller.** `AvatarController` listens to the chat state and is the only code that sets the avatar's state: `thinking` while marlix replies, a 3 s `happy` after a reply to a positive message, `idle` otherwise. Screens only watch it, so voice mode (Sprint 6) adds `listening` and `speaking` there without touching the widget. The avatar sits in the chat header (64 px, 48 px with the keyboard open, because at 64 px a 320x568 phone with the keyboard open overflowed by 20 px), as in wireframe 03a but bigger and animated.
+
+**`tone` in `POST /v1/chat`.** The backend returns `tone` (`positive` or `neutral`), computed in `api/src/services/tone/message-tone.ts` with rules over words and emojis, without calling the model. It is conservative on purpose: `positive` only for a short message (at most 200 characters) with a clear happy phrase and no negation or doubt ("no me siento bien", "estoy bien pero cansado" are `neutral`), because celebrating next to someone who is struggling is worse than staying calm. A crisis is always `neutral`. The app reads anything but an explicit `"positive"` as neutral, so it still works against a backend that does not send the field.
+
+| Alternative | Why not |
+| --- | --- |
+| The model decides the tone | It changes the system prompt (about 1,600 tokens, and the Groq per-minute limit is tight), complicates parsing and forces repeating the prompt tests. |
+| Detecting the tone in the app | The card asks the backend for the signal; the rules would be duplicated for the future voice mode and cannot be tested with the backend suite. |
+| A sentiment library | A dependency and a model for a decoration; false positives are worse than none. |
+
+**Avatar by `avatar_id` moves to S5-7.** `/v1/me` and `/v1/avatars` do not exist yet, so the folder comes from `avatarFolderProvider`, which returns marlix's folder; S5-7 overrides it. Decided with the product owner on 2026-10-19.
+
+**Reduce motion.** `AvatarMarlix` stops its 12 s clock when the phone asks to remove animations (`MediaQuery.disableAnimationsOf`): it keeps its pose and still eases between states. It is the right behavior for people who need it, and it lets `pumpAndSettle` finish in the chat tests, since the avatar otherwise floats for ever (tests turn the feature on in `openChat`).

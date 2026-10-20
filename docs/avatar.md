@@ -50,6 +50,19 @@ The ring, thought bubbles and hearts are painted by code, so they need no layer.
 - The layers that never move (`pies`, `cuerpo`, `panza`, `brazo_izq`, `brazo_der`, `cabeza`) are built once and cached as one picture, so each frame only redraws the tail, ears, eyes, mouth and effects.
 - A missing layer leaves a gap instead of an error screen.
 
+## In the chat
+
+The avatar lives in the header of the chat screen, 64 px (48 px while the keyboard is open, to leave room for the messages). `AvatarController` (`app/lib/screens/chat/avatar_controller.dart`) is the only place that decides its state; screens just watch `avatarStateProvider`.
+
+| Moment | State |
+| --- | --- |
+| Nothing is happening | `idle` |
+| A message was sent and marlix has not answered | `thinking` |
+| The reply arrived, and the user's message was positive (`tone: "positive"`) | `happy` for 3 s, then `idle` |
+| The reply arrived otherwise, the send failed, or it was a crisis | `idle` |
+
+`tone` comes from the backend (`POST /v1/chat`, [contract](api-contract.md#post-v1chat)). It is never `positive` for a crisis, and the history loaded at the start never makes the avatar celebrate. The folder of the layers comes from `avatarFolderProvider`, which returns `assets/avatars/marlix` until S5-7 reads it from the backend. With "remove animations" on in the phone, the avatar keeps its pose and only eases between states.
+
 ## Trying it
 
 In a debug build, Settings has a "Probar el avatar" row with a button per state and a volume slider. It is not in release builds.
