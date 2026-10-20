@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:integration_test/integration_test.dart';
@@ -8,23 +10,26 @@ import 'package:marlix/services/auth_service.dart';
 import 'package:marlix/services/marlix_api.dart';
 
 /// Calls the real backend from the app on a device or emulator, with the same
-/// configuration files as `flutter run`, signed in with a test account from
-/// `config/test-account.json`. It sends two chat messages: one uses the model
-/// (and the Groq quota), the other is caught by the crisis filter.
+/// configuration file as `flutter run`. It signs up its own throwaway account
+/// and deletes it at the end, so a run leaves no data behind (S5-6). It sends
+/// two chat messages: one uses the model (and the Groq quota), the other is
+/// caught by the crisis filter.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  const email = String.fromEnvironment('TEST_ACCOUNT_EMAIL');
-  const password = String.fromEnvironment('TEST_ACCOUNT_PASSWORD');
+  final random = Random.secure();
+  final email =
+      'it-${DateTime.now().millisecondsSinceEpoch}-${random.nextInt(1 << 32)}@marlix.test';
+  final password = List.generate(24, (_) => random.nextInt(36).toRadixString(36)).join();
+  var accountDeleted = false;
   final config = AppConfig.fromEnvironment();
   final client = http.Client();
   late SupabaseAuthService auth;
   late MarlixApi api;
 
   setUpAll(() async {
-    expect(email, isNotEmpty, reason: 'Pass config/test-account.json (see the README)');
     auth = await SupabaseAuthService.initialize(config);
-    await auth.signIn(email: email, password: password);
+    await auth.signUp(email: email, password: password, birthDate: DateTime(1990, 1, 1));
     api = MarlixApi(
       client: client,
       baseUrl: config.apiBaseUrl,
@@ -32,6 +37,11 @@ void main() {
     );
   });
   tearDownAll(() async {
+    // Also when a test failed halfway: the account must not stay in production.
+    if (!accountDeleted) {
+      await auth.signIn(email: email, password: password);
+      await api.deleteAccount();
+    }
     await auth.signOut();
     client.close();
   });
@@ -119,10 +129,27 @@ void main() {
     await expectLater(anonymous.usage(), throwsA(isA<UnauthorizedException>()));
   });
 
-  // Never with the session: it would delete the test account. The deletion
-  // itself is covered by the backend and widget tests and was run by hand.
   testWidgets('DELETE /v1/account without a session deletes nothing', (_) async {
     final anonymous = MarlixApi(client: client, baseUrl: config.apiBaseUrl);
     await expectLater(anonymous.deleteAccount(), throwsA(isA<UnauthorizedException>()));
+  });
+
+  // Last on purpose: it removes the account the other tests use. A new sign-in
+  // makes the session recent enough for the deletion (5 minutes).
+  testWidgets('DELETE /v1/account removes the test account and its data', (_) async {
+    await auth.signIn(email: email, password: password);
+    await api.deleteAccount();
+    accountDeleted = true;
+
+    await expectLater(
+      auth.signIn(email: email, password: password),
+      throwsA(
+        isA<AuthFailureException>().having(
+          (error) => error.failure,
+          'failure',
+          AuthFailure.invalidCredentials,
+        ),
+      ),
+    );
   });
 }

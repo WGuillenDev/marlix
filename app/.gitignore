@@ -49,5 +49,3 @@ app.*.map.json
 
 # Per-developer environment (copy config/local.example.json)
 /config/local.json
-# Test account for integration_test/ (copy config/test-account.example.json)
-/config/test-account.json
