@@ -218,6 +218,7 @@ Sends a message to marlix and returns the reply. It runs the full flow of the [s
 ~~~json
 {
   "type": "reply",
+  "tone": "positive",
   "userMessage": {
     "id": "c2a7e9b0-4f3d-4a1e-9b8c-7d6e5f4a3b21",
     "role": "user",
@@ -240,6 +241,7 @@ Sends a message to marlix and returns the reply. It runs the full flow of the [s
 ~~~json
 {
   "type": "crisis",
+  "tone": "neutral",
   "userMessage": {
     "id": "a9b8c7d6-e5f4-4321-8a7b-6c5d4e3f2a1b",
     "role": "user",
@@ -259,6 +261,8 @@ Sends a message to marlix and returns the reply. It runs the full flow of the [s
   "usage": { "used": 13, "limit": 100, "remaining": 87, "resetsAt": "2026-10-01T06:00:00Z" }
 }
 ~~~
+
+`tone` is the tone of the user's message, `positive` or `neutral`, so the app can make the avatar celebrate (S5-4). It is computed with simple rules over words and emojis, never by the model, so it adds no latency or Groq quota. It is `positive` only for a short message with a clear happy phrase and no negation or doubt ("no me siento bien" and "estoy bien, pero cansado" are `neutral`); anything uncertain is `neutral`, because celebrating next to someone who is struggling is worse than staying calm. A crisis is always `neutral`.
 
 `usage` is missing from a response when the database cannot be read right after the reply or the crisis was produced: the person still gets it, and the app keeps the last usage it knew.
 

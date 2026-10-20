@@ -6,6 +6,10 @@ enum ChatMode { text, voice }
 
 enum MessageRole { user, assistant }
 
+/// Tone of the user's message, decided by the backend (S5-4). The avatar
+/// celebrates a positive one.
+enum MessageTone { positive, neutral }
+
 class ChatMessage {
   const ChatMessage({
     required this.id,
@@ -39,15 +43,24 @@ class ChatMessage {
 /// Response of `POST /v1/chat`. A crisis is a reply, not an error: the app
 /// must show it right away and never offer a retry.
 sealed class ChatResponse {
-  const ChatResponse({required this.userMessage, required this.reply, this.usage});
+  const ChatResponse({
+    required this.userMessage,
+    required this.reply,
+    this.tone = MessageTone.neutral,
+    this.usage,
+  });
 
   factory ChatResponse.fromJson(Map<String, Object?> json) {
     final userMessage = ChatMessage.fromJson(json.requireObject('userMessage'));
     final reply = ChatMessage.fromJson(json.requireObject('reply'));
     final usageJson = json['usage'];
     final usage = usageJson == null ? null : Usage.fromJson(json.requireObject('usage'));
+    // Anything but an explicit "positive" is neutral, so an older backend works.
+    final tone = json.optionalString('tone') == 'positive'
+        ? MessageTone.positive
+        : MessageTone.neutral;
     return switch (json.requireString('type')) {
-      'reply' => ChatReply(userMessage: userMessage, reply: reply, usage: usage),
+      'reply' => ChatReply(userMessage: userMessage, reply: reply, tone: tone, usage: usage),
       'crisis' => CrisisReply(
         userMessage: userMessage,
         reply: reply,
@@ -61,12 +74,14 @@ sealed class ChatResponse {
   final ChatMessage userMessage;
   final ChatMessage reply;
 
+  final MessageTone tone;
+
   /// Missing when the backend could not read the count; the app keeps the last one.
   final Usage? usage;
 }
 
 class ChatReply extends ChatResponse {
-  const ChatReply({required super.userMessage, required super.reply, super.usage});
+  const ChatReply({required super.userMessage, required super.reply, super.tone, super.usage});
 }
 
 /// The crisis filter detected risk: [reply] is the fixed crisis text and

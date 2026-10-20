@@ -32,6 +32,27 @@ describe('POST /v1/chat', () => {
     assert.ok(!Number.isNaN(Date.parse(body.reply.createdAt)));
   });
 
+  it('tells the app the tone of the user message so the avatar can celebrate (S5-4)', async () => {
+    const toneOf = async (message: string) => {
+      const response = await app.postJson('/v1/chat', { message });
+      return ((await response.json()) as { tone: string }).tone;
+    };
+
+    assert.equal(await toneOf('Hoy me fue muy bien'), 'positive');
+    assert.equal(await toneOf('Hola'), 'neutral');
+    assert.equal(await toneOf('Hoy no me siento bien'), 'neutral');
+  });
+
+  it('answers a crisis with a neutral tone', async () => {
+    const response = await app.postJson('/v1/chat', {
+      message: 'Me quiero morir, aunque hoy estoy feliz',
+    });
+    const body = (await response.json()) as { type: string; tone: string };
+
+    assert.equal(body.type, 'crisis');
+    assert.equal(body.tone, 'neutral');
+  });
+
   it('sends the personality system prompt first on every call', async () => {
     await app.postJson('/v1/chat', { message: 'Hola', mode: 'voice' });
     const { messages } = fake.requests.at(-1)!;

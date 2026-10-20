@@ -43,7 +43,7 @@ export function createChatRouter(chatService: ChatService, crisis: CrisisConfig)
 
     const { message, mode, interruptedMessageId } = parsed.data;
     const user = currentUser(res);
-    const { type, userMessage, reply, usage } = await chatService.reply({
+    const { type, tone, userMessage, reply, usage } = await chatService.reply({
       message,
       mode,
       user,
@@ -53,6 +53,7 @@ export function createChatRouter(chatService: ChatService, crisis: CrisisConfig)
 
     res.status(200).json({
       type,
+      tone,
       userMessage: {
         id: userMessage.id,
         role: userMessage.role,

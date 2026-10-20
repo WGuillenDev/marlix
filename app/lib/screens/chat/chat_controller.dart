@@ -44,9 +44,12 @@ class UserEntry extends ChatEntry {
 }
 
 class MarlixEntry extends ChatEntry {
-  MarlixEntry(this.message) : super(message.id);
+  MarlixEntry(this.message, {this.tone = MessageTone.neutral}) : super(message.id);
 
   final ChatMessage message;
+
+  /// Tone of the message this one answers; only a reply just received has it.
+  final MessageTone tone;
 }
 
 /// The crisis filter answered: shown prominently, never with a retry.
@@ -202,7 +205,7 @@ class ChatController extends Notifier<ChatState> {
       if (!ref.mounted) return;
       final reply = switch (response) {
         CrisisReply(:final reply, :final resources) => CrisisEntry(reply, resources),
-        ChatReply(:final reply) => MarlixEntry(reply),
+        ChatReply(:final reply, :final tone) => MarlixEntry(reply, tone: tone),
       };
       state = state.copyWith(
         entries: [
