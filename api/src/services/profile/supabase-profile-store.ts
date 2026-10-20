@@ -9,11 +9,11 @@ interface ProfileRow {
   data_consent_at: string | null;
   onboarding_completed_at: string | null;
   reminders_enabled: boolean;
-  avatar: { id: string; slug: string; name: string };
+  avatar: { id: string; slug: string; name: string; layers_path: string };
 }
 
 const COLUMNS =
-  'id, plan, data_consent_at, onboarding_completed_at, reminders_enabled, avatar:avatars(id, slug, name)';
+  'id, plan, data_consent_at, onboarding_completed_at, reminders_enabled, avatar:avatars(id, slug, name, layers_path)';
 
 /**
  * Reads and writes the profile through the Supabase API with the secret key,
@@ -61,7 +61,12 @@ function toProfile(row: ProfileRow): Profile {
   return {
     id: row.id,
     plan: row.plan,
-    avatar: row.avatar,
+    avatar: {
+      id: row.avatar.id,
+      slug: row.avatar.slug,
+      name: row.avatar.name,
+      layersPath: row.avatar.layers_path,
+    },
     onboardingCompleted: row.onboarding_completed_at !== null,
     dataConsentAt: row.data_consent_at,
     settings: { remindersEnabled: row.reminders_enabled },

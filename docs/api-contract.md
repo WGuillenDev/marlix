@@ -140,13 +140,16 @@ Returns the signed-in user's profile. The app calls it after sign-in to decide w
   "avatar": {
     "id": "0b8e5d2a-7c41-4f0e-8d2b-3a9c1e7f6b54",
     "slug": "marlix",
-    "name": "marlix"
+    "name": "marlix",
+    "layersPath": "assets/avatars/marlix/"
   },
   "onboardingCompleted": false,
   "dataConsentAt": null,
   "settings": { "remindersEnabled": false }
 }
 ~~~
+
+`avatar.layersPath` is the folder with the avatar's SVG layers inside the app's assets (`avatars.layers_path`). The app passes it to the avatar widget (S5-7); it ignores a path that does not start with `assets/avatars/` and uses marlix's, and it tolerates the trailing slash.
 
 ---
 

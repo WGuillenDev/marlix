@@ -143,6 +143,9 @@ class FakeBackend {
   /// When set, `POST /v1/onboarding` fails with it.
   http.Response? Function()? onboardingFailure;
 
+  /// The `layersPath` that `GET /v1/me` sends for the avatar (null: not sent). The seed's value.
+  String? avatarLayersPath = 'assets/avatars/marlix/';
+
   /// How many times `GET /v1/me` was called.
   int meRequests = 0;
 
@@ -151,7 +154,12 @@ class FakeBackend {
   Map<String, Object?> _profile() => {
     'id': 'user-ana',
     'plan': 'personal',
-    'avatar': {'id': 'avatar-1', 'slug': 'marlix', 'name': 'marlix'},
+    'avatar': {
+      'id': 'avatar-1',
+      'slug': 'marlix',
+      'name': 'marlix',
+      'layersPath': ?avatarLayersPath,
+    },
     'onboardingCompleted': onboardingDone,
     'dataConsentAt': onboardingDone ? '2026-10-19T20:00:00Z' : null,
     'settings': {'remindersEnabled': _remindersAnswer},

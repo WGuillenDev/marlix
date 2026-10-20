@@ -4,11 +4,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/chat.dart';
 import '../../widgets/avatar_marlix.dart';
+import '../onboarding/profile_controller.dart';
 import 'chat_controller.dart';
 
-/// Folder of the layers of the avatar to show. Always marlix for now; S5-7
-/// overrides it with the one the backend says is the user's.
-final avatarFolderProvider = Provider<String>((ref) => 'assets/avatars/marlix');
+const defaultAvatarFolder = 'assets/avatars/marlix';
+
+/// The folder to load the layers from: the one in the user's profile (S5-7) or,
+/// if there is none or it does not look like a bundled avatar, marlix's.
+/// The seed stores it with a trailing slash, which would break `folder/name.svg`.
+String avatarFolderFrom(String? layersPath) {
+  final path = layersPath?.replaceFirst(RegExp(r'/+$'), '');
+  if (path == null || !path.startsWith('assets/avatars/') || path.contains('..')) {
+    return defaultAvatarFolder;
+  }
+  return path;
+}
+
+/// Folder of the layers of the avatar to show. The profile is loaded before
+/// the chat opens; while it loads or if it failed, marlix's folder is used.
+final avatarFolderProvider = Provider<String>(
+  (ref) => avatarFolderFrom(ref.watch(profileControllerProvider).value?.avatarLayersPath),
+);
 
 /// What the avatar is doing (S5-4), the only place that decides it: screens
 /// just watch it, so voice mode adds `listening` and `speaking` here without

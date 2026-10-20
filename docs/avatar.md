@@ -61,7 +61,7 @@ The avatar lives in the header of the chat screen, 64 px (48 px while the keyboa
 | The reply arrived, and the user's message was positive (`tone: "positive"`) | `happy` for 3 s, then `idle` |
 | The reply arrived otherwise, the send failed, or it was a crisis | `idle` |
 
-`tone` comes from the backend (`POST /v1/chat`, [contract](api-contract.md#post-v1chat)). It is never `positive` for a crisis, and the history loaded at the start never makes the avatar celebrate. The folder of the layers comes from `avatarFolderProvider`, which returns `assets/avatars/marlix` until S5-7 reads it from the backend. With "remove animations" on in the phone, the avatar keeps its pose and only eases between states.
+`tone` comes from the backend (`POST /v1/chat`, [contract](api-contract.md#post-v1chat)). It is never `positive` for a crisis, and the history loaded at the start never makes the avatar celebrate. The folder of the layers comes from `avatarFolderProvider`, which reads `avatar.layersPath` from `GET /v1/me` (S5-7) and uses `assets/avatars/marlix` if the profile has not loaded, failed or sent a path that is not under `assets/avatars/`. With "remove animations" on in the phone, the avatar keeps its pose and only eases between states.
 
 ## Trying it
 

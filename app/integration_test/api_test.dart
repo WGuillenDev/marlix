@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:integration_test/integration_test.dart';
 import 'package:marlix/config/app_config.dart';
 import 'package:marlix/models/chat.dart';
+import 'package:marlix/screens/chat/avatar_controller.dart';
 import 'package:marlix/services/api_exception.dart';
 import 'package:marlix/services/auth_service.dart';
 import 'package:marlix/services/marlix_api.dart';
@@ -66,6 +67,13 @@ void main() {
   testWidgets('GET /v1/help-resources', (_) async {
     final help = await api.helpResources();
     expect(help.resources.where((resource) => resource.primary).single.phone, '911');
+  });
+
+  testWidgets('GET /v1/me returns the avatar with the folder of its layers', (_) async {
+    final profile = await api.me();
+    expect(profile.avatarSlug, 'marlix');
+    expect(avatarFolderFrom(profile.avatarLayersPath), 'assets/avatars/marlix');
+    expect(profile.avatarLayersPath, isNotNull, reason: 'the backend must send layersPath');
   });
 
   testWidgets('GET /v1/usage', (_) async {

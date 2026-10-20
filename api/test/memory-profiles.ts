@@ -8,6 +8,7 @@ const MARLIX = {
   id: '0b8e5d2a-7c41-4f0e-8d2b-3a9c1e7f6b54',
   slug: 'marlix',
   name: 'marlix',
+  layersPath: 'assets/avatars/marlix/',
 };
 
 /** Profiles in memory: every user starts with onboarding still open. */
