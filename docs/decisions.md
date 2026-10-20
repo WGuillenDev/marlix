@@ -565,3 +565,21 @@ Alternatives, in order: another Groq model, a paid provider such as DeepSeek, or
 **Avatar by `avatar_id` moves to S5-7.** `/v1/me` and `/v1/avatars` do not exist yet, so the folder comes from `avatarFolderProvider`, which returns marlix's folder; S5-7 overrides it. Decided with the product owner on 2026-10-19.
 
 **Reduce motion.** `AvatarMarlix` stops its 12 s clock when the phone asks to remove animations (`MediaQuery.disableAnimationsOf`): it keeps its pose and still eases between states. It is the right behavior for people who need it, and it lets `pumpAndSettle` finish in the chat tests, since the avatar otherwise floats for ever (tests turn the feature on in `openChat`).
+
+
+## 2026-10-19 — Onboarding: the consent is stored on the server, and the chat waits for it (S5-5)
+
+**Decision:** after signing in, the app reads `GET /v1/me` and only opens the chat if `onboardingCompleted` is true; otherwise it shows the onboarding (`ProfileGate`). Finishing it calls `POST /v1/onboarding`, which records `data_consent_at` and `onboarding_completed_at` and the answer to the reminders offer, in one atomic update (`where onboarding_completed_at is null`), so two phones cannot both win; the second gets `409 ONBOARDING_ALREADY_COMPLETED`, which the app treats as "already done". Both endpoints were already in the contract and the columns in the schema, so there is no migration. This was outside the card ("App" area) and was added with the product owner on 2026-10-19: "once per account" and "explicit consent" cannot live only on the phone, because a reinstall or a second phone would skip the consent or repeat the onboarding.
+
+| Alternative | Why not |
+| --- | --- |
+| The flag in `SharedPreferences` | The consent would not be on record in the database, and the onboarding would repeat after a reinstall. It contradicts US-02 and the ERD. |
+| Letting the app write the columns through Supabase | The app never reads or writes the database directly (docs/architecture.md); the backend does it with its own key. |
+
+**The chat stays closed while the profile loads or fails.** Without the consent the app must not be used, so a failed `GET /v1/me` shows a retry (plus sign-out and help), never the chat, and there are no automatic retries. The profile is not read without a session: a request at sign-out would come back 401 and make a voluntary sign-out look like an expired session. Accounts created before this card (their `onboarding_completed_at` is null) see the onboarding the next time they sign in.
+
+**Steps (wireframes 02a to 02d).** Welcome with the avatar bouncing with joy (`happy`); the notice that marlix is not therapy, what is stored and the consent; the microphone and the daily reminders; and where help is. The pages do not swipe, so the consent cannot be skipped. The checkbox is pinned next to its button: inside the scroll it fell below the fold on an 800 px screen, with the button visible but disabled. Whoever does not accept can sign out ("No acepto, cerrar sesión"); the wireframe has no exit. Errors are said on the step itself, not in a snackbar, because the snackbar covered the button to try again.
+
+**Microphone.** `permission_handler` asks for `RECORD_AUDIO` when the person taps "Permitir"; "Ahora no" asks nothing and voice mode (Sprint 6) asks again. `permission_handler` 13 requires compiling against Android 37 and our Android Gradle plugin recommends 36, so the project uses 12.x until the toolchain moves. The screen says speech recognition may depend on the phone's service, as the card asks.
+
+**Reminders.** The switch uses the same code as settings (`toggleReminders`) and the answer goes to the server with the consent. The local preference stays the one that schedules the notifications (S5-3); the server copy is informational.

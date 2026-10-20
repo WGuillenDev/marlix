@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'screens/auth_screen.dart';
-import 'screens/chat/chat_screen.dart';
+import 'screens/onboarding/profile_gate.dart';
 import 'services/auth_service.dart';
 import 'services/reminder_scheduler.dart';
 import 'services/reminders.dart';
@@ -67,7 +67,7 @@ class _MarlixAppState extends ConsumerState<MarlixApp> with WidgetsBindingObserv
       title: 'marlix',
       theme: AppTheme.light(),
       debugShowCheckedModeBanner: false,
-      home: signedIn ? const ChatScreen() : const AuthScreen(),
+      home: signedIn ? const ProfileGate() : const AuthScreen(),
     );
   }
 }

@@ -13,6 +13,7 @@ import { createLlmProvider } from './services/llm/index.js';
 import { createMemoryExtractor } from './services/memory/extractor.js';
 import { createMemoryJob } from './services/memory/memory-job.js';
 import { createSupabaseMemoryStore } from './services/memory/supabase-memory-store.js';
+import { createSupabaseProfileStore } from './services/profile/supabase-profile-store.js';
 import { createRetentionJob } from './services/retention/retention-job.js';
 import { createSupabaseUsageStore } from './services/usage/supabase-usage-store.js';
 
@@ -57,6 +58,7 @@ const app = createApp({
   memoryJob,
   accounts: createSupabaseAccountStore(database),
   usage: createSupabaseUsageStore(database),
+  profiles: createSupabaseProfileStore(database),
 });
 
 const server = app.listen(env.PORT, () => {

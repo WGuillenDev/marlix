@@ -10,6 +10,7 @@ import 'account/delete_account.dart';
 import 'avatar_test_screen.dart';
 import 'help_screen.dart';
 import 'memories/memories_screen.dart';
+import 'reminders_toggle.dart';
 
 /// Settings (wireframe docs/diagrams/wireframes/screens/07a-settings.png).
 class SettingsScreen extends ConsumerWidget {
@@ -44,18 +45,9 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Future<void> _toggleReminders(BuildContext context, WidgetRef ref, bool on) async {
-    final reminders = ref.read(remindersProvider.notifier);
-    if (!on) return reminders.disable();
     final messenger = ScaffoldMessenger.of(context);
-    if (!await reminders.enable()) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Para recibir recordatorios, permite las notificaciones de marlix en los '
-            'ajustes del teléfono.',
-          ),
-        ),
-      );
+    if (!await toggleReminders(ref, on)) {
+      messenger.showSnackBar(const SnackBar(content: Text(remindersDeniedNotice)));
     }
   }
 

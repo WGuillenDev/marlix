@@ -3,6 +3,7 @@ import type { ErrorRequestHandler, RequestHandler } from 'express';
 
 import { MessageNotFoundError } from '../services/history/message-store.js';
 import { LlmError } from '../services/llm/index.js';
+import { OnboardingAlreadyCompletedError } from '../services/profile/profile-store.js';
 import { UsageLimitExceededError } from '../services/usage/usage-limiter.js';
 
 export interface ValidationIssue {
@@ -75,6 +76,10 @@ function toApiError(error: unknown): ApiError {
 
   if (error instanceof MessageNotFoundError) {
     return new ApiError(404, 'NOT_FOUND', 'The message does not exist.');
+  }
+
+  if (error instanceof OnboardingAlreadyCompletedError) {
+    return new ApiError(409, 'ONBOARDING_ALREADY_COMPLETED', 'Onboarding was already completed.');
   }
 
   if (error instanceof UsageLimitExceededError) {

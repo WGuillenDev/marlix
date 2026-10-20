@@ -12,6 +12,7 @@ import { createHelpResourcesRouter } from './routes/help-resources.js';
 import { createAccountRouter } from './routes/account.js';
 import { createHistoryRouter } from './routes/history.js';
 import { createMemoriesRouter } from './routes/memories.js';
+import { createProfileRouter } from './routes/profile.js';
 import { createUsageRouter } from './routes/usage.js';
 import { createChatService } from './services/chat-service.js';
 import {
@@ -24,6 +25,7 @@ import type { AccountStore } from './services/account/account-store.js';
 import type { MessageStore } from './services/history/message-store.js';
 import type { MemoryJob } from './services/memory/memory-job.js';
 import type { MemoryStore } from './services/memory/memory-store.js';
+import type { ProfileStore } from './services/profile/profile-store.js';
 import { selectForPrompt } from './services/memory/prompt-memories.js';
 import type { LlmProvider } from './services/llm/index.js';
 import { createUsageLimiter } from './services/usage/usage-limiter.js';
@@ -49,6 +51,8 @@ export interface AppDependencies {
   accounts: AccountStore;
   /** Where the daily counters and caps are (S4-13). */
   usage: UsageStore;
+  /** The profile and the onboarding state (S5-5). */
+  profiles: ProfileStore;
   /** Crisis text and help resources; read from api/config/crisis.json by default. */
   crisisConfig?: CrisisConfig;
   /** Where crisis activations are recorded (S2-5); the logs by default. */
@@ -69,6 +73,7 @@ export function createApp({
   memoryJob,
   accounts,
   usage,
+  profiles,
   crisisConfig = loadCrisisConfig(),
   activationLog = createConsoleActivationLog(),
   plans = loadPlansConfig(),
@@ -108,6 +113,7 @@ export function createApp({
     createHistoryRouter(messages),
     createMemoriesRouter(memories),
     createAccountRouter(accounts),
+    createProfileRouter(profiles),
     createUsageRouter(usageLimiter),
   );
 

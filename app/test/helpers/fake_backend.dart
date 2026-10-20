@@ -12,6 +12,7 @@ import 'package:marlix/services/auth_service.dart';
 import 'package:marlix/services/dialer.dart';
 import 'package:marlix/services/help_resources.dart';
 import 'package:marlix/services/marlix_api.dart';
+import 'package:marlix/services/microphone_permission.dart';
 import 'package:marlix/services/reminder_scheduler.dart';
 import 'package:marlix/services/reminders.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -127,6 +128,35 @@ class FakeBackend {
     return notFound;
   }
 
+  /// Whether onboarding is done; `POST /v1/onboarding` sets it. Tests open on the chat.
+  bool onboardingDone = true;
+
+  /// When set, `GET /v1/me` answers with it instead of the profile.
+  http.Response? Function()? meFailure;
+
+  /// `GET /v1/me` waits for this to complete; replace it to keep it pending.
+  Completer<void> meGate = Completer()..complete();
+
+  /// What was sent to `POST /v1/onboarding`, in order.
+  final onboardingRequests = <Map<String, Object?>>[];
+
+  /// When set, `POST /v1/onboarding` fails with it.
+  http.Response? Function()? onboardingFailure;
+
+  /// How many times `GET /v1/me` was called.
+  int meRequests = 0;
+
+  bool _remindersAnswer = false;
+
+  Map<String, Object?> _profile() => {
+    'id': 'user-ana',
+    'plan': 'personal',
+    'avatar': {'id': 'avatar-1', 'slug': 'marlix', 'name': 'marlix'},
+    'onboardingCompleted': onboardingDone,
+    'dataConsentAt': onboardingDone ? '2026-10-19T20:00:00Z' : null,
+    'settings': {'remindersEnabled': _remindersAnswer},
+  };
+
   /// The session is too old to delete the account until the person signs in again.
   bool sessionIsOld = false;
 
@@ -152,6 +182,19 @@ class FakeBackend {
     client: MockClient((request) async {
       authorizations.add(request.headers['Authorization']);
       if (request.url.path == '/v1/account') return _deleteAccount(request, auth);
+      if (request.url.path == '/v1/me') {
+        meRequests++;
+        await meGate.future;
+        return meFailure?.call() ?? jsonResponse(_profile());
+      }
+      if (request.url.path == '/v1/onboarding') {
+        if (onboardingFailure?.call() case final failure?) return failure;
+        final body = jsonDecode(request.body) as Map<String, Object?>;
+        onboardingRequests.add(body);
+        onboardingDone = true;
+        _remindersAnswer = body['remindersEnabled'] == true;
+        return jsonResponse(_profile());
+      }
       if (request.url.path.startsWith('/v1/memories')) return _memories(request);
       if (request.url.path == '/v1/help-resources') {
         if (offline) throw http.ClientException('No connection');
@@ -306,6 +349,18 @@ class FakeDialer implements Dialer {
   }
 }
 
+/// The microphone dialog of the system: the test decides what the person answers.
+class FakeMicrophone implements MicrophonePermission {
+  bool allows = true;
+  int asked = 0;
+
+  @override
+  Future<bool> request() async {
+    asked++;
+    return allows;
+  }
+}
+
 /// A reminder as the phone would hold it, repeating every week until cancelled.
 typedef ScheduledReminder = ({int id, DateTime at, String title, String body});
 
@@ -355,6 +410,7 @@ Future<FakeBackend> openChat(
   FakeAuthService? auth,
   FakeDialer? dialer,
   FakeReminderScheduler? reminders,
+  FakeMicrophone? microphone,
   Map<String, Object> savedPreferences = const {},
 }) async {
   tester.view.physicalSize = size * tester.view.devicePixelRatio;
@@ -378,10 +434,13 @@ Future<FakeBackend> openChat(
         dialerProvider.overrideWithValue(dialer ?? FakeDialer()),
         reminderSchedulerProvider.overrideWithValue(reminders ?? FakeReminderScheduler()),
         reminderConfigProvider.overrideWithValue(testReminderConfig),
+        microphonePermissionProvider.overrideWithValue(microphone ?? FakeMicrophone()),
       ],
       child: const MarlixApp(),
     ),
   );
+  // The profile loads first (S5-5); a second frame shows what it decides.
+  await tester.pump();
   await tester.pump();
   return fake;
 }

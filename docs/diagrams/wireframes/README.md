@@ -39,7 +39,7 @@ US-07 (memory extraction) runs in the background and has no screen; its result i
 ## Flow decisions
 
 - **App start.** With a saved session the app opens straight into the chat; without one it opens the login.
-- **Onboarding** (02a–02d) runs once per account, right after sign-up.
+- **Onboarding** (02a–02d) runs once per account, right after sign-up. The 02c image still reads "2, 5 y 10 días" for the reminders offer; since S5-3 it is a daily greeting, and the app follows the card (the PNG was not redrawn).
 - **One conversation.** v1 has a single, continuous chat with no "new chat" action. Recent messages load when the chat opens, grouped by date (older dates, *Ayer*, *Reciente*).
 - **Help** is one tap away from the chat and voice mode (lifebuoy button), and from the crisis response. The login does not link to it.
 - **Settings** (07a–07b) is not one of the six screens in the card; it was added so memory, reminders, sign-out and account deletion are reachable.
