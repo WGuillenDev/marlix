@@ -267,6 +267,9 @@ void main() {
 
       await tester.tap(find.byTooltip('Ajustes'));
       await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(find.text('Cerrar sesión'), 200);
+      await tester.ensureVisible(find.text('Cerrar sesión'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Cerrar sesión'));
       await tester.pumpAndSettle();
       expect(find.text('¿Cerrar sesión?'), findsOneWidget);

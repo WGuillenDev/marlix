@@ -44,6 +44,17 @@ void main() {
     expect(directAccess, isEmpty);
   });
 
+  test('only lib/services/ talks to the notification plugin', () {
+    final offenders = [
+      for (final file in sources)
+        if (!relative(file).startsWith('lib/services/') &&
+            file.readAsStringSync().contains('package:flutter_local_notifications/'))
+          relative(file),
+    ];
+
+    expect(offenders, isEmpty, reason: 'Screens go through ReminderScheduler');
+  });
+
   test('the app holds no API key', () {
     // Groq keys, Supabase secret keys and JWTs such as the service_role key.
     final keyPattern = RegExp(r'gsk_[A-Za-z0-9]{20,}|sb_secret_|eyJ[A-Za-z0-9_-]{20,}\.');
