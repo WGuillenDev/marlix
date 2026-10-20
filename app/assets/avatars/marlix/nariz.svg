@@ -1,4 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <ellipse cx="256" cy="246" rx="25" ry="18" fill="#3A2314"/>
-  <ellipse cx="248" cy="240" rx="8" ry="4.5" fill="#FFFFFF" fill-opacity="0.55"/>
+  <g transform="translate(256 270) scale(0.92) translate(-256 -270)">
+  <ellipse cx="256" cy="214" rx="37" ry="25" fill="#1E1B1A"/>
+  <ellipse cx="245" cy="201" rx="10" ry="5" fill="#FFFFFF"/>
+  </g>
 </svg>
