@@ -4,7 +4,29 @@ Notable changes to marlix, one entry per sprint. The format follows [Keep a Chan
 
 ## [Unreleased]
 
-Sprint 5 — Avatars: the avatar comes to life.
+Sprint 6 — Voice: marlix listens and speaks.
+
+## Sprint 5 — Avatars (2026-10-19 to 2026-10-20)
+
+marlix gets a face: a final animated avatar that follows the conversation, an onboarding that sets the rules of use, and a daily greeting that never guilt-trips.
+
+### Added
+
+- The final marlix avatar, drawn as SVG layers with a fixed set of names so a new avatar is just a new folder ([#124](https://github.com/WGuillenDev/marlix/pull/124)).
+- `AvatarMarlix` widget: it assembles the layers and animates five states (`idle`, `listening`, `thinking`, `speaking`, `happy`) in code, and rests when the phone asks to remove animations ([#126](https://github.com/WGuillenDev/marlix/pull/126)).
+- Daily reminders: one local notification per weekday at the time the person chooses (7 p.m. by default), with a different warm text each day, no streaks and no counters ([#128](https://github.com/WGuillenDev/marlix/pull/128)).
+- The avatar follows the conversation: it thinks while marlix replies and celebrates after a happy message. `POST /v1/chat` returns `tone` (`positive` or `neutral`), computed with conservative rules and never by the model ([#130](https://github.com/WGuillenDev/marlix/pull/130)).
+- Onboarding with the avatar's introduction, the notice that marlix does not replace professional care, the explicit data consent, the microphone permission and the reminders offer. It is shown once per account, backed by `GET /v1/me` and `POST /v1/onboarding` ([#132](https://github.com/WGuillenDev/marlix/pull/132)).
+- `GET /v1/me` returns `avatar.layersPath` and the app loads the avatar from that folder, falling back to marlix's ([#136](https://github.com/WGuillenDev/marlix/pull/136)).
+
+### Changed
+
+- The integration tests sign up their own throwaway account and delete it at the end, so a run leaves no data in production. `config/test-account.json` is gone ([#134](https://github.com/WGuillenDev/marlix/pull/134)).
+
+### Security
+
+- The test account and its data were removed from production, and no `@marlix.test` user is left ([#134](https://github.com/WGuillenDev/marlix/pull/134)).
+- The consent and the onboarding are recorded by the backend in one atomic update, so two phones cannot both finish it; the app keeps the chat closed until the consent is on record ([#132](https://github.com/WGuillenDev/marlix/pull/132)).
 
 ## Sprint 4 — Data and memory (2026-10-15 to 2026-10-18)
 
