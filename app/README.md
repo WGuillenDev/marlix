@@ -12,7 +12,7 @@ The Flutter app (Android first). Setup and commands are in the [main README](../
 | `lib/theme/` | Colors and theme from the [style guide](../docs/diagrams/wireframes/README.md). |
 | `config/` | Environment files for `--dart-define-from-file`. |
 | `integration_test/` | Tests that call the real backend from a device or emulator. |
-| `assets/` | The header avatar (S0-5 prototype until S5-1) and the fonts. |
+| `assets/` | The header avatar (S0-5 prototype until S5-2), the SVG layers of the final avatar (S5-1) and the fonts. |
 
 State is managed with [Riverpod](https://riverpod.dev); see the [decision](../docs/decisions.md).
 
