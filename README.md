@@ -66,7 +66,7 @@ The app opens on the sign-in screen. Create an account there (you must be 18 or 
 |---|---|
 | `flutter analyze` | Checks the code with the project's lint rules. |
 | `flutter test` | Runs the automated tests. The [CI](.github/workflows/ci.yml) also runs them, with the format check and `flutter analyze`, on every pull request. |
-| `flutter test integration_test --dart-define-from-file=config/local.json --dart-define-from-file=config/test-account.json` | Signs in with a test account and calls every backend endpoint from the app on the emulator. Create the account in the app first, then copy `config/test-account.example.json` to `config/test-account.json` (ignored by Git) and fill it in. It sends two chat messages; one uses the Groq quota. |
+| `flutter test integration_test --dart-define-from-file=config/local.json` | Calls every backend endpoint from the app on the emulator. It signs up its own throwaway account (`it-…@marlix.test`) and deletes it with `DELETE /v1/account` at the end, even if a test fails, so it leaves no data in the database. It sends two chat messages; one uses the Groq quota. |
 | `dart format lib test integration_test` | Formats the code (100 columns). |
 
 ### Backend
