@@ -12,6 +12,7 @@ import { LlmError } from '../src/services/llm/index.js';
 import type { LlmCompletionRequest, LlmProvider } from '../src/services/llm/index.js';
 import { createFakeAccounts, createFakeMemories } from './memory-fakes.js';
 import { createMemoryMessageStore } from './memory-message-store.js';
+import { createFakeProfiles } from './memory-profiles.js';
 import { createMemoryUsageStore } from './memory-usage-store.js';
 
 /** An LlmProvider that records every request and answers with `respond`. */
@@ -101,6 +102,7 @@ export async function startApp({
   memoryJob,
   accounts = createFakeAccounts().store,
   usage = createMemoryUsageStore().store,
+  profiles = createFakeProfiles().store,
 }: {
   llm: LlmProvider;
   crisisClassifier?: LlmProvider;
@@ -115,6 +117,7 @@ export async function startApp({
   memoryJob?: AppDependencies['memoryJob'];
   accounts?: AppDependencies['accounts'];
   usage?: AppDependencies['usage'];
+  profiles?: AppDependencies['profiles'];
 }) {
   const app = createApp({
     llm,
@@ -130,6 +133,7 @@ export async function startApp({
     ...(memoryJob ? { memoryJob } : {}),
     accounts,
     usage,
+    profiles,
   });
   const authHeader = { authorization: `Bearer ${await signSession()}` };
   const server = app.listen(0);
