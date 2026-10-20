@@ -63,6 +63,12 @@ class NotFoundException extends ApiErrorException {
   const NotFoundException({required super.message}) : super(statusCode: 404, code: 'NOT_FOUND');
 }
 
+/// `409 ONBOARDING_ALREADY_COMPLETED`: another device finished onboarding first.
+class OnboardingAlreadyCompletedException extends ApiErrorException {
+  const OnboardingAlreadyCompletedException({required super.message})
+    : super(statusCode: 409, code: 'ONBOARDING_ALREADY_COMPLETED');
+}
+
 /// `429 DAILY_LIMIT_REACHED`. The help screen stays available.
 class DailyLimitReachedException extends ApiErrorException {
   const DailyLimitReachedException({required super.message, required this.resetsAt})

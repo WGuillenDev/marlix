@@ -11,6 +11,7 @@ import '../models/help_resource.dart';
 import '../models/history.dart';
 import '../models/json_reader.dart';
 import '../models/memory.dart';
+import '../models/profile.dart';
 import '../models/usage.dart';
 import 'api_exception.dart';
 import 'auth_service.dart';
@@ -92,6 +93,20 @@ class MarlixApi {
   Future<void> deleteAllMemories() =>
       _send('DELETE', '/v1/memories', authenticated: true, parse: null);
 
+  /// `GET /v1/me`: the profile, which says whether onboarding must be shown.
+  Future<Profile> me() => _send('GET', '/v1/me', authenticated: true, parse: Profile.fromJson);
+
+  /// `POST /v1/onboarding`: records the explicit consent and the answer to the
+  /// reminders offer, and marks onboarding as done. Throws
+  /// [OnboardingAlreadyCompletedException] if it was already done.
+  Future<Profile> completeOnboarding({required bool remindersEnabled}) => _send(
+    'POST',
+    '/v1/onboarding',
+    body: {'dataConsent': true, 'remindersEnabled': remindersEnabled},
+    authenticated: true,
+    parse: Profile.fromJson,
+  );
+
   /// `DELETE /v1/account`: the account and all its data. Throws
   /// [ReauthenticationRequiredException] if the last sign-in is too old.
   Future<void> deleteAccount() => _send('DELETE', '/v1/account', authenticated: true, parse: null);
@@ -166,6 +181,7 @@ class MarlixApi {
         'UNAUTHORIZED' => UnauthorizedException(message: message),
         'REAUTHENTICATION_REQUIRED' => ReauthenticationRequiredException(message: message),
         'NOT_FOUND' => NotFoundException(message: message),
+        'ONBOARDING_ALREADY_COMPLETED' => OnboardingAlreadyCompletedException(message: message),
         'DAILY_LIMIT_REACHED' => DailyLimitReachedException(
           message: message,
           resetsAt: details.requireDateTime('resetsAt'),
