@@ -497,3 +497,14 @@ Result: `openai/gpt-oss-120b` answered in Spanish, using 113 tokens.
 ### If the policy or limits stop being acceptable
 
 Alternatives, in order: another Groq model, a paid provider such as DeepSeek, or a local model with Ollama.
+
+
+## 2026-10-19 — Final avatar artwork: vector layers and palette (S5-1)
+
+**Decision:** the avatar is a round beagle drawn as 12 independent SVG layers in `app/assets/avatars/marlix/` (`oreja_izq`, `oreja_der`, `cuerpo`, `panza`, `mejillas`, `ojos_abiertos`, `ojos_felices`, `nariz`, `boca_0` to `boca_3`). Every layer uses the same `0 0 512 512` canvas, so stacking them in order assembles the character with no offsets. The widget of S5-2 animates them by swapping eyes and mouths.
+
+**Palette:** orange body, brown ears, white muzzle and blaze, cream belly, pink cheeks: the validated S0-5 prototype. The mint palette first written on the card was dropped so the chat keeps the same character it already shows.
+
+**Origin:** the character is original, inspired by the author's own dog; it copies no existing character. The art is public and editable with any SVG editor.
+
+**Test:** `app/test/avatar/marlix_layers_test.dart` checks the 12 files and the shared canvas, and stacks them with `flutter_svg`, the dependency S5-2 needs anyway.
