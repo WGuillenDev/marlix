@@ -11,6 +11,7 @@ dependencies:
     sdk: flutter
   flutter_riverpod: ^3.4.3
   flutter_secure_storage: ^11.2.0
+  flutter_svg: ^2.3.0
   http: ^1.6.0
   shared_preferences: ^2.5.6
   supabase_flutter: ^2.18.3
@@ -31,6 +32,8 @@ flutter:
     # until the final artwork (S5-1).
     - assets/avatar/marlix.png
     - assets/avatar/marlix-happy.png
+    # Layers of the final artwork (S5-1), stacked by the avatar widget (S5-2).
+    - assets/avatars/marlix/
 
   # Bundled, not fetched at runtime. OFL licenses are next to the files.
   fonts:
