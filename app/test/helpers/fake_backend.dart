@@ -177,18 +177,21 @@ class FakeBackend {
     baseUrl: Uri.parse('https://api.test'),
   );
 
-  void answer(String userText, String replyText, {int remaining = 86}) => reply.complete(
-    jsonResponse({
-      'type': 'reply',
-      'userMessage': messageJson('user', userText),
-      'reply': messageJson('assistant', replyText),
-      'usage': usageJson(remaining: remaining),
-    }),
-  );
+  void answer(String userText, String replyText, {int remaining = 86, String tone = 'neutral'}) =>
+      reply.complete(
+        jsonResponse({
+          'type': 'reply',
+          'tone': tone,
+          'userMessage': messageJson('user', userText),
+          'reply': messageJson('assistant', replyText),
+          'usage': usageJson(remaining: remaining),
+        }),
+      );
 
   void answerCrisis(String userText, String crisisText) => reply.complete(
     jsonResponse({
       'type': 'crisis',
+      'tone': 'neutral',
       'userMessage': messageJson('user', userText),
       'reply': messageJson('assistant', crisisText),
       'resources': crisisResources,
@@ -356,6 +359,12 @@ Future<FakeBackend> openChat(
 }) async {
   tester.view.physicalSize = size * tester.view.devicePixelRatio;
   addTearDown(tester.view.reset);
+  // The avatar floats for ever; with animations removed it rests, so
+  // pumpAndSettle can finish. A test of the avatar's movement turns it back on.
+  tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(
+    disableAnimations: true,
+  );
+  addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
   final fake = backend ?? FakeBackend();
   final session = auth ?? FakeAuthService(userId: 'user-ana@example.com');
   SharedPreferences.setMockInitialValues(savedPreferences);
