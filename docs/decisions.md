@@ -527,3 +527,24 @@ Alternatives, in order: another Groq model, a paid provider such as DeepSeek, or
 **Artwork redrawn against the prototype (found in S5-2).** The first layers of S5-1 were drawn from the card alone and did not look like the validated prototype (`docs/diagrams/wireframes/style-guide/avatar.png`): they lacked the white eye rings, the "marlix" coat, arms, tail and feet. The layers were redrawn measuring over the prototype and the template grew to 19 layers (`cola`, `pies`, `brazo_izq`, `brazo_der`, `cabeza`, `pupilas` and `boca_pensando` are new; `panza` is the coat). The open mouths have the flat top of the prototype, so Speaking visibly opens the mouth even at low volume, and the doubtful mouth of Thinking is its own layer instead of sharing `boca_1`. `pupilas` is apart from `ojos_abiertos` so the pupils can look up inside their rings. The lettering is outlined from the bundled Baloo 2 because `flutter_svg` does not draw text. Lesson: check the artwork against the validated reference before delivering, not only against the card.
 
 **Debug-only test screen.** "Probar el avatar" is shown in Settings only when `kDebugMode`, so release builds do not carry a developer row.
+
+
+## 2026-10-19 — Daily reminders: local, weekly-repeating, no streaks (S5-3)
+
+**Change of scope (user decision, 2026-10-19).** The card first asked for reminders after 2, 5 and 10 days without opening the app, then silence. The product owner changed it to a daily greeting, like Duolingo, so the user talks with marlix a little every day. What does not change: no streaks, no day counters, no guilt and no user data in the texts, because in an emotional-support app losing a streak creates guilt and pressure, and the text shows on the lock screen.
+
+**Decision:** the reminders are local notifications with `flutter_local_notifications`: no server, no Firebase and no Groq quota. When they are on, the app schedules seven notifications, one per weekday at the time the user picks (19:00 by default), each repeating every week (`DateTimeComponents.dayOfWeekAndTime`). They keep going even if the app is never opened again, and each weekday has its own text, so they rotate through the week. A single daily repeating notification would always show the same text.
+
+**Configuration:** the default time and the bank of at least seven texts live in `app/assets/config/reminders.json`, validated at startup (`ReminderConfig`). A test checks that no shipped text has digits, guilt, a sad avatar, streaks, "it has been a while" or user data.
+
+**Opt-in on the phone.** The switch and the time (`RemindersController`, keys `reminders_enabled` and `reminders_time` in `SharedPreferences`) are off by default; they turn on only after the system permission (`POST_NOTIFICATIONS` on Android 13+), and `enable()` is the function onboarding (S5-5) calls. If the user revokes the permission in the phone's settings, the next opening turns the switch off instead of pretending they are active. Signing out cancels them and signing in schedules them again. `docs/api-contract.md` and `docs/erd.md` already describe `remindersEnabled` / `users.reminders_enabled` on the server, but no endpoint stores it yet; syncing it is left to the onboarding and settings work.
+
+| Alternative | Why not |
+| --- | --- |
+| Push notifications (Firebase) | They need a server, an account and keys; the card asks for zero cost and no server. |
+| One daily repeating notification (`DateTimeComponents.time`) | The text cannot change from one day to the next. |
+| Scheduling the next 30 one-shot days on each opening | They would stop if the app is not opened for a month, and the user asked for no end. |
+| A streak counter like Duolingo's | Discarded by the user too: it creates guilt and dependence. |
+| Exact alarms (`SCHEDULE_EXACT_ALARM`) | A greeting does not need the exact minute, and the permission adds a prompt and store scrutiny. |
+
+**Details:** the time zone is read from the phone (`flutter_timezone`) so the hour follows the local clock, daylight saving time included; the app reschedules on every opening, which also follows a time zone change. Reboots are covered by the plugin's boot receiver (`RECEIVE_BOOT_COMPLETED`), and the plugin needs core library desugaring in `build.gradle.kts`. The time picker uses the 24-hour clock because the app has no Spanish localizations and the 12-hour one would show AM/PM in English.

@@ -200,7 +200,7 @@ It runs on every pull request in the CI's Database job, against Supabase's Postg
 
 - Creating the real Supabase project (S4-1).
 - Crisis activation log without content: for now it is written to the server logs (S2-5, see the [crisis protocol](crisis-protocol.md#activation-log)); a table can replace it once the backend uses the database (Sprint 4).
-- Scheduling inactivity reminders: they are local notifications on the phone (S5-3). The database only stores the opt-in (`reminders_enabled`).
+- Scheduling daily reminders: they are local notifications on the phone (S5-3). The database only stores the opt-in (`reminders_enabled`).
 
 ## How to test
 

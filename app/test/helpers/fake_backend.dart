@@ -7,10 +7,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:marlix/app.dart';
+import 'package:marlix/models/reminder_config.dart';
 import 'package:marlix/services/auth_service.dart';
 import 'package:marlix/services/dialer.dart';
 import 'package:marlix/services/help_resources.dart';
 import 'package:marlix/services/marlix_api.dart';
+import 'package:marlix/services/reminder_scheduler.dart';
+import 'package:marlix/services/reminders.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Relative to now, so the limit logic behaves the same on any date.
@@ -300,6 +303,46 @@ class FakeDialer implements Dialer {
   }
 }
 
+/// A reminder as the phone would hold it, repeating every week until cancelled.
+typedef ScheduledReminder = ({int id, DateTime at, String title, String body});
+
+class FakeReminderScheduler implements ReminderScheduler {
+  /// What the user answers to the system permission dialog.
+  bool grantsPermission = true;
+  final scheduled = <ScheduledReminder>[];
+  final _taps = StreamController<void>.broadcast();
+
+  /// The user taps a reminder.
+  void tap() => _taps.add(null);
+
+  @override
+  Stream<void> get taps => _taps.stream;
+
+  @override
+  Future<bool> requestPermission() async => grantsPermission;
+
+  @override
+  Future<bool> hasPermission() async => grantsPermission;
+
+  @override
+  Future<void> scheduleWeekly({
+    required int id,
+    required DateTime at,
+    required String title,
+    required String body,
+  }) async {
+    scheduled.add((id: id, at: at, title: title, body: body));
+  }
+
+  @override
+  Future<void> cancelAll() async => scheduled.clear();
+}
+
+final testReminderConfig = ReminderConfig(
+  defaultTime: (hour: 19, minute: 0),
+  messages: const ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'],
+);
+
 /// Opens the app signed in as Ana, on the chat. With [auth] signed out, it
 /// opens on the sign-in screen.
 Future<FakeBackend> openChat(
@@ -308,6 +351,7 @@ Future<FakeBackend> openChat(
   FakeBackend? backend,
   FakeAuthService? auth,
   FakeDialer? dialer,
+  FakeReminderScheduler? reminders,
   Map<String, Object> savedPreferences = const {},
 }) async {
   tester.view.physicalSize = size * tester.view.devicePixelRatio;
@@ -323,6 +367,8 @@ Future<FakeBackend> openChat(
         marlixApiProvider.overrideWithValue(fake.api(session)),
         sharedPreferencesProvider.overrideWithValue(preferences),
         dialerProvider.overrideWithValue(dialer ?? FakeDialer()),
+        reminderSchedulerProvider.overrideWithValue(reminders ?? FakeReminderScheduler()),
+        reminderConfigProvider.overrideWithValue(testReminderConfig),
       ],
       child: const MarlixApp(),
     ),

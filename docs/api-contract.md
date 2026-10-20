@@ -183,7 +183,7 @@ Changes the user's settings. Only the fields sent are changed.
 
 | Field | Type | Rules |
 |---|---|---|
-| `remindersEnabled` | boolean | Optional. Inactivity reminders on or off (US-14). The phone schedules or cancels them locally. |
+| `remindersEnabled` | boolean | Optional. Daily reminders on or off (US-14). The phone schedules or cancels them locally. |
 
 **Response `200`**
 
@@ -476,7 +476,7 @@ Every use case from the [use case diagram](use-cases.md) runs with these endpoin
 | UC-14 Check crisis signals | Inside `POST /v1/chat`, before the model |
 | UC-15 Show crisis response | `POST /v1/chat` answers `200` with `type: "crisis"` |
 | UC-16 Distill memory | Backend background job, no endpoint |
-| UC-17 Send inactivity reminder | Local notification on the phone, no endpoint |
+| UC-17 Send daily reminder | Local notification on the phone, no endpoint |
 | UC-18 Delete messages older than 90 days | Backend scheduled job, no endpoint |
 
 ## Out of scope
