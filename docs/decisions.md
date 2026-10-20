@@ -583,3 +583,17 @@ Alternatives, in order: another Groq model, a paid provider such as DeepSeek, or
 **Microphone.** `permission_handler` asks for `RECORD_AUDIO` when the person taps "Permitir"; "Ahora no" asks nothing and voice mode (Sprint 6) asks again. `permission_handler` 13 requires compiling against Android 37 and our Android Gradle plugin recommends 36, so the project uses 12.x until the toolchain moves. The screen says speech recognition may depend on the phone's service, as the card asks.
 
 **Reminders.** The switch uses the same code as settings (`toggleReminders`) and the answer goes to the server with the consent. The local preference stays the one that schedules the notifications (S5-3); the server copy is informational.
+
+
+## 2026-10-20 — Integration tests create and delete their own account (S5-6)
+
+**Decision:** `app/integration_test/api_test.dart` signs up a throwaway account (`it-<time>-<random>@marlix.test`, random password) in `setUpAll` and deletes it with `DELETE /v1/account` at the end. The last test does it and checks the account can no longer sign in; `tearDownAll` repeats the deletion if a test failed halfway, so a run never leaves data in production. `config/test-account.json` and its example are gone: nothing needs a permanent test account. The sign-up works because "Confirm email" is off ([S4-3](#2026-10-15--accounts-18-or-older-no-email-confirmation-yet-sessions-checked-with-the-projects-public-keys-s4-3)).
+
+| Alternative | Why not |
+| --- | --- |
+| A permanent test account | It is what left `prueba-s43@marlix.test` and its messages in production. |
+| A local database for the tests | The point of these tests is the deployed backend and its real Supabase rules. A second Supabase project is out of scope for the card. |
+
+**Only the app deletes.** The run needs a recent sign-in for the deletion, so it signs in again right before deleting instead of trusting the sign-up token. The account's cascade (S4-9) removes profile, messages, memories and usage; the backend suite uses fakes and never touches production.
+
+**Production cleanup.** The old accounts (`@marlix.test`) are removed by the owner in the Supabase SQL Editor with `delete from auth.users where email like '%@marlix.test'`, which the same foreign keys cascade.
