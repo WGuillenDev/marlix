@@ -1,4 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <circle cx="170" cy="262" r="25" fill="#F9A8B8" fill-opacity="0.85"/>
-  <circle cx="342" cy="262" r="25" fill="#F9A8B8" fill-opacity="0.85"/>
+  <g transform="translate(256 270) scale(0.92) translate(-256 -270)">
+  <ellipse cx="162" cy="248" rx="24" ry="12" fill="#F5A9A4"/>
+  <ellipse cx="350" cy="248" rx="24" ry="12" fill="#F5A9A4"/>
+  </g>
 </svg>

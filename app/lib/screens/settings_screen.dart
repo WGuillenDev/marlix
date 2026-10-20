@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 import 'account/delete_account.dart';
+import 'avatar_test_screen.dart';
 import 'help_screen.dart';
 import 'memories/memories_screen.dart';
 
@@ -75,6 +77,14 @@ class SettingsScreen extends ConsumerWidget {
               subtitle: '9-1-1 y otros recursos',
               onTap: () => Navigator.of(context).push(HelpScreen.route()),
             ),
+            if (kDebugMode) ...[
+              const SizedBox(height: 12),
+              _SettingsCard(
+                title: 'Probar el avatar',
+                subtitle: 'Solo en desarrollo',
+                onTap: () => Navigator.of(context).push(AvatarTestScreen.route()),
+              ),
+            ],
             const SizedBox(height: 12),
             _SettingsCard(title: 'Cerrar sesión', onTap: () => _signOut(context, ref)),
             const SizedBox(height: 28),

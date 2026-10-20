@@ -7,18 +7,25 @@ import 'package:flutter_test/flutter_test.dart';
 /// The layers of the final artwork (S5-1) must fit when stacked.
 const _dir = 'assets/avatars/marlix';
 const _layers = [
-  'oreja_izq',
-  'oreja_der',
+  'cola',
+  'pies',
   'cuerpo',
   'panza',
+  'brazo_izq',
+  'brazo_der',
+  'cabeza',
+  'oreja_izq',
+  'oreja_der',
   'mejillas',
   'ojos_abiertos',
+  'pupilas',
   'ojos_felices',
   'nariz',
   'boca_0',
   'boca_1',
   'boca_2',
   'boca_3',
+  'boca_pensando',
 ];
 
 void main() {
@@ -42,16 +49,7 @@ void main() {
           height: 300,
           child: Stack(
             children: [
-              for (final name in [
-                'oreja_izq',
-                'oreja_der',
-                'cuerpo',
-                'panza',
-                'mejillas',
-                'ojos_abiertos',
-                'nariz',
-                'boca_0',
-              ])
+              for (final name in _layers)
                 Positioned.fill(child: SvgPicture.asset('$_dir/$name.svg')),
             ],
           ),
@@ -61,6 +59,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
-    expect(find.byType(SvgPicture), findsNWidgets(8));
+    expect(find.byType(SvgPicture), findsNWidgets(_layers.length));
   });
 }

@@ -1,3 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <path d="M 256 264 L 256 278 M 224 282 Q 240 300 256 278 Q 272 300 288 282" fill="none" stroke="#3A2314" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <g transform="translate(256 270) scale(0.92) translate(-256 -270)">
+  <path d="M 256 239 L 256 254 M 220 254 Q 238 278 256 254 Q 274 278 292 254" fill="none" stroke="#1E1B1A" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
 </svg>
