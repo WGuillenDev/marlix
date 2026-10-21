@@ -5,7 +5,8 @@ import type { ActivationLog } from './crisis/activation-log.js';
 import type { CrisisFilter } from './crisis/filter.js';
 import { MessageNotFoundError, type MessageStore, type SavedTurn } from './history/message-store.js';
 import type { LlmProvider } from './llm/index.js';
-import { reviewReply } from './review/reply-review.js';
+import { reviewReply, SAFE_REPLY } from './review/reply-review.js';
+import { toSpokenText } from './speech/spoken-text.js';
 import { detectTone, type MessageTone } from './tone/message-tone.js';
 import type { UsageLimiter, UsageSnapshot, UsageUser } from './usage/usage-limiter.js';
 
@@ -103,7 +104,12 @@ export function createChatService(
         ],
         maxOutputTokens: MAX_OUTPUT_TOKENS[mode],
       });
-      const review = reviewReply(completion.content);
+      // In voice mode the reply is read aloud, so it is cleaned first: the review,
+      // the history and the memory then all see exactly what is said (S6-3).
+      const spoken = mode === 'voice' ? toSpokenText(completion.content) : completion.content;
+      // Nothing left to say (only emojis, for example): the safe reply, never an empty one.
+      const review: { content: string; replacedBy?: string } =
+        spoken === '' ? { content: SAFE_REPLY, replacedBy: 'nothing to say' } : reviewReply(spoken);
       // Only the rule is logged, never the reply.
       if (review.replacedBy) console.warn(`Reply replaced by the review: ${review.replacedBy}`);
       // A reply that cannot be saved is not delivered or counted: the history

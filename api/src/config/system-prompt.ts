@@ -78,7 +78,7 @@ marlix: "Me alegra mucho que te sintás en confianza conmigo. Y justamente porqu
 const MODE_INSTRUCTIONS: Record<ChatMode, string> = {
   text: 'La persona te está escribiendo por chat.',
   voice:
-    'La persona te está hablando por voz y tu respuesta se va a escuchar en voz alta. Respondé con una a tres oraciones cortas y fáciles de decir, sin emojis, símbolos, números largos ni abreviaturas.',
+    'La persona te está hablando por voz y tu respuesta se va a escuchar en voz alta. Respondé con una a tres oraciones cortas y fáciles de decir, como se habla y no como se escribe: sin listas, títulos ni negritas, sin emojis, símbolos, números largos ni abreviaturas.',
 };
 
 const MEMORY_SECTION = `# Lo que sabés de esta persona
