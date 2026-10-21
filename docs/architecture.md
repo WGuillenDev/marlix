@@ -60,7 +60,7 @@ Thick arrows are the path of a normal chat message. Dotted arrows are background
 |---|---|---|
 | Flutter app | Phone | Chat and voice screens, animated avatar, help screen, onboarding and settings. Talks only to the backend and to Supabase Auth. |
 | Speech recognizer | Phone | Turns the user's voice into text (`speech_to_text`). Free and understands Costa Rican Spanish. |
-| Avatar voice | Phone | Turns marlix's reply into speech with Supertonic 3; the native voice (`flutter_tts`) is the fallback. Free, offline and private. |
+| Avatar voice | Phone | Turns marlix's reply into speech with Supertonic 3; the native voice (`flutter_tts`) is the fallback. Free and private. The model (398 MB) is downloaded once from Hugging Face at a pinned revision; after that it works offline ([decision](decisions.md#2026-10-21--voice-supertonic-3-on-the-phone-voice-f4-s6-1)). |
 | Local reminders | Phone | Daily reminders scheduled on the phone (`flutter_local_notifications`). No server, no push. |
 | Backend | Render (free plan) | The only component that talks to the LLM and writes to the database. Checks the session, the daily limit and the crisis filter, builds the prompt with memory, calls Groq and reviews the reply before returning it. |
 | Supabase Auth | Supabase | Sign-up, sign-in and sessions. |

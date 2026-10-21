@@ -611,3 +611,62 @@ Alternatives, in order: another Groq model, a paid provider such as DeepSeek, or
 **Fallback.** The chat never waits for or breaks on the avatar: if the profile is loading, failed, or the backend (an older one) sends no `layersPath`, the folder is marlix's. A path that does not start with `assets/avatars/` or has `..` is ignored too: the app only loads bundled files, and an unknown folder would draw an empty avatar (the widget hides a missing layer).
 
 **Trap: the seed's trailing slash.** `schema.sql` stores `assets/avatars/marlix/`, and the widget builds `$folder/cola.svg`, which would become `marlix//cola.svg` and silently draw nothing. The app trims trailing slashes instead of editing the seed, so databases that already exist need no migration.
+
+
+## 2026-10-21 — Voice: Supertonic 3 on the phone, voice F4 (S6-1)
+
+**Decision:** marlix speaks with [Supertonic 3](https://huggingface.co/Supertone/supertonic-3), a neural text-to-speech model that runs on the phone with ONNX Runtime, in Spanish (`es`) and with the **F4** voice, using the package's default settings (5 denoising steps, speed 1.05). The phone's native voice (`flutter_tts`) stays behind the voice layer of S6-2 only for when Supertonic cannot run: no space for the model, a failed download or a model that does not load. It is not a fallback for slow phones, because the point of the decision is a voice that sounds human. The Costa Rican flavor comes from the text, which the [system prompt](system-prompt.md) defines: no free voice has a Costa Rican accent.
+
+| Alternative | Why not |
+| --- | --- |
+| The phone's native voice (`flutter_tts`) | The listeners preferred Supertonic in every vote but one (and that one was corrected). It starts in 56 to 137 ms and weighs nothing, so it is the fallback when Supertonic cannot run. |
+| Paid cloud voices | Out of scope: they cost money and send the reply to a third party. |
+
+**How it was tested.** A throwaway app (not in the repository) played the same 5 phrases, written in marlix's voseo tone, with both engines on two real phones, a Samsung Galaxy S24 Ultra (SM-S928B, Android 16, arm64, 11 GB of RAM) and a HONOR 90 (REA-NX9, Android 15, arm64, 11 GB of RAM), and on the emulator. Three people voted blind, on the S24 Ultra: the app drew which engine was A and which was B in every phrase. A second round played one phrase (the empathic one) with the 10 Supertonic voices, anonymous and in random order, and each person picked a favorite.
+
+| Result | Native voice | Supertonic 3 (F1) |
+| --- | --- | --- |
+| Blind vote, engine | 0 | **14 of 14** (3 people, 5 phrases; one person did not vote phrase 1; one wrong vote on phrase 1 was replaced by its correction) |
+| Time to start speaking, S24 Ultra | 56 to 82 ms (238 ms the first time) | 1.05 to 1.72 s, about 3 times faster than the audio lasts |
+| Time to start speaking, HONOR 90 | 92 to 137 ms (396 ms the first time) | 1.82 to 2.70 s, about 2 times faster than the audio lasts |
+| Loading the model | none | 0.8 to 0.9 s on the S24 Ultra, 1.7 s on the HONOR 90 (12 s on the emulator) |
+| First-use download | none | 398 MB (4 ONNX files): 32 s over wifi on the S24 Ultra, 49 s on the HONOR 90 |
+| Added to the APK (arm64) | none | about 28.6 MB (`libonnxruntime.so`) |
+
+The voice vote gave **F4** two votes and F1 one (a fourth vote without a name, also F4, was not counted). Three voters is a small sample: enough to choose, not to measure preference.
+
+**What it costs.**
+- **A first-use download of 398 MB.** The app has to ask for wifi, show progress and work in text mode meanwhile. S6-2 and S6-4 must plan it.
+- **A wait before the first word.** The package synthesizes the whole phrase before playing it, so the wait grows with the phrase length. The voice mode prompt already asks for one to three short sentences.
+- **Unofficial port.** `supertonic_flutter` 2.0.0 depends on `flutter_onnxruntime`; the model files come from Hugging Face. The app pins the version, adds `-keep class ai.onnxruntime.** { *; }` to the ProGuard rules, and uses the native voice if loading fails.
+
+**Shortening the wait without changing the voice.** Measured on the HONOR 90, the slower phone, with the F4 voice:
+
+| How it is synthesized | Time to the first word (phrases 1, 2, 3 and 5, which have more than one sentence) |
+| --- | --- |
+| The whole phrase, 5 denoising steps (what was voted) | 1.60 to 2.92 s |
+| **Only the first sentence, 5 steps** | **1.17 to 1.43 s** |
+| The whole phrase, 3 steps | 1.05 to 1.70 s |
+| Only the first sentence, 3 steps | 0.76 to 0.97 s |
+
+The voice keeps the **5 steps** that the listeners voted for: 3 steps is faster but nobody has listened to it, and fewer steps can sound less natural. The wait is shortened by speaking **sentence by sentence** (S6-10): marlix starts with the first sentence while the next ones are synthesized, which keeps the voted voice and brings the first word to about 1.2 to 1.4 s on the HONOR 90. A phrase of a single sentence still waits for the whole of it: phrase 4 took 2.03 s with 5 steps.
+
+**Not verified: a low-end phone.** The card asked for two real phones; two were tested and both are high end (11 GB of RAM). Neither is a modest or old phone, and the wait grew from one to the other. S6-12 measures one. If the first sentence still takes more than 3 s there, the next step is 3 denoising steps, checked first with a blind listening test; the native voice is the last option.
+
+**Scaling to any phone.** The app decides by measuring the phone, never by its model name, so the same code serves a flagship, a modest phone or an iPhone (the package supports iOS 16 or newer). S6-2 builds these rules behind the voice interface:
+
+1. **marlix owns the model download.** If the files are missing, the package's `initialize()` downloads them by itself from the `main` branch, unverified and even over mobile data. The app therefore downloads the files itself, from the pinned revision `3cadd1ee6394adea1bd021217a0e650ede09a323` of `Supertone/supertonic-3`, checks each file against a SHA-256 manifest shipped in the app, resumes broken downloads, uses wifi unless the person allows mobile data, and only then calls `initialize()`. A model update is a new revision and a new manifest in a release, never a silent change.
+2. **Space before downloading.** The download needs at least 1 GB free (398 MB of files plus room to write them). Otherwise the phone uses the native voice and the app says why.
+3. **Memory without guessing.** With the model loaded the app used 637 MB (PSS) on the HONOR 90. A phone that Android marks as low-RAM (`ActivityManager.isLowRamDevice`, as Android Go phones are) skips Supertonic. On any other phone the app tries: it saves a "loading" flag before loading the model and clears it after; if the next start finds the flag, the last load killed the app, and that phone uses the native voice.
+4. **Speed measured once per phone.** After loading, the app synthesizes one fixed sentence and computes how many seconds of audio it makes per second of work. Speaking by sentences only works if the next sentence is ready before the current one ends, so the threshold is **1.3** (30 % of margin). The phones measured gave 3.0 to 3.7 (S24 Ultra) and 1.8 to 2.3 (HONOR 90). Below 1.3 the phone tries 3 steps, once the blind listening test approves them; below 1.3 with 3 steps it uses the native voice. The result is saved per phone and app version, and measured again when either changes. The 1.3 starts as a reasoned value and S6-12 calibrates it.
+5. **Never a broken conversation.** If Supertonic fails in the middle of a reply, that reply continues with the native voice, and the text is always on screen.
+
+| Phone | Voice |
+| --- | --- |
+| Enough space, loads the model, 1.3 or more with 5 steps | Supertonic F4, 5 steps (the voted voice) |
+| Loads the model, below 1.3 with 5 steps and 1.3 or more with 3 | Supertonic F4, 3 steps, only after the listening test approves them |
+| No space, low-RAM, a failed load, or below 1.3 even with 3 steps | Native voice |
+
+**The voice settings live in the database.** `avatars.voice_config` only accepts `voice`, `pitch` and `rate` today, which fit the native voice and not Supertonic. S6-2 changes it with a migration to `{"engine": "supertonic-3", "voice": "F4", "language": "es", "steps": 5, "rate": 1.05, "fallback": {"voice": "default", "pitch": 1.0, "rate": 1.0}}`, updates the seed and sends it in `GET /v1/me` next to `layersPath`. A new avatar in v2 brings its own voice with no code change.
+
+**License.** The code is MIT; the model weights use the [OpenRAIL-M License](https://huggingface.co/Supertone/supertonic-3/blob/main/LICENSE) (Copyright (c) 2026 Supertone Inc.), which allows commercial use and asks to keep the notices, to give recipients a copy of the license and to pass on its use restrictions. The app downloads the model from Hugging Face and the repository does not contain it. Those restrictions that touch marlix: no medical advice (marlix never diagnoses), generated content must say that it is machine generated, and no exploiting a person's vulnerabilities (marlix does not encourage dependence). **The disclosure is still missing:** the system prompt makes marlix say it is an AI when it talks, but no screen of the app says so. S6-13 adds it before the voice ships. The credit is in the README.
