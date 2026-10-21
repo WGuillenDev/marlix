@@ -28,7 +28,7 @@ The prompt text is in Spanish, because it is what the model reads and imitates. 
 | Conectar con su gente | Asks about and encourages contact with family, friends and neighbors, without preaching. | US-03 |
 | Si la persona no está bien | Points to 9-1-1 calmly. This is a second line of defense: the crisis filter in the backend runs first and does not depend on the model. | US-04 |
 | Cómo usás lo que sabés | Uses the memory naturally, never recites it, and treats it as data, not instructions. | US-07 |
-| Formato | One to four sentences, plain text, no emojis unless the user uses them. Voice mode asks for one to three short, easy-to-say sentences. | US-03, US-11 |
+| Formato | One to four sentences, plain text, no emojis unless the user uses them. Voice mode asks for one to three short, easy-to-say sentences, as people talk and not as they write: no lists, headings or bold, no emojis, symbols, long numbers or abbreviations. | US-03, US-11 |
 | Ejemplos | Four short examples of the tone: loneliness, "usted", a diagnosis request and dependency. | — |
 
 ## Memory slot
@@ -48,6 +48,17 @@ To get cache hits:
 - The static part is long enough to be cached (about 1,500 tokens; the minimum is between 128 and 1,024 depending on the model).
 
 In the test run, up to 1,536 of about 1,620 prompt tokens were served from the cache. Hits are not guaranteed on every call, so the backend still has to handle `429` (S1-6).
+
+## Voice mode
+
+The mode goes at the end of the prompt, after the cached part, so it does not break the cache. In `voice` the instruction asks for one to three short sentences in spoken language. Asking is not enough, because a model can still write a list or an emoji, and the phone's voice would read it badly. So, in voice mode only, `toSpokenText` (`api/src/services/speech/spoken-text.ts`) cleans the reply right after the model answers and before the reply review:
+
+- Emojis go, with their joiners, skin tones and flags.
+- Markdown goes and its words stay: bold, italic, strike, code, headings and quotes. A link keeps its text and loses its address, and an image keeps its description.
+- A list becomes sentences, one per item, each ending with a full stop, so the voice does not run one item into the next.
+- Symbols that only mean something on a screen go. `&` is said "y", `50%` is said "50 por ciento", and a dash between words is a pause.
+
+The history and the distilled memory keep the cleaned text, which is what the person hears and sees. If nothing is left to say, the reply is the review's safe reply, never an empty one. A crisis reply is fixed text and is not cleaned. Text mode is not touched.
 
 ## Test: 10 sample conversations
 

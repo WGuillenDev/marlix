@@ -706,3 +706,24 @@ The voice keeps the **5 steps** that the listeners voted for: 3 steps is faster 
 - Google's voice can say a language is available and still fail to speak it, so availability is not checked once but at the moment of speaking.
 - `device_info_plus` already gives `isLowRamDevice`; the only native code is five lines in `MainActivity` for the free space, which Dart cannot read.
 - The model, voice styles included, is 401 MB: S6-1 measured 398 MB for the four ONNX files alone.
+
+
+## 2026-10-21 — Voice replies: ask for short sentences, and clean what the model still writes (S6-3)
+
+**Decision:** in voice mode (`mode: "voice"` in `POST /v1/chat`) the system prompt asks for **one to three** short sentences, as people talk, and the backend cleans the reply with `toSpokenText` before the reply review, the history and the memory see it. In text mode nothing changes. The voice is made on the phone, so the backend only returns text prepared to be read aloud, and there is no synthesis endpoint.
+
+| Alternative | Why not |
+| --- | --- |
+| Two to four sentences, as the card said | The code and the docs already had one to three. A shorter reply starts speaking sooner and spends less of Groq's quota; the same message got 127 characters in voice mode and 182 in text, and 221 against 376 in another. The card was changed to say one to three. |
+| Only ask the model (no cleaning) | A prompt is a request, not a guarantee. One list or one emoji is read as "asterisco" or skipped with a strange pause. |
+| Clean in the app, just before the voice | Then the screen shows the dirty text and the voice says another one, and every future client repeats the cleaning. In the backend, one place. |
+| Save the original and clean only for the voice | Two versions of every reply, and a chat that could show words that were not said. The history keeps what was said. |
+
+**Where it runs.** After the model answers and before `reviewReply`, so the review checks the final text. A reply that is empty once cleaned (only emojis) is replaced by the review's safe reply and logged as "nothing to say" without its content. The crisis reply never goes through the model or through this.
+
+**What was already there.** `mode` was accepted since S1-5 and the voice token limit (512 against 1,024 in text) too; this card covers them with tests and adds the cleaning and the prompt wording ("as people talk and not as they write: no lists, headings or bold").
+
+**Checked against the real model.** Three messages in both modes: the voice replies had two or three sentences and were 30 to 40 % shorter, and the cleaner found nothing to change, because the prompt already works. The cleaner is the net for the day the model slips.
+
+**Out of scope.** Streaming the reply sentence by sentence so the voice starts before the whole reply exists is S6-10, and the audio is S6-4.
+

@@ -223,7 +223,7 @@ Sends a message to marlix and returns the reply. It runs the full flow of the [s
 | Field | Type | Rules |
 |---|---|---|
 | `message` | string | Required. 1 to 2,000 characters after trimming spaces. In voice mode it is the text from the phone's speech recognizer. |
-| `mode` | `"text"` \| `"voice"` | Optional, default `"text"`. In `"voice"` the model is asked for short, conversational replies (US-11). |
+| `mode` | `"text"` \| `"voice"` | Optional, default `"text"`. In `"voice"` the model is asked for one to three short sentences, as people talk, and the reply is cleaned of emojis, markdown and symbols before it is reviewed, saved and returned, because the phone reads it aloud (US-11, S6-3). `"text"` changes nothing. |
 | `interruptedMessageId` | UUID \| null | Optional. The assistant message the user interrupted by talking (US-12). It stays in the history marked as interrupted. |
 
 **Response `200`, normal reply** (`Accept: application/json`, the default)
