@@ -227,3 +227,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 ## License
 
 [MIT](LICENSE)
+
+### Third-party models
+
+marlix's voice is [Supertonic 3](https://huggingface.co/Supertone/supertonic-3) by Supertone Inc. (Copyright (c) 2026 Supertone Inc.). Its model weights are under the [OpenRAIL-M License](https://huggingface.co/Supertone/supertonic-3/blob/main/LICENSE), which allows commercial use and includes use restrictions that apply to anyone who uses the model; its sample code is MIT. The app downloads the model on first use; it is not part of this repository. See the [decision](docs/decisions.md#2026-10-21--voice-supertonic-3-on-the-phone-voice-f4-s6-1).
