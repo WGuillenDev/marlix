@@ -1,7 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { databaseFailure } from '../database-error.js';
-import { OnboardingAlreadyCompletedError, type Profile, type ProfileStore } from './profile-store.js';
+import {
+  OnboardingAlreadyCompletedError,
+  type Profile,
+  type ProfileStore,
+  type VoiceConfig,
+} from './profile-store.js';
 
 interface ProfileRow {
   id: string;
@@ -9,11 +14,11 @@ interface ProfileRow {
   data_consent_at: string | null;
   onboarding_completed_at: string | null;
   reminders_enabled: boolean;
-  avatar: { id: string; slug: string; name: string; layers_path: string };
+  avatar: { id: string; slug: string; name: string; layers_path: string; voice_config: VoiceConfig };
 }
 
 const COLUMNS =
-  'id, plan, data_consent_at, onboarding_completed_at, reminders_enabled, avatar:avatars(id, slug, name, layers_path)';
+  'id, plan, data_consent_at, onboarding_completed_at, reminders_enabled, avatar:avatars(id, slug, name, layers_path, voice_config)';
 
 /**
  * Reads and writes the profile through the Supabase API with the secret key,
@@ -66,6 +71,7 @@ function toProfile(row: ProfileRow): Profile {
       slug: row.avatar.slug,
       name: row.avatar.name,
       layersPath: row.avatar.layers_path,
+      voiceConfig: row.avatar.voice_config,
     },
     onboardingCompleted: row.onboarding_completed_at !== null,
     dataConsentAt: row.data_consent_at,

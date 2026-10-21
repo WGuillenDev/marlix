@@ -8,13 +8,27 @@ import { fakeSupabaseClient } from './fake-supabase.js';
 import { captureConsole } from './helpers.js';
 
 const USER = '00000000-0000-4000-8000-00000000000a';
+const VOICE = {
+  engine: 'supertonic-3',
+  voice: 'F4',
+  language: 'es',
+  steps: 5,
+  rate: 1.05,
+  fallback: { voice: 'default', pitch: 1.0, rate: 1.0 },
+};
 const ROW = {
   id: USER,
   plan: 'personal',
   data_consent_at: null,
   onboarding_completed_at: null,
   reminders_enabled: false,
-  avatar: { id: 'a1', slug: 'marlix', name: 'marlix', layers_path: 'assets/avatars/marlix/' },
+  avatar: {
+    id: 'a1',
+    slug: 'marlix',
+    name: 'marlix',
+    layers_path: 'assets/avatars/marlix/',
+    voice_config: VOICE,
+  },
 };
 
 describe('createSupabaseProfileStore', () => {
@@ -25,7 +39,13 @@ describe('createSupabaseProfileStore', () => {
     assert.deepEqual(profile, {
       id: USER,
       plan: 'personal',
-      avatar: { id: 'a1', slug: 'marlix', name: 'marlix', layersPath: 'assets/avatars/marlix/' },
+      avatar: {
+        id: 'a1',
+        slug: 'marlix',
+        name: 'marlix',
+        layersPath: 'assets/avatars/marlix/',
+        voiceConfig: VOICE,
+      },
       onboardingCompleted: false,
       dataConsentAt: null,
       settings: { remindersEnabled: false },
@@ -33,7 +53,7 @@ describe('createSupabaseProfileStore', () => {
     const query = calls[0]!.params;
     assert.equal(calls[0]!.table, 'users');
     assert.equal(query.get('id'), `eq.${USER}`);
-    assert.match(query.get('select') ?? '', /avatar:avatars\(id,slug,name,layers_path\)/);
+    assert.match(query.get('select') ?? '', /avatar:avatars\(id,slug,name,layers_path,voice_config\)/);
   });
 
   it('says onboarding is done when onboarding_completed_at is set', async () => {

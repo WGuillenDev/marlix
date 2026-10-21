@@ -9,6 +9,14 @@ const MARLIX = {
   slug: 'marlix',
   name: 'marlix',
   layersPath: 'assets/avatars/marlix/',
+  voiceConfig: {
+    engine: 'supertonic-3' as const,
+    voice: 'F4',
+    language: 'es',
+    steps: 5,
+    rate: 1.05,
+    fallback: { voice: 'default', pitch: 1.0, rate: 1.0 },
+  },
 };
 
 /** Profiles in memory: every user starts with onboarding still open. */

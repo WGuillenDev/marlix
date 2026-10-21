@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
@@ -11,6 +13,8 @@ import 'models/reminder_config.dart';
 import 'services/auth_service.dart';
 import 'services/help_resources.dart';
 import 'services/reminders.dart';
+import 'services/voice/voice_model_store.dart';
+import 'services/voice/voice_providers.dart';
 
 Future<void> main() async {
   // Fails at startup, not on the first request, when the configuration is wrong.
@@ -23,6 +27,11 @@ Future<void> main() async {
   final reminders = ReminderConfig.fromJson(
     jsonDecode(await rootBundle.loadString('assets/config/reminders.json')) as Map<String, Object?>,
   );
+  final voiceModel = VoiceModelManifest.fromJson(
+    jsonDecode(await rootBundle.loadString('assets/config/voice-model.json'))
+        as Map<String, Object?>,
+  );
+  final support = await getApplicationSupportDirectory();
   runApp(
     ProviderScope(
       overrides: [
@@ -30,6 +39,10 @@ Future<void> main() async {
         sharedPreferencesProvider.overrideWithValue(preferences),
         authServiceProvider.overrideWithValue(auth),
         reminderConfigProvider.overrideWithValue(reminders),
+        voiceModelManifestProvider.overrideWithValue(voiceModel),
+        voiceModelDirectoryProvider.overrideWithValue(
+          Directory('${support.path}/${VoiceModelStore.packageFolder}'),
+        ),
       ],
       child: const MarlixApp(),
     ),

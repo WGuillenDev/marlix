@@ -29,6 +29,9 @@ extension JsonReader on Map<String, Object?> {
 
   int requireInt(String key) => _require<int>(key);
 
+  /// A JSON number: `1` decodes as an int and `1.05` as a double.
+  double requireNumber(String key) => _require<num>(key).toDouble();
+
   List<String> requireStringList(String key) {
     final items = _require<List<Object?>>(key);
     return [

@@ -77,9 +77,13 @@ create table public.avatars (
   name         text not null,
   voice_config jsonb not null check (
     jsonb_typeof(voice_config) = 'object'
-    and voice_config ? 'voice'
-    and voice_config ? 'pitch'
-    and voice_config ? 'rate'
+    -- coalesce: a missing key gives null, and a check accepts null.
+    and coalesce(voice_config->>'engine' in ('supertonic-3', 'native'), false)
+    and coalesce(jsonb_typeof(voice_config->'voice') = 'string', false)
+    and coalesce(jsonb_typeof(voice_config->'language') = 'string', false)
+    and coalesce(jsonb_typeof(voice_config->'steps') = 'number', false)
+    and coalesce(jsonb_typeof(voice_config->'rate') = 'number', false)
+    and coalesce(jsonb_typeof(voice_config->'fallback') = 'object', false)
   ),
   layers_path  text not null,
   is_default   boolean not null default false,
@@ -88,7 +92,7 @@ create table public.avatars (
 );
 
 comment on column public.avatars.voice_config is
-  'On-device TTS settings read by the app: {"voice", "pitch", "rate"}.';
+  'On-device voice settings read by the app (S6-2): {"engine", "voice", "language", "steps", "rate", "fallback": {"voice", "pitch", "rate"}}. The fallback is for the phone''s native voice.';
 comment on column public.avatars.layers_path is
   'Folder in the app assets that holds the avatar SVG layers.';
 comment on column public.avatars.is_default is
@@ -457,12 +461,13 @@ grant delete on public.memories to authenticated;
 insert into public.plan_limits (plan, daily_interactions)
 values ('personal', 100);
 
--- The final voice is chosen in S6-1; these are neutral starting values.
+-- The voice chosen in S6-1: Supertonic 3, voice F4, with the native voice as fallback.
 insert into public.avatars (slug, name, voice_config, layers_path, is_default)
 values (
   'marlix',
   'marlix',
-  '{"voice": "default", "pitch": 1.0, "rate": 1.0}',
+  '{"engine": "supertonic-3", "voice": "F4", "language": "es", "steps": 5, "rate": 1.05,
+    "fallback": {"voice": "default", "pitch": 1.0, "rate": 1.0}}',
   'assets/avatars/marlix/',
   true
 );

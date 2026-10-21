@@ -146,6 +146,17 @@ class FakeBackend {
   /// The `layersPath` that `GET /v1/me` sends for the avatar (null: not sent). The seed's value.
   String? avatarLayersPath = 'assets/avatars/marlix/';
 
+  /// The `voiceConfig` that `GET /v1/me` sends for the avatar (null: not sent, like an older
+  /// backend). The seed's value.
+  Map<String, Object?>? avatarVoiceConfig = {
+    'engine': 'supertonic-3',
+    'voice': 'F4',
+    'language': 'es',
+    'steps': 5,
+    'rate': 1.05,
+    'fallback': {'voice': 'default', 'pitch': 1.0, 'rate': 1.0},
+  };
+
   /// How many times `GET /v1/me` was called.
   int meRequests = 0;
 
@@ -159,6 +170,7 @@ class FakeBackend {
       'slug': 'marlix',
       'name': 'marlix',
       'layersPath': ?avatarLayersPath,
+      'voiceConfig': ?avatarVoiceConfig,
     },
     'onboardingCompleted': onboardingDone,
     'dataConsentAt': onboardingDone ? '2026-10-19T20:00:00Z' : null,

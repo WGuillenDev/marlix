@@ -66,6 +66,51 @@ void main() {
     expect(offenders, isEmpty, reason: 'Screens go through MicrophonePermission');
   });
 
+  test('only lib/services/voice/ talks to the voice engines and the network checks', () {
+    // The screens speak through VoiceController (S6-2): none names an engine, so
+    // a new engine changes one folder.
+    const voicePackages = [
+      'package:flutter_tts/',
+      'package:supertonic_flutter/',
+      'package:audioplayers/',
+      'package:device_info_plus/',
+      'package:connectivity_plus/',
+    ];
+    final offenders = [
+      for (final file in sources)
+        if (!relative(file).startsWith('lib/services/voice/') &&
+            voicePackages.any(file.readAsStringSync().contains))
+          relative(file),
+    ];
+
+    expect(offenders, isEmpty, reason: 'Screens go through VoiceController');
+  });
+
+  test('no screen imports a concrete voice engine or the model store', () {
+    final engines = RegExp(
+      r"import '[^']*services/voice/((native|supertonic)_voice_engine|voice_model_store)\.dart'",
+    );
+    final offenders = [
+      for (final file in sources)
+        if (relative(file).startsWith('lib/screens/') && engines.hasMatch(file.readAsStringSync()))
+          relative(file),
+    ];
+
+    expect(offenders, isEmpty, reason: 'Screens only know VoiceController and VoiceStatus');
+  });
+
+  test('only the voice model store downloads the model: the engines close the network', () {
+    final offenders = [
+      for (final file in sources)
+        if (relative(file).startsWith('lib/services/voice/') &&
+            !relative(file).endsWith('voice_model_store.dart') &&
+            file.readAsStringSync().contains('preDownloadModels'))
+          relative(file),
+    ];
+
+    expect(offenders, isEmpty, reason: 'The package downloads from main without checking');
+  });
+
   test('the app holds no API key', () {
     // Groq keys, Supabase secret keys and JWTs such as the service_role key.
     final keyPattern = RegExp(r'gsk_[A-Za-z0-9]{20,}|sb_secret_|eyJ[A-Za-z0-9_-]{20,}\.');
