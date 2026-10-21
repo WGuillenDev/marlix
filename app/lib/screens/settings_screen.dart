@@ -11,6 +11,7 @@ import 'avatar_test_screen.dart';
 import 'help_screen.dart';
 import 'memories/memories_screen.dart';
 import 'reminders_toggle.dart';
+import 'voice/voice_test_screen.dart';
 
 /// Settings (wireframe docs/diagrams/wireframes/screens/07a-settings.png).
 class SettingsScreen extends ConsumerWidget {
@@ -133,6 +134,12 @@ class SettingsScreen extends ConsumerWidget {
                 title: 'Probar el avatar',
                 subtitle: 'Solo en desarrollo',
                 onTap: () => Navigator.of(context).push(AvatarTestScreen.route()),
+              ),
+              const SizedBox(height: 12),
+              _SettingsCard(
+                title: 'Probar la voz',
+                subtitle: 'Solo en desarrollo',
+                onTap: () => Navigator.of(context).push(VoiceTestScreen.route()),
               ),
             ],
             const SizedBox(height: 12),
