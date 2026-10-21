@@ -229,6 +229,33 @@ select pg_temp.expect('the sign-up trigger stored the birth date',
   (select birth_date from public.users where id = '00000000-0000-4000-8000-00000000000a')
   = date '1990-05-20');
 
+-- The voice settings of an avatar (S6-2): the seed passes and a wrong shape is refused.
+select pg_temp.expect('the default avatar speaks with Supertonic and has a native fallback',
+  (select voice_config->>'engine' = 'supertonic-3' and voice_config->'fallback'->>'voice' = 'default'
+   from public.avatars where is_default));
+
+create function pg_temp.expect_voice_refused(description text, config jsonb)
+returns void
+language plpgsql
+as $$
+begin
+  insert into public.avatars (slug, name, voice_config, layers_path)
+  values ('voice-test', 'voice-test', config, 'assets/avatars/voice-test/');
+  raise exception 'FAILED: % (the voice settings were accepted)', description;
+exception
+  when check_violation then null;
+end;
+$$;
+
+select pg_temp.expect_voice_refused('the old shape without an engine is refused',
+  '{"voice": "default", "pitch": 1.0, "rate": 1.0}');
+select pg_temp.expect_voice_refused('an unknown engine is refused',
+  '{"engine": "cloud", "voice": "F4", "language": "es", "steps": 5, "rate": 1.0, "fallback": {}}');
+select pg_temp.expect_voice_refused('steps that are not a number are refused',
+  '{"engine": "supertonic-3", "voice": "F4", "language": "es", "steps": "5", "rate": 1.0, "fallback": {}}');
+select pg_temp.expect_voice_refused('a missing fallback is refused',
+  '{"engine": "supertonic-3", "voice": "F4", "language": "es", "steps": 5, "rate": 1.0}');
+
 insert into public.conversations (id, user_id, avatar_id)
 select c.id, c.user_id, (select id from public.avatars where is_default)
 from (values

@@ -46,7 +46,7 @@ erDiagram
         uuid id PK
         text slug UK
         text name
-        jsonb voice_config "voice, pitch, rate"
+        jsonb voice_config "engine, voice, language, steps, rate, fallback"
         text layers_path
         boolean is_default "at most one true"
         timestamptz created_at

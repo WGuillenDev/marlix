@@ -1,3 +1,17 @@
+/**
+ * How the app makes the avatar speak (S6-2). The database enforces this shape;
+ * the app decides at run time whether the phone can use the engine or falls
+ * back to its native voice.
+ */
+export interface VoiceConfig {
+  engine: 'supertonic-3' | 'native';
+  voice: string;
+  language: string;
+  steps: number;
+  rate: number;
+  fallback: { voice: string; pitch: number; rate: number };
+}
+
 export interface Profile {
   id: string;
   plan: string;
@@ -7,6 +21,7 @@ export interface Profile {
     name: string;
     /** Folder of the avatar's SVG layers in the app's assets (S5-7). */
     layersPath: string;
+    voiceConfig: VoiceConfig;
   };
   onboardingCompleted: boolean;
   /** When the person gave the explicit data consent; null until they do. */

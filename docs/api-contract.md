@@ -141,7 +141,15 @@ Returns the signed-in user's profile. The app calls it after sign-in to decide w
     "id": "0b8e5d2a-7c41-4f0e-8d2b-3a9c1e7f6b54",
     "slug": "marlix",
     "name": "marlix",
-    "layersPath": "assets/avatars/marlix/"
+    "layersPath": "assets/avatars/marlix/",
+    "voiceConfig": {
+      "engine": "supertonic-3",
+      "voice": "F4",
+      "language": "es",
+      "steps": 5,
+      "rate": 1.05,
+      "fallback": { "voice": "default", "pitch": 1.0, "rate": 1.0 }
+    }
   },
   "onboardingCompleted": false,
   "dataConsentAt": null,
@@ -150,6 +158,8 @@ Returns the signed-in user's profile. The app calls it after sign-in to decide w
 ~~~
 
 `avatar.layersPath` is the folder with the avatar's SVG layers inside the app's assets (`avatars.layers_path`). The app passes it to the avatar widget (S5-7); it ignores a path that does not start with `assets/avatars/` and uses marlix's, and it tolerates the trailing slash.
+
+`avatar.voiceConfig` says how the avatar speaks (S6-2). `engine` is `supertonic-3` (the neural voice that runs on the phone) or `native` (the phone's own voice); `voice` is the Supertonic voice, `language` its language, `steps` its denoising steps and `rate` its speed. `fallback` is for the phone's native voice, which the app uses when the phone cannot run Supertonic. The app ignores a `voiceConfig` it does not understand and falls back to its built-in defaults, so an older app keeps working and a newer one does not break against an older backend. The choice of engine on each phone is made by the app ([decision](decisions.md#2026-10-21--voice-supertonic-3-on-the-phone-voice-f4-s6-1)).
 
 ---
 
@@ -439,7 +449,14 @@ Lists the available avatars. In v1 there is one; the endpoint is ready for more 
       "id": "0b8e5d2a-7c41-4f0e-8d2b-3a9c1e7f6b54",
       "slug": "marlix",
       "name": "marlix",
-      "voiceConfig": { "voice": "default", "pitch": 1.0, "rate": 1.0 },
+      "voiceConfig": {
+        "engine": "supertonic-3",
+        "voice": "F4",
+        "language": "es",
+        "steps": 5,
+        "rate": 1.05,
+        "fallback": { "voice": "default", "pitch": 1.0, "rate": 1.0 }
+      },
       "layersPath": "assets/avatars/marlix/",
       "isDefault": true
     }
@@ -447,7 +464,7 @@ Lists the available avatars. In v1 there is one; the endpoint is ready for more 
 }
 ~~~
 
-The app reads `voiceConfig` for the on-device voice and `layersPath` for the SVG layers.
+The app reads `voiceConfig` for the on-device voice (same shape as in [`GET /v1/me`](#get-v1me)) and `layersPath` for the SVG layers.
 
 ---
 
