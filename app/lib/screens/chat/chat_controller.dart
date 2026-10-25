@@ -6,6 +6,7 @@ import '../../models/usage.dart';
 import '../../services/api_exception.dart';
 import '../../services/auth_service.dart';
 import '../../services/marlix_api.dart';
+import '../../services/read_aloud.dart';
 
 /// One row of the chat.
 sealed class ChatEntry {
@@ -201,7 +202,9 @@ class ChatController extends Notifier<ChatState> {
 
   Future<void> _deliver(String id, String text) async {
     try {
-      final response = await _api.sendMessage(text);
+      // Replies that will be read aloud come short and clean (S6-3).
+      final mode = ref.read(readAloudProvider) ? ChatMode.voice : ChatMode.text;
+      final response = await _api.sendMessage(text, mode: mode);
       if (!ref.mounted) return;
       final reply = switch (response) {
         CrisisReply(:final reply, :final resources) => CrisisEntry(reply, resources),

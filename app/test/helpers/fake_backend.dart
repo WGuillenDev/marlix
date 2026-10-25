@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -66,6 +67,9 @@ const crisisResources = [
 class FakeBackend {
   Completer<http.Response> reply = Completer();
   final sent = <String>[];
+
+  /// The `mode` of every chat request, in order.
+  final modes = <String?>[];
   int usageRemaining = 87;
 
   /// `GET /v1/help-resources` fails as if there were no connection.
@@ -234,7 +238,9 @@ class FakeBackend {
       if (request.url.path == '/v1/usage') {
         return jsonResponse({'plan': 'personal', ...usageJson(remaining: usageRemaining)});
       }
-      sent.add((jsonDecode(request.body) as Map)['message'] as String);
+      final body = jsonDecode(request.body) as Map;
+      sent.add(body['message'] as String);
+      modes.add(body['mode'] as String?);
       return reply.future;
     }),
     baseUrl: Uri.parse('https://api.test'),
@@ -432,6 +438,7 @@ Future<FakeBackend> openChat(
   FakeReminderScheduler? reminders,
   FakeMicrophone? microphone,
   Map<String, Object> savedPreferences = const {},
+  List<Override> overrides = const [],
 }) async {
   tester.view.physicalSize = size * tester.view.devicePixelRatio;
   addTearDown(tester.view.reset);
@@ -455,6 +462,7 @@ Future<FakeBackend> openChat(
         reminderSchedulerProvider.overrideWithValue(reminders ?? FakeReminderScheduler()),
         reminderConfigProvider.overrideWithValue(testReminderConfig),
         microphonePermissionProvider.overrideWithValue(microphone ?? FakeMicrophone()),
+        ...overrides,
       ],
       child: const MarlixApp(),
     ),

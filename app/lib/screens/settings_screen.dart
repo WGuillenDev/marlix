@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/reminder_config.dart';
 import '../services/auth_service.dart';
+import '../services/read_aloud.dart';
 import '../services/reminders.dart';
 import '../theme/app_theme.dart';
 import 'account/delete_account.dart';
@@ -76,6 +77,8 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final reminders = ref.watch(remindersProvider);
+    final readAloud = ref.watch(readAloudProvider);
+    final readAloudNotifier = ref.read(readAloudProvider.notifier);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Ajustes', style: AppText.title),
@@ -128,6 +131,17 @@ class SettingsScreen extends ConsumerWidget {
                 onTap: () => _pickReminderTime(context, ref, reminders.time),
               ),
             ],
+            const SizedBox(height: 12),
+            _SettingsCard(
+              title: 'Leer las respuestas en voz alta',
+              subtitle: 'marlix te habla además de escribirte',
+              onTap: () => readAloudNotifier.set(!readAloud),
+              trailing: Switch(
+                value: readAloud,
+                activeThumbColor: AppColors.tan,
+                onChanged: readAloudNotifier.set,
+              ),
+            ),
             if (kDebugMode) ...[
               const SizedBox(height: 12),
               _SettingsCard(

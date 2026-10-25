@@ -14,6 +14,7 @@ import '../help_screen.dart';
 import '../settings_screen.dart';
 import 'avatar_controller.dart';
 import 'chat_controller.dart';
+import 'reply_reader.dart';
 
 /// Main screen (wireframes docs/diagrams/wireframes/screens/03a to 03d).
 class ChatScreen extends ConsumerStatefulWidget {
@@ -27,7 +28,7 @@ class ChatScreen extends ConsumerStatefulWidget {
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends ConsumerState<ChatScreen> {
+class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObserver {
   static const slowReplyAfter = ChatScreen.slowReplyAfter;
 
   /// How close to the oldest loaded message the scroll gets before the next
@@ -42,6 +43,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _input.addListener(() => setState(() {}));
     _scroll.addListener(_loadOlderNearTop);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -55,10 +57,26 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _slowTimer?.cancel();
     _input.dispose();
     _scroll.dispose();
     super.dispose();
+  }
+
+  // With the screen locked or the app in the background the voice waits, and
+  // it goes on when the person comes back (docs/decisions.md, S6-4).
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final reader = ref.read(replyReaderProvider.notifier);
+    switch (state) {
+      case AppLifecycleState.paused || AppLifecycleState.hidden:
+        unawaited(reader.pause(byApp: true));
+      case AppLifecycleState.resumed:
+        unawaited(reader.resumeAfterBackground());
+      case AppLifecycleState.inactive || AppLifecycleState.detached:
+        break;
+    }
   }
 
   Future<void> _send() async {
@@ -79,7 +97,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
-  void _openHelp() => Navigator.of(context).push(HelpScreen.route());
+  /// Leaving the chat for another screen ends the reading.
+  void _openHelp() {
+    unawaited(ref.read(replyReaderProvider.notifier).stop());
+    Navigator.of(context).push(HelpScreen.route());
+  }
+
+  void _openSettings() {
+    unawaited(ref.read(replyReaderProvider.notifier).stop());
+    Navigator.of(context).push(SettingsScreen.route());
+  }
 
   void _scrollToLatest() {
     // The list is reversed, so offset 0 is the newest message.
@@ -111,6 +138,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       if (previous?.sending != next.sending) _watchSlowReply(next.sending);
     });
 
+    final reading = ref.watch(replyReaderProvider);
     final controller = ref.read(chatControllerProvider.notifier);
     final items = <Widget>[
       if (chat.limitReached) DailyLimitCard(onHelp: _openHelp),
@@ -132,9 +160,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               // Read here: the Scaffold hides the keyboard from its body.
               compact: MediaQuery.viewInsetsOf(context).bottom > 0,
               onHelp: _openHelp,
-              onSettings: () => Navigator.of(context).push(SettingsScreen.route()),
+              onSettings: _openSettings,
             ),
             if (chat.usage case final usage?) _UsageChip(usage: usage),
+            if (reading != Reading.idle) _ReadingBar(reading: reading),
             if (_slow)
               const Padding(padding: EdgeInsets.fromLTRB(16, 12, 16, 0), child: WakingUpBanner()),
             Expanded(
@@ -292,6 +321,58 @@ class _Header extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Pause, resume and stop for the reply being read aloud.
+class _ReadingBar extends ConsumerWidget {
+  const _ReadingBar({required this.reading});
+
+  final Reading reading;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final reader = ref.read(replyReaderProvider.notifier);
+    final paused = reading == Reading.paused;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          border: Border.all(color: AppColors.line),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 2, 4, 2),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  paused ? 'En pausa' : 'marlix está hablando',
+                  style: AppText.caption.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+              IconButton(
+                onPressed: paused ? reader.resume : reader.pause,
+                tooltip: paused ? 'Continuar' : 'Pausar',
+                icon: Icon(paused ? Icons.play_arrow_rounded : Icons.pause_rounded),
+                iconSize: 28,
+                color: AppColors.textSecondary,
+                style: IconButton.styleFrom(fixedSize: const Size(48, 48)),
+              ),
+              IconButton(
+                onPressed: reader.stop,
+                tooltip: 'Detener',
+                icon: const Icon(Icons.stop_rounded),
+                iconSize: 28,
+                color: AppColors.textSecondary,
+                style: IconButton.styleFrom(fixedSize: const Size(48, 48)),
+              ),
+            ],
+          ),
         ),
       ),
     );
