@@ -727,3 +727,17 @@ The voice keeps the **5 steps** that the listeners voted for: 3 steps is faster 
 
 **Out of scope.** Streaming the reply sentence by sentence so the voice starts before the whole reply exists is S6-10, and the audio is S6-4.
 
+
+## 2026-10-25 — Reading replies aloud: a switch in Settings, pause with the screen, stop on leaving (S6-4)
+
+**Decision:** the chat reads each reply aloud when the person turns on **Leer las respuestas en voz alta** in Settings (saved on the phone, off by default). While it is on, the app sends `mode: "voice"` so the reply comes short and clean (S6-3). The chat shows a bar with **pause / resume / stop** while marlix talks. The reply is always on screen as text first: a voice that fails only ends the reading and never touches the chat.
+
+| Question | Decision |
+| --- | --- |
+| How is it turned on, if the voice button is S6-7? | A minimal switch in Settings, which S6-7 replaces with the button and the full-screen mode. The alternatives were a speaker button on every bubble (does not read by itself) and moving the whole thing to S6-7 (S6-4 would have no way to be tried). |
+| Screen locked or app in the background | The voice **pauses** and **continues when the person comes back**; a pause made by the person stays until they resume. No foreground service, no notification and no extra permission. Playing on with the screen off needs a persistent notification in Android, and that fits better in the voice mode (S6-7). |
+| Leaving the chat | Opening Settings or Help stops the reading, and so does signing out or turning the switch off. Help is where someone in a bad moment goes: nothing should keep talking over it. |
+| Pause in the native voice | Android's engine cannot pause, so it stops and **says the sentence again from its start** on resume. Supertonic pauses the audio exactly where it is. Both keep the stream open, so the sentence loop of `VoiceService` waits for the resume instead of treating the pause as a failure. |
+| Crisis replies | They are not read: they stay on screen with their numbers and the call buttons. Reading them is a decision for the voice mode. |
+
+**Not in this card.** The 401 MB download of the Supertonic model has no screen yet, so until the model is on the phone the replies are read with the native voice. The prompt to download it belongs to the voice mode (S6-7); the avatar moving its mouth with the audio is S6-5.
