@@ -520,6 +520,75 @@ void main() {
       expect(rig.supertonic.spoken, ['Uno.', 'Tres.']);
     });
 
+    test('pausing holds the engine and resuming lets it go on', () async {
+      final rig = await Rig.create();
+      await rig.service.start();
+      rig.supertonic.hold = Completer<void>();
+      final events = rig.service.speak('Uno.').toList();
+      await pumpEventQueue();
+
+      await rig.service.pause();
+      expect(rig.service.isPaused, isTrue);
+      expect(rig.supertonic.pauses, 1);
+
+      await rig.service.resume();
+      rig.supertonic.hold!.complete();
+
+      expect(rig.service.isPaused, isFalse);
+      expect(rig.supertonic.resumes, 1);
+      expect((await events).last, isA<VoiceFinished>());
+    });
+
+    test('a sentence that ends while paused does not start the next one', () async {
+      final rig = await Rig.create();
+      await rig.service.start();
+      rig.supertonic.hold = Completer<void>();
+      final events = rig.service.speak('Uno. Dos.').toList();
+      await pumpEventQueue();
+
+      await rig.service.pause();
+      rig.supertonic.hold!.complete();
+      await pumpEventQueue();
+      expect(rig.supertonic.spoken, ['Uno.']);
+
+      await rig.service.resume();
+
+      expect((await events).last, isA<VoiceFinished>());
+      expect(rig.supertonic.spoken, ['Uno.', 'Dos.']);
+    });
+
+    test('stopping while paused ends the speech and drops the rest', () async {
+      final rig = await Rig.create();
+      await rig.service.start();
+      rig.supertonic.hold = Completer<void>();
+      final events = rig.service.speak('Uno. Dos.').toList();
+      await pumpEventQueue();
+      await rig.service.pause();
+      rig.supertonic.hold!.complete();
+      await pumpEventQueue();
+
+      await rig.service.stop();
+
+      expect((await events).whereType<VoiceFinished>(), isEmpty);
+      expect(rig.service.isPaused, isFalse);
+      expect(rig.supertonic.spoken, ['Uno.']);
+    });
+
+    test('a new reply while paused starts speaking at once', () async {
+      final rig = await Rig.create();
+      await rig.service.start();
+      rig.supertonic.hold = Completer<void>();
+      final first = rig.service.speak('Uno.').toList();
+      await pumpEventQueue();
+      await rig.service.pause();
+
+      final second = await rig.say('Dos.');
+      await first;
+
+      expect(second.last, isA<VoiceFinished>());
+      expect(rig.service.isPaused, isFalse);
+    });
+
     test('an empty text finishes at once without touching an engine', () async {
       final rig = await Rig.create();
       await rig.service.start();

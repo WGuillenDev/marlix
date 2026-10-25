@@ -12,7 +12,11 @@ Future<void> openSettings(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-Finder get reminderSwitch => find.byType(Switch);
+/// Settings has more than one switch: this is the one in the reminders card.
+Finder get reminderSwitch => find.descendant(
+  of: find.ancestor(of: find.text('Recordatorios'), matching: find.byType(Material)).first,
+  matching: find.byType(Switch),
+);
 
 ProviderContainer containerOf(WidgetTester tester) =>
     ProviderScope.containerOf(tester.element(find.byType(ChatScreen, skipOffstage: false)));

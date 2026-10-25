@@ -19,7 +19,9 @@ class NativeVoiceEngine implements VoiceEngine {
   static const preferredLocales = ['es-CR', 'es-419', 'es-MX', 'es-US', 'es-ES'];
 
   StreamController<VoiceEvent>? _active;
+  var _text = '';
   var _length = 1;
+  var _paused = false;
 
   @override
   VoiceEngineKind get kind => VoiceEngineKind.native;
@@ -60,7 +62,10 @@ class NativeVoiceEngine implements VoiceEngine {
       if (_length > 0) _active?.add(VoiceProgress((end / _length).clamp(0.0, 1.0)));
     });
     _tts.setCompletionHandler(() => _finish(done: true));
-    _tts.setCancelHandler(() => _finish(done: false));
+    // Pausing stops the speech on purpose; that is not the end of the sentence.
+    _tts.setCancelHandler(() {
+      if (!_paused) _finish(done: false);
+    });
     _tts.setErrorHandler((message) {
       _active?.addError(VoiceException('Native voice failed: $message'));
       _finish(done: false);
@@ -89,11 +94,18 @@ class NativeVoiceEngine implements VoiceEngine {
   @override
   Stream<VoiceEvent> speak(String text) {
     _finish(done: false);
+    _paused = false;
     final controller = StreamController<VoiceEvent>();
     _active = controller;
+    _text = text;
     _length = text.length;
+    _say(controller);
+    return controller.stream;
+  }
+
+  void _say(StreamController<VoiceEvent> controller) {
     _tts
-        .speak(text)
+        .speak(_text)
         .then<void>(
           (_) {},
           onError: (Object error) {
@@ -103,11 +115,26 @@ class NativeVoiceEngine implements VoiceEngine {
             }
           },
         );
-    return controller.stream;
+  }
+
+  @override
+  Future<void> pause() async {
+    if (_active == null || _paused) return;
+    _paused = true;
+    await _tts.stop();
+  }
+
+  @override
+  Future<void> resume() async {
+    final active = _active;
+    if (!_paused) return;
+    _paused = false;
+    if (active != null) _say(active);
   }
 
   @override
   Future<void> stop() async {
+    _paused = false;
     await _tts.stop();
     _finish(done: false);
   }
