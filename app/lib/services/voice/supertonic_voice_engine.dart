@@ -33,7 +33,9 @@ class SupertonicVoiceEngine implements MeasurableVoiceEngine, PrefetchingVoiceEn
   StreamController<VoiceEvent>? _active;
   StreamSubscription<PlayerState>? _playerStates;
   Timer? _ticker;
+  Stopwatch? _clock;
   var _stopped = false;
+  var _paused = false;
 
   @override
   VoiceEngineKind get kind => VoiceEngineKind.supertonic;
@@ -116,6 +118,7 @@ class SupertonicVoiceEngine implements MeasurableVoiceEngine, PrefetchingVoiceEn
   Stream<VoiceEvent> speak(String text) {
     _finish(done: false);
     _stopped = false;
+    _paused = false;
     final controller = StreamController<VoiceEvent>();
     _active = controller;
     unawaited(_run(text, controller));
@@ -127,13 +130,18 @@ class SupertonicVoiceEngine implements MeasurableVoiceEngine, PrefetchingVoiceEn
       final result = await (_prepared.remove(text) ?? _synthesize(text));
       if (_stopped || _active != controller) return;
 
-      final clock = Stopwatch()..start();
+      final clock = _clock = Stopwatch()..start();
       await _playerStates?.cancel();
       _playerStates = _player.playerStateStream.listen((state) {
         if (state == PlayerState.completed) _finish(done: true);
       });
       await _player.play(result);
       if (_stopped || _active != controller) return;
+      // Paused while the audio was still being made: hold it at the start.
+      if (_paused) {
+        clock.stop();
+        await _player.pause();
+      }
 
       controller.add(const VoiceStarted(VoiceEngineKind.supertonic));
       _ticker = Timer.periodic(progressEvery, (_) {
@@ -159,8 +167,26 @@ class SupertonicVoiceEngine implements MeasurableVoiceEngine, PrefetchingVoiceEn
   }
 
   @override
+  Future<void> pause() async {
+    if (_active == null || _paused) return;
+    _paused = true;
+    _clock?.stop();
+    await _player.pause();
+  }
+
+  @override
+  Future<void> resume() async {
+    if (!_paused) return;
+    _paused = false;
+    if (_active == null) return;
+    await _player.resume();
+    _clock?.start();
+  }
+
+  @override
   Future<void> stop() async {
     _stopped = true;
+    _paused = false;
     _prepared.clear();
     _finish(done: false);
     await _player.stop();

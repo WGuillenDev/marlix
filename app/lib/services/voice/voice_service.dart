@@ -90,6 +90,9 @@ class VoiceService {
   var _failures = 0;
   var _generation = 0;
 
+  /// Open while the speech is paused: the sentence loop waits on it.
+  Completer<void>? _pause;
+
   VoiceStatus get status => _status;
 
   void _set(VoiceStatus status) {
@@ -252,6 +255,7 @@ class VoiceService {
 
   Future<void> _speakAll(String text, StreamController<VoiceEvent> controller) async {
     final turn = ++_generation;
+    _openPause();
     await _stopEngines();
     bool stopped() => turn != _generation;
 
@@ -268,6 +272,9 @@ class VoiceService {
         final next = index + 1 < sentences.length ? sentences[index + 1] : null;
         var done = false;
         while (!done && !stopped()) {
+          // Paused between two sentences: the next one waits for the resume.
+          if (_pause case final pause?) await pause.future;
+          if (stopped()) break;
           final VoiceEngine engine;
           try {
             engine = (!degraded && _supertonic != null) ? _supertonic! : await _nativeEngine();
@@ -337,9 +344,34 @@ class VoiceService {
     await _useNative(NativeReason.loadFailed);
   }
 
+  bool get isPaused => _pause != null;
+
+  /// Holds the speech where it is; [resume] continues it and [stop] ends it.
+  Future<void> pause() async {
+    if (_pause != null) return;
+    _pause = Completer<void>();
+    await _supertonic?.pause();
+    await _native?.pause();
+  }
+
+  Future<void> resume() async {
+    if (_pause == null) return;
+    await _supertonic?.resume();
+    await _native?.resume();
+    _openPause();
+  }
+
   Future<void> stop() async {
     _generation++;
+    _openPause();
     await _stopEngines();
+  }
+
+  /// Lets a paused sentence loop go on, or end if it was stopped.
+  void _openPause() {
+    final pause = _pause;
+    _pause = null;
+    if (pause != null && !pause.isCompleted) pause.complete();
   }
 
   Future<void> _stopEngines() async {
@@ -349,6 +381,7 @@ class VoiceService {
 
   Future<void> _release() async {
     _generation++;
+    _openPause();
     final supertonic = _supertonic;
     final native = _native;
     _supertonic = null;

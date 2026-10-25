@@ -94,6 +94,8 @@ class FakeEngine implements MeasurableVoiceEngine, PrefetchingVoiceEngine {
   var prepared = 0;
   var benchmarks = 0;
   var stops = 0;
+  var pauses = 0;
+  var resumes = 0;
   var disposed = false;
   var _stopped = false;
   var _speaking = false;
@@ -150,6 +152,12 @@ class FakeEngine implements MeasurableVoiceEngine, PrefetchingVoiceEngine {
     }());
     return controller.stream;
   }
+
+  @override
+  Future<void> pause() async => pauses++;
+
+  @override
+  Future<void> resume() async => resumes++;
 
   @override
   Future<void> stop() async {

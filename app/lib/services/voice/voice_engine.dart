@@ -39,6 +39,14 @@ abstract interface class VoiceEngine {
   /// [stop] cut the speech; an engine failure comes as a stream error.
   Stream<VoiceEvent> speak(String text);
 
+  /// Holds the speech without ending its stream. Does nothing when the engine
+  /// is not speaking.
+  Future<void> pause();
+
+  /// Continues what [pause] held. The native voice cannot resume in the middle
+  /// of a sentence, so it says the sentence again from its start.
+  Future<void> resume();
+
   Future<void> stop();
 
   Future<void> dispose();

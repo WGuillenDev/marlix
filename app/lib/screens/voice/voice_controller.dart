@@ -60,6 +60,11 @@ class VoiceController extends Notifier<VoiceStatus> {
     yield* _service.speak(text);
   }
 
+  /// Holds the speech where it is; [resume] continues it.
+  Future<void> pause() => _service.pause();
+
+  Future<void> resume() => _service.resume();
+
   Future<void> stop() => _service.stop();
 }
 
