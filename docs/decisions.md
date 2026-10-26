@@ -759,3 +759,19 @@ The voice keeps the **5 steps** that the listeners voted for: 3 steps is faster 
 **Alternatives.** Reading the player's real position would be more exact, but `audioplayers` behind the package does not expose it; the clock starts when `play` returns. Measuring the level on the native audio is not possible without capturing the output.
 
 **Not checked.** The delay between sound and mouth was not measured on a phone from code: it depends on the output latency of each phone and has to be seen on a screen recording.
+
+
+## 2026-10-25 — Warning before the daily interactions run out (S6-6)
+
+**Decision:** when 10 % or less of the plan's daily cap is left, the counter chip in the chat turns into a warning (amber background and border) and says when they renew: "Te quedan 10 mensajes hoy. Se renuevan a medianoche." Before that it only shows the count, and at zero the limit card (S4-13) takes over. There is no pop-up and nothing is added to the conversation.
+
+| Question | Decision |
+| --- | --- |
+| What was already there? | The counter (S3-3), the limit card that explains the renewal and the help button in the header, which never depends on the quota. S6-6 covers them with tests and adds the early warning, the only criterion that was missing. |
+| Where is the line? | `remaining <= ceil(limit * 0.1)`, 10 of 100 today. It is calculated from the `limit` the backend sends, so a cap changed in `plan_limits` moves it without a release. Fixed numbers (10, 20) would have been wrong for a plan with another cap. |
+| Why 10 % and not 20 %? | A warning that is on for a fifth of a long day stops being noticed. At 10 % it shows for the last ten messages, which is enough to finish a thought. |
+| Message in the chat instead? | Rejected: it adds text to the history and the conversation that the person did not write nor marlix said, and the model would see it. |
+| Screen readers | The warning is a live region, so it is announced when the chip turns into it and not on every message. |
+| Voice | The counter is shared by text and voice, as the card says. The full-screen voice mode (S6-7) has to show this same chip. |
+
+**Checked on the phone (S24 Ultra):** with the cap lowered to 3 for a test account, the chip showed "Te queda 1 mensaje hoy. Se renuevan a medianoche." on an amber background at one left, and the limit card with the locked composer and the help button at zero; the help screen opened from the header. The normal, low, last-one and exhausted states are also covered with widget tests.
