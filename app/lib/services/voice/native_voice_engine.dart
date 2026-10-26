@@ -22,6 +22,7 @@ class NativeVoiceEngine implements VoiceEngine {
   var _text = '';
   var _length = 1;
   var _paused = false;
+  Timer? _mouthClosing;
 
   @override
   VoiceEngineKind get kind => VoiceEngineKind.native;
@@ -29,6 +30,14 @@ class NativeVoiceEngine implements VoiceEngine {
   /// The Android speech rate: 0.5 is the normal pace, and the configuration
   /// says 1 for normal.
   static double androidRate(double configRate) => (configRate * 0.5).clamp(0.1, 1.0);
+
+  /// How long the mouth stays open on a word before it closes to wait for the
+  /// next one. The native voice gives no audio to measure.
+  static const wordMouth = Duration(milliseconds: 160);
+
+  /// How open the mouth is for [word]: longer words open it wider, so the
+  /// shapes alternate with the speech.
+  static double wordLevel(String word) => (word.length / 7).clamp(0.3, 1.0);
 
   /// The first locale of [language] the phone can speak, in order of
   /// preference, or null.
@@ -59,7 +68,12 @@ class NativeVoiceEngine implements VoiceEngine {
 
     _tts.setStartHandler(() => _active?.add(const VoiceStarted(VoiceEngineKind.native)));
     _tts.setProgressHandler((text, start, end, word) {
-      if (_length > 0) _active?.add(VoiceProgress((end / _length).clamp(0.0, 1.0)));
+      final active = _active;
+      if (active == null) return;
+      if (_length > 0) active.add(VoiceProgress((end / _length).clamp(0.0, 1.0)));
+      active.add(VoiceLevel(wordLevel(word)));
+      _mouthClosing?.cancel();
+      _mouthClosing = Timer(wordMouth, () => active.add(const VoiceLevel(0)));
     });
     _tts.setCompletionHandler(() => _finish(done: true));
     // Pausing stops the speech on purpose; that is not the end of the sentence.
@@ -84,10 +98,14 @@ class NativeVoiceEngine implements VoiceEngine {
   }
 
   void _finish({required bool done}) {
+    _mouthClosing?.cancel();
     final active = _active;
     if (active == null) return;
     _active = null;
-    if (done) active.add(const VoiceFinished());
+    if (done) {
+      active.add(const VoiceLevel(0));
+      active.add(const VoiceFinished());
+    }
     active.close();
   }
 
@@ -121,6 +139,7 @@ class NativeVoiceEngine implements VoiceEngine {
   Future<void> pause() async {
     if (_active == null || _paused) return;
     _paused = true;
+    _mouthClosing?.cancel();
     await _tts.stop();
   }
 

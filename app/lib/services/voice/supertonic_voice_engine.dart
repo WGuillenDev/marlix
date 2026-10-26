@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:audioplayers/audioplayers.dart';
@@ -21,8 +22,9 @@ class SupertonicVoiceEngine implements MeasurableVoiceEngine, PrefetchingVoiceEn
   final SupertonicTTS _tts;
   final TTSAudioPlayer _player;
 
-  /// How often the progress is reported while the audio plays.
-  static const progressEvery = Duration(milliseconds: 100);
+  /// How often the progress and the level are reported while the audio plays.
+  /// The level moves the avatar's mouth, so it needs to be finer than a syllable.
+  static const progressEvery = Duration(milliseconds: 50);
 
   /// Spoken once per phone to learn how fast it is (see `VoiceService`): a
   /// phrase of about five seconds of audio, like the ones marlix says.
@@ -68,6 +70,27 @@ class SupertonicVoiceEngine implements MeasurableVoiceEngine, PrefetchingVoiceEn
     );
     clock.stop();
     return result.duration / (clock.elapsedMicroseconds / Duration.microsecondsPerSecond);
+  }
+
+  /// The loudness of [audio] in steps of [progressEvery], from 0 to 1 relative
+  /// to the loudest step of the sentence, so the mouth moves the same with a
+  /// quiet voice or a loud one.
+  static List<double> levelsOf(List<double> audio, int sampleRate) {
+    final step = (sampleRate * progressEvery.inMicroseconds / Duration.microsecondsPerSecond)
+        .round();
+    if (step <= 0 || audio.isEmpty) return const [];
+    final rms = <double>[];
+    for (var start = 0; start < audio.length; start += step) {
+      final end = math.min(start + step, audio.length);
+      var sum = 0.0;
+      for (var i = start; i < end; i++) {
+        sum += audio[i] * audio[i];
+      }
+      rms.add(math.sqrt(sum / (end - start)));
+    }
+    final loudest = rms.reduce(math.max);
+    if (loudest == 0) return List.filled(rms.length, 0.0);
+    return [for (final value in rms) value / loudest];
   }
 
   /// One sentence, clause by clause, with the pause of each comma in between.
@@ -143,10 +166,16 @@ class SupertonicVoiceEngine implements MeasurableVoiceEngine, PrefetchingVoiceEn
         await _player.pause();
       }
 
+      final levels = levelsOf(result.audioData, result.sampleRate);
       controller.add(const VoiceStarted(VoiceEngineKind.supertonic));
       _ticker = Timer.periodic(progressEvery, (_) {
+        // Paused: the clock is held, and so must the mouth be.
+        if (_paused) return;
         final spoken = clock.elapsedMicroseconds / Duration.microsecondsPerSecond;
         controller.add(VoiceProgress((spoken / result.duration).clamp(0.0, 1.0)));
+        final step = (spoken * Duration.microsecondsPerSecond / progressEvery.inMicroseconds)
+            .floor();
+        controller.add(VoiceLevel(step < levels.length ? levels[step] : 0));
       });
     } on Object catch (error) {
       if (_active == controller) {
@@ -162,7 +191,11 @@ class SupertonicVoiceEngine implements MeasurableVoiceEngine, PrefetchingVoiceEn
     final active = _active;
     if (active == null) return;
     _active = null;
-    if (done) active.add(const VoiceFinished());
+    if (done) {
+      // The last level would leave the mouth open until the next sentence.
+      active.add(const VoiceLevel(0));
+      active.add(const VoiceFinished());
+    }
     active.close();
   }
 

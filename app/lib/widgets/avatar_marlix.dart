@@ -8,8 +8,13 @@ import '../theme/app_theme.dart';
 /// What the avatar is doing. Each state is a pose the widget eases into.
 enum AvatarState { idle, listening, thinking, speaking, happy }
 
+/// Under this volume the voice is silent (between words, or a comma) and the
+/// mouth closes.
+const silenceBelow = 0.05;
+
 /// Mouth layer (`boca_1` to `boca_3`) for a volume from 0.0 to 1.0.
-/// `boca_0`, the closed smile, is the resting mouth and never comes from here.
+/// `boca_0`, the closed smile, is the resting mouth; while speaking it is used
+/// only for silence, which is decided before calling this.
 int mouthForVolume(double volume) {
   if (volume < 0.2) return 1;
   if (volume < 0.6) return 2;
@@ -92,7 +97,8 @@ class _AvatarMarlixState extends State<AvatarMarlix> with SingleTickerProviderSt
   String get _mouth => switch (widget.state) {
     AvatarState.idle || AvatarState.listening => 'boca_0',
     AvatarState.thinking => 'boca_pensando',
-    AvatarState.speaking => 'boca_${mouthForVolume(widget.volume)}',
+    AvatarState.speaking =>
+      widget.volume < silenceBelow ? 'boca_0' : 'boca_${mouthForVolume(widget.volume)}',
     AvatarState.happy => 'boca_3',
   };
 

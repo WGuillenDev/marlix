@@ -66,7 +66,7 @@ class _VoiceTestScreenState extends ConsumerState<VoiceTestScreen> {
         .listen(
           (event) {
             if (!mounted) return;
-            // While a sentence plays, progress arrives every 100 ms: a longer
+            // While a sentence plays, progress arrives every 50 ms: a longer
             // gap is silence between two sentences.
             final now = clock.elapsedMilliseconds;
             if (firstWord.isNotEmpty && now - lastEvent > longestSilence) {
@@ -79,6 +79,8 @@ class _VoiceTestScreenState extends ConsumerState<VoiceTestScreen> {
                 setState(() => _result = firstWord);
               case VoiceProgress(:final fraction):
                 setState(() => _progress = fraction);
+              case VoiceLevel():
+                break;
               case VoiceFinished():
                 setState(() {
                   _progress = 1;

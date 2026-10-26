@@ -40,7 +40,9 @@ The art is drawn in a design space and shrunk to 92% around its middle when expo
 | `speaking` | Floats less and opens the mouth. | From the volume (below). |
 | `happy` | Eyes closed with joy, bounces, wags the tail fast, hearts rise. | `boca_3` |
 
-Mouth for the volume (0.0 to 1.0) while speaking: under 0.2 `boca_1`, under 0.6 `boca_2`, otherwise `boca_3`.
+Mouth for the volume (0.0 to 1.0) while speaking: under 0.05 (silence) `boca_0`, under 0.2 `boca_1`, under 0.6 `boca_2`, otherwise `boca_3`.
+
+In the chat, `AvatarController` sets `speaking` when the first sound of a reply plays and `avatarVolumeProvider` carries the volume from the voice layer; the avatar goes back to rest when the sound ends, is paused, is stopped or fails.
 
 The ring, thought bubbles and hearts are painted by code, so they need no layer.
 

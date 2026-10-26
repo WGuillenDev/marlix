@@ -9,7 +9,7 @@ import '../../services/voice/voice_service.dart';
 import '../onboarding/profile_controller.dart';
 
 export '../../services/voice/voice_engine.dart'
-    show VoiceEvent, VoiceException, VoiceFinished, VoiceProgress, VoiceStarted;
+    show VoiceEvent, VoiceException, VoiceFinished, VoiceLevel, VoiceProgress, VoiceStarted;
 export '../../services/voice/voice_service.dart';
 
 /// How the avatar speaks. The profile is loaded before the chat opens; while it

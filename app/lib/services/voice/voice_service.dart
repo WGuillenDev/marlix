@@ -244,8 +244,8 @@ class VoiceService {
   }
 
   /// Speaks [text] sentence by sentence with the best engine the phone has.
-  /// The stream carries one [VoiceStarted], the progress over the whole text and
-  /// one [VoiceFinished]; if no engine can speak it carries an error. While the
+  /// The stream carries one [VoiceStarted], the progress over the whole text, the
+  /// level of the sound and one [VoiceFinished]; if no engine can speak it carries an error. While the
   /// model is downloading, the native voice speaks.
   Stream<VoiceEvent> speak(String text) {
     final controller = StreamController<VoiceEvent>();
@@ -300,6 +300,8 @@ class VoiceService {
                   controller.add(
                     VoiceProgress((spokenChars + fraction * sentence.length) / totalChars),
                   );
+                case VoiceLevel():
+                  controller.add(event);
                 case VoiceFinished():
                   finished = true;
               }
