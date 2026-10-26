@@ -24,4 +24,10 @@ class Usage {
   final int limit;
   final int remaining;
   final DateTime resetsAt;
+
+  /// The share of the cap that is left when the app starts warning (S6-6).
+  static const lowShare = 0.1;
+
+  /// Few are left but not none: time to warn. It follows the cap of the plan.
+  bool get isLow => limit > 0 && remaining > 0 && remaining <= (limit * lowShare).ceil();
 }
