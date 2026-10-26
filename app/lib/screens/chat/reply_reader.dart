@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/auth_service.dart';
 import '../../services/read_aloud.dart';
 import '../voice/voice_controller.dart';
+import 'avatar_controller.dart';
 import 'chat_controller.dart';
 
 enum Reading { idle, speaking, paused }
@@ -21,6 +22,10 @@ class ReplyReader extends Notifier<Reading> {
   /// continues by itself when the person comes back. A pause by the person
   /// stays until they resume.
   var _pausedByApp = false;
+
+  /// The sound of the current reading has begun, so the avatar has a mouth to
+  /// move; a pause before that leaves nothing to resume on screen.
+  var _soundStarted = false;
 
   @override
   Reading build() {
@@ -42,20 +47,36 @@ class ReplyReader extends Notifier<Reading> {
 
   VoiceController get _voice => ref.read(voiceControllerProvider.notifier);
 
+  AvatarController get _avatar => ref.read(avatarStateProvider.notifier);
+
+  void _onEvent(VoiceEvent event) {
+    switch (event) {
+      case VoiceStarted():
+        _soundStarted = true;
+        if (state == Reading.speaking) _avatar.speak();
+      case VoiceLevel(:final level):
+        if (state == Reading.speaking) ref.read(avatarVolumeProvider.notifier).set(level);
+      case VoiceProgress() || VoiceFinished():
+        break;
+    }
+  }
+
   /// Reads [text], cutting whatever was being read.
   Future<void> read(String text) async {
     await _reading?.cancel();
     _pausedByApp = false;
+    _soundStarted = false;
     state = Reading.speaking;
     late final StreamSubscription<VoiceEvent> reading;
     void end() {
       if (_reading == reading && ref.mounted) {
         _reading = null;
         state = Reading.idle;
+        _avatar.rest();
       }
     }
 
-    reading = _voice.speak(text).listen((_) {}, onError: (Object _) => end(), onDone: end);
+    reading = _voice.speak(text).listen(_onEvent, onError: (Object _) => end(), onDone: end);
     _reading = reading;
   }
 
@@ -63,6 +84,7 @@ class ReplyReader extends Notifier<Reading> {
     if (state != Reading.speaking) return;
     state = Reading.paused;
     _pausedByApp = byApp;
+    _avatar.rest();
     await _safely(_voice.pause);
   }
 
@@ -70,6 +92,7 @@ class ReplyReader extends Notifier<Reading> {
     if (state != Reading.paused) return;
     state = Reading.speaking;
     _pausedByApp = false;
+    if (_soundStarted) _avatar.speak();
     await _safely(_voice.resume);
   }
 
@@ -84,6 +107,7 @@ class ReplyReader extends Notifier<Reading> {
     _reading = null;
     _pausedByApp = false;
     state = Reading.idle;
+    _avatar.rest();
     await _safely(_voice.stop);
     await reading?.cancel();
   }

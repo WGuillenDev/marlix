@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marlix/models/voice_config.dart';
+import 'package:marlix/services/voice/voice_engine.dart';
 import 'package:marlix/services/voice/voice_providers.dart';
+import 'package:marlix/widgets/avatar_marlix.dart';
 
 import '../helpers/fake_backend.dart';
 import '../services/voice/voice_fakes.dart';
@@ -52,6 +54,8 @@ void _foreground(WidgetTester tester) {
     tester.binding.handleAppLifecycleStateChanged(state);
   }
 }
+
+AvatarMarlix _avatar(WidgetTester tester) => tester.widget<AvatarMarlix>(find.byType(AvatarMarlix));
 
 Future<void> _ask(WidgetTester tester, FakeBackend backend, String reply) async {
   await type(tester, 'Hola');
@@ -228,6 +232,132 @@ void main() {
       isNotNull,
       reason: 'the person can keep writing',
     );
+  });
+
+  group('the avatar follows the voice', () {
+    testWidgets('it speaks with the volume of the sound and rests when it ends', (tester) async {
+      final voices = _Voices()
+        ..supertonic.hold = Completer<void>()
+        ..supertonic.scripts.add([
+          const VoiceStarted(VoiceEngineKind.supertonic),
+          const VoiceLevel(0.9),
+          const VoiceFinished(),
+        ]);
+      final backend = await openChat(
+        tester,
+        overrides: voices.overrides,
+        savedPreferences: _readAloud,
+      );
+
+      await _ask(tester, backend, 'Cuéntame más.');
+      expect(_avatar(tester).state, AvatarState.speaking);
+      expect(_avatar(tester).volume, 0.9);
+
+      voices.supertonic.hold!.complete();
+      await _settle(tester);
+      expect(_avatar(tester).state, AvatarState.idle);
+      expect(_avatar(tester).volume, 0);
+    });
+
+    testWidgets('it does not speak before the first sound', (tester) async {
+      final voices = _Voices()
+        ..supertonic.hold = Completer<void>()
+        ..supertonic.scripts.add([const VoiceLevel(0.9), const VoiceFinished()]);
+      final backend = await openChat(
+        tester,
+        overrides: voices.overrides,
+        savedPreferences: _readAloud,
+      );
+
+      await _ask(tester, backend, 'Cuéntame más.');
+
+      expect(find.text('marlix está hablando'), findsOneWidget);
+      expect(_avatar(tester).state, AvatarState.idle);
+    });
+
+    testWidgets('a pause closes the mouth and resuming opens it again', (tester) async {
+      final voices = _Voices()..supertonic.hold = Completer<void>();
+      final backend = await openChat(
+        tester,
+        overrides: voices.overrides,
+        savedPreferences: _readAloud,
+      );
+      await _ask(tester, backend, 'Cuéntame más.');
+      expect(_avatar(tester).state, AvatarState.speaking);
+
+      await tester.tap(find.byTooltip('Pausar'));
+      await _settle(tester);
+      expect(_avatar(tester).state, AvatarState.idle);
+
+      await tester.tap(find.byTooltip('Continuar'));
+      await _settle(tester);
+      expect(_avatar(tester).state, AvatarState.speaking);
+    });
+
+    testWidgets('stopping the voice leaves the avatar at rest', (tester) async {
+      final voices = _Voices()..supertonic.hold = Completer<void>();
+      final backend = await openChat(
+        tester,
+        overrides: voices.overrides,
+        savedPreferences: _readAloud,
+      );
+      await _ask(tester, backend, 'Cuéntame más.');
+
+      await tester.tap(find.byTooltip('Detener'));
+      await _settle(tester);
+
+      expect(_avatar(tester).state, AvatarState.idle);
+    });
+
+    testWidgets('a voice that fails halfway does not leave the avatar speaking', (tester) async {
+      final voices = _Voices();
+      voices.supertonic.scripts.addAll([
+        [const VoiceStarted(VoiceEngineKind.supertonic), StateError('no audio')],
+        [StateError('no audio')],
+        [StateError('no audio')],
+      ]);
+      voices.native.scripts.add([StateError('no voice')]);
+      final backend = await openChat(
+        tester,
+        overrides: voices.overrides,
+        savedPreferences: _readAloud,
+      );
+
+      await _ask(tester, backend, 'Cuéntame más.');
+
+      expect(_avatar(tester).state, AvatarState.idle);
+      expect(find.byTooltip('Detener'), findsNothing);
+    });
+
+    testWidgets('the old sound ending does not stop it thinking about a new message', (
+      tester,
+    ) async {
+      final voices = _Voices()..supertonic.hold = Completer<void>();
+      final backend = await openChat(
+        tester,
+        overrides: voices.overrides,
+        savedPreferences: _readAloud,
+      );
+      await _ask(tester, backend, 'Cuéntame más.');
+      expect(_avatar(tester).state, AvatarState.speaking);
+
+      backend.reply = Completer();
+      await type(tester, 'Espera');
+      await tester.tap(sendButton);
+      await tester.pump();
+      expect(_avatar(tester).state, AvatarState.thinking);
+
+      voices.supertonic.hold!.complete();
+      await _settle(tester);
+      expect(_avatar(tester).state, AvatarState.thinking);
+
+      voices.supertonic.hold = Completer<void>();
+      backend.answer('Espera', 'Aquí estoy.');
+      await _settle(tester);
+      expect(_avatar(tester).state, AvatarState.speaking);
+      voices.supertonic.hold!.complete();
+      await _settle(tester);
+    });
   });
 
   testWidgets('a crisis reply is not read aloud', (tester) async {

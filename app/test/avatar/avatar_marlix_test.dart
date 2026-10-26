@@ -44,6 +44,16 @@ void main() {
     expect(find.byKey(const ValueKey('boca_3')), findsOneWidget);
   });
 
+  testWidgets('speaking closes the mouth in silence', (tester) async {
+    await tester.pumpWidget(_avatar(AvatarState.speaking, volume: silenceBelow - 0.01));
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.byKey(const ValueKey('boca_0')), findsOneWidget);
+
+    await tester.pumpWidget(_avatar(AvatarState.speaking, volume: silenceBelow));
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.byKey(const ValueKey('boca_1')), findsOneWidget);
+  });
+
   testWidgets('outside speaking the volume is ignored', (tester) async {
     await tester.pumpWidget(_avatar(AvatarState.idle, volume: 1));
     await tester.pump(const Duration(milliseconds: 200));

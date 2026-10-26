@@ -258,6 +258,7 @@ class _HeaderAvatar extends ConsumerWidget {
         dimension: compact ? compactSize : size,
         child: AvatarMarlix(
           state: ref.watch(avatarStateProvider),
+          volume: ref.watch(avatarVolumeProvider),
           folder: ref.watch(avatarFolderProvider),
         ),
       ),

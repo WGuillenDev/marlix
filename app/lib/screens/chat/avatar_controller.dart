@@ -27,11 +27,12 @@ final avatarFolderProvider = Provider<String>(
 );
 
 /// What the avatar is doing (S5-4), the only place that decides it: screens
-/// just watch it, so voice mode adds `listening` and `speaking` here without
-/// touching the widget.
+/// just watch it, so voice mode adds `listening` here without touching the
+/// widget.
 ///
 /// It follows the conversation: `thinking` while marlix replies, a brief
-/// `happy` after a reply to a positive message, `idle` otherwise.
+/// `happy` after a reply to a positive message, `idle` otherwise. The voice
+/// (S6-5) sets `speaking` while its audio plays.
 class AvatarController extends Notifier<AvatarState> {
   /// How long the avatar celebrates before going back to rest.
   static const happyFor = Duration(seconds: 3);
@@ -57,6 +58,17 @@ class AvatarController extends Notifier<AvatarState> {
     return AvatarState.idle;
   }
 
+  /// The first sound of a reply is playing.
+  void speak() => _show(AvatarState.speaking);
+
+  /// The sound ended, was cut or failed. It only closes the mouth: if the
+  /// avatar is thinking about a new message, that stays.
+  void rest() {
+    if (state != AvatarState.speaking) return;
+    _show(AvatarState.idle);
+    ref.read(avatarVolumeProvider.notifier).set(0);
+  }
+
   void _show(AvatarState next) {
     _happyTimer?.cancel();
     state = next;
@@ -67,3 +79,14 @@ class AvatarController extends Notifier<AvatarState> {
 }
 
 final avatarStateProvider = NotifierProvider<AvatarController, AvatarState>(AvatarController.new);
+
+/// How loud the voice is right now, from 0 to 1. The avatar's mouth follows it
+/// while `speaking`; it is its own provider so only the avatar rebuilds with it.
+class AvatarVolume extends Notifier<double> {
+  @override
+  double build() => 0;
+
+  void set(double volume) => state = volume.clamp(0.0, 1.0);
+}
+
+final avatarVolumeProvider = NotifierProvider<AvatarVolume, double>(AvatarVolume.new);
