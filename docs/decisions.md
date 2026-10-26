@@ -741,3 +741,21 @@ The voice keeps the **5 steps** that the listeners voted for: 3 steps is faster 
 | Crisis replies | They are not read: they stay on screen with their numbers and the call buttons. Reading them is a decision for the voice mode. |
 
 **Not in this card.** The 401 MB download of the Supertonic model has no screen yet, so until the model is on the phone the replies are read with the native voice. The prompt to download it belongs to the voice mode (S6-7); the avatar moving its mouth with the audio is S6-5.
+
+
+## 2026-10-25 — The avatar's mouth follows the loudness of the voice (S6-5)
+
+**Decision:** the voice layer (S6-2) gets a second signal next to the progress, `VoiceLevel`: how loud the sound is right now, from 0 to 1. `ReplyReader` passes it to the avatar, which opens the mouth by that volume. It is not phonetic lip-sync (out of scope in the card).
+
+| Question | Decision |
+| --- | --- |
+| Where does the level come from in Supertonic? | From the audio the engine already has: the loudness (RMS) of every 50 ms step, divided by the loudest step of that sentence, so a quiet voice and a loud one move the mouth the same. It is calculated once per sentence, before it plays, and read by the same clock that gives the progress. |
+| And in the native voice? | Android gives no audio, so each word marks the level (longer words open wider) and the mouth closes 160 ms later to wait for the next word. |
+| Why 50 ms and not the 100 ms of the progress? | A syllable lasts about 150 ms: at 100 ms the mouth would move once per syllable and look slow. The progress went to 50 ms too, so both come from the same tick. |
+| When does the avatar speak? | When the first sound plays (`VoiceStarted`), not when the reply arrives: with Supertonic the first word takes 1 to 2.7 s and the mouth should not move in the silence. Until then it keeps the state the chat gave it. A positive reply's `happy` gives way to `speaking`. |
+| Silence | Under 0.05 the mouth is the closed smile (`boca_0`), so commas and gaps between sentences close it. Before, `boca_0` never came from the volume. |
+| Pause, stop, failure | Pausing closes the mouth and resuming opens it again; stopping, ending or any failure sends the avatar back to rest. It only rests if it was speaking: if the person already sent another message the avatar is thinking, and the old sound ending must not interrupt that. |
+
+**Alternatives.** Reading the player's real position would be more exact, but `audioplayers` behind the package does not expose it; the clock starts when `play` returns. Measuring the level on the native audio is not possible without capturing the output.
+
+**Not checked.** The delay between sound and mouth was not measured on a phone from code: it depends on the output latency of each phone and has to be seen on a screen recording.
