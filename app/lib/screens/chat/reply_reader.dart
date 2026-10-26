@@ -10,7 +10,7 @@ import 'chat_controller.dart';
 
 enum Reading { idle, speaking, paused }
 
-/// Reads each reply that arrives while [readAloudProvider] is on, and holds
+/// Reads each reply that arrives while [repliesAreSpokenProvider] is on, and holds
 /// what the chat screen needs to show the controls.
 ///
 /// Voice never breaks the text chat: the reply is already on screen when it
@@ -34,12 +34,12 @@ class ReplyReader extends Notifier<Reading> {
       if (!(previous?.sending ?? false) || next.sending) return;
       final last = next.entries.lastOrNull;
       // A crisis reply stays on screen with its numbers and is not read.
-      if (last is MarlixEntry && ref.read(readAloudProvider)) {
+      if (last is MarlixEntry && ref.read(repliesAreSpokenProvider)) {
         unawaited(read(last.message.content));
       }
     });
     ref.listen(signedInUserProvider, (_, _) => unawaited(stop()));
-    ref.listen(readAloudProvider, (_, on) {
+    ref.listen(repliesAreSpokenProvider, (_, on) {
       if (!on) unawaited(stop());
     });
     return Reading.idle;

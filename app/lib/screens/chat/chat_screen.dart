@@ -3,15 +3,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../models/usage.dart';
 import '../../services/help_resources.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/avatar_marlix.dart';
 import '../../widgets/chat_states.dart';
+import '../../widgets/composer.dart';
 import '../../widgets/message_bubble.dart';
 import '../../widgets/typing_indicator.dart';
+import '../../widgets/usage_chip.dart';
 import '../help_screen.dart';
 import '../settings_screen.dart';
+import '../voice/voice_mode_screen.dart';
 import 'avatar_controller.dart';
 import 'chat_controller.dart';
 import 'reply_reader.dart';
@@ -103,6 +105,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
     Navigator.of(context).push(HelpScreen.route());
   }
 
+  void _openVoiceMode() {
+    Navigator.of(context).push(VoiceModeScreen.route());
+  }
+
   void _openSettings() {
     unawaited(ref.read(replyReaderProvider.notifier).stop());
     Navigator.of(context).push(SettingsScreen.route());
@@ -162,7 +168,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
               onHelp: _openHelp,
               onSettings: _openSettings,
             ),
-            if (chat.usage case final usage?) _UsageChip(usage: usage),
+            if (chat.usage case final usage?) UsageChip(usage: usage),
             if (reading != Reading.idle) _ReadingBar(reading: reading),
             if (_slow)
               const Padding(padding: EdgeInsets.fromLTRB(16, 12, 16, 0), child: WakingUpBanner()),
@@ -179,11 +185,27 @@ class _ChatScreenState extends ConsumerState<ChatScreen> with WidgetsBindingObse
                       itemBuilder: (context, index) => items[index],
                     ),
             ),
-            _Composer(
+            Composer(
               controller: _input,
               canSend: canSend,
               enabled: !chat.limitReached,
               onSend: _send,
+              // While writing the field gets all the width, as in a messaging app.
+              leading: _input.text.isNotEmpty
+                  ? null
+                  : IconButton(
+                      onPressed: chat.limitReached ? null : _openVoiceMode,
+                      tooltip: 'Modo voz',
+                      icon: const Icon(Icons.graphic_eq_rounded),
+                      iconSize: 26,
+                      style: IconButton.styleFrom(
+                        fixedSize: const Size(48, 48),
+                        foregroundColor: AppColors.tanDark,
+                        backgroundColor: AppColors.white,
+                        disabledForegroundColor: AppColors.textSecondary,
+                        side: const BorderSide(color: AppColors.tanDark, width: 1.5),
+                      ),
+                    ),
             ),
           ],
         ),
@@ -254,12 +276,15 @@ class _HeaderAvatar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ExcludeSemantics(
-      child: SizedBox.square(
-        dimension: compact ? compactSize : size,
-        child: AvatarMarlix(
-          state: ref.watch(avatarStateProvider),
-          volume: ref.watch(avatarVolumeProvider),
-          folder: ref.watch(avatarFolderProvider),
+      child: Hero(
+        tag: marlixAvatarHero,
+        child: SizedBox.square(
+          dimension: compact ? compactSize : size,
+          child: AvatarMarlix(
+            state: ref.watch(avatarStateProvider),
+            volume: ref.watch(avatarVolumeProvider),
+            folder: ref.watch(avatarFolderProvider),
+          ),
         ),
       ),
     );
@@ -380,41 +405,6 @@ class _ReadingBar extends ConsumerWidget {
   }
 }
 
-class _UsageChip extends StatelessWidget {
-  const _UsageChip({required this.usage});
-
-  final Usage usage;
-
-  @override
-  Widget build(BuildContext context) {
-    final remaining = usage.remaining;
-    final low = usage.isLow;
-    final count = remaining == 1 ? 'Te queda 1 mensaje hoy' : 'Te quedan $remaining mensajes hoy';
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      // Announced when it turns into a warning, not on every message.
-      child: Semantics(
-        liveRegion: low,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: low ? AppColors.warningBackground : AppColors.white,
-            border: Border.all(color: low ? AppColors.tan : AppColors.line),
-            borderRadius: BorderRadius.circular(low ? 20 : 999),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            child: Text(
-              low ? '$count. Se renuevan a medianoche.' : count,
-              textAlign: TextAlign.center,
-              style: AppText.caption.copyWith(fontWeight: FontWeight.w700),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _EmptyChat extends StatelessWidget {
   const _EmptyChat();
 
@@ -427,85 +417,6 @@ class _EmptyChat extends StatelessWidget {
           'Contale a marlix cómo te fue hoy.',
           textAlign: TextAlign.center,
           style: AppText.body.copyWith(color: AppColors.textSecondary),
-        ),
-      ),
-    );
-  }
-}
-
-class _Composer extends StatelessWidget {
-  const _Composer({
-    required this.controller,
-    required this.canSend,
-    required this.enabled,
-    required this.onSend,
-  });
-
-  final TextEditingController controller;
-  final bool canSend;
-
-  /// False once the daily limit is reached.
-  final bool enabled;
-  final VoidCallback onSend;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: AppColors.line)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Expanded(
-              child: TextField(
-                controller: controller,
-                enabled: enabled,
-                minLines: 1,
-                maxLines: 5,
-                // Same limit as the API contract.
-                maxLength: 2000,
-                textCapitalization: TextCapitalization.sentences,
-                style: AppText.body,
-                decoration: InputDecoration(
-                  hintText: enabled ? 'Escribe un mensaje…' : 'Límite diario alcanzado',
-                  hintStyle: AppText.body.copyWith(color: AppColors.textSecondary),
-                  counterText: '',
-                  filled: true,
-                  fillColor: enabled ? AppColors.white : AppColors.line,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(28),
-                    borderSide: const BorderSide(color: AppColors.line, width: 1.5),
-                  ),
-                  disabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(28),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(28),
-                    borderSide: const BorderSide(color: AppColors.tanDark, width: 1.5),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            IconButton.filled(
-              onPressed: canSend ? onSend : null,
-              tooltip: 'Enviar',
-              iconSize: 24,
-              style: IconButton.styleFrom(
-                fixedSize: const Size(56, 56),
-                backgroundColor: AppColors.tanDark,
-                foregroundColor: AppColors.white,
-                disabledBackgroundColor: AppColors.line,
-                disabledForegroundColor: AppColors.textSecondary,
-              ),
-              icon: const Icon(Icons.send_rounded),
-            ),
-          ],
         ),
       ),
     );

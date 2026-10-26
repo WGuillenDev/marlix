@@ -10,8 +10,8 @@ import '../../theme/app_theme.dart';
 import 'voice_controller.dart';
 
 /// Development screen to hear the avatar's voice and see which engine the phone
-/// uses and why (S6-2). Only reachable from Settings in debug builds: voice mode
-/// itself arrives in S6-7.
+/// uses and why (S6-2). Only reachable from Settings in debug builds: the voice
+/// mode (S6-7) is the screen for people, and it offers the model download.
 class VoiceTestScreen extends ConsumerStatefulWidget {
   const VoiceTestScreen({super.key});
 
