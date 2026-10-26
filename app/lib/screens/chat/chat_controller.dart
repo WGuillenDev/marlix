@@ -203,7 +203,7 @@ class ChatController extends Notifier<ChatState> {
   Future<void> _deliver(String id, String text) async {
     try {
       // Replies that will be read aloud come short and clean (S6-3).
-      final mode = ref.read(readAloudProvider) ? ChatMode.voice : ChatMode.text;
+      final mode = ref.read(repliesAreSpokenProvider) ? ChatMode.voice : ChatMode.text;
       final response = await _api.sendMessage(text, mode: mode);
       if (!ref.mounted) return;
       final reply = switch (response) {
