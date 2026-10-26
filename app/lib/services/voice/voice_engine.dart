@@ -21,6 +21,15 @@ final class VoiceProgress extends VoiceEvent {
   final double fraction;
 }
 
+/// How loud the sound is right now, from 0 (silence) to 1, so the avatar can
+/// move its mouth (S6-5). Supertonic measures its own audio; the native voice
+/// gives no audio, so it marks each word instead.
+final class VoiceLevel extends VoiceEvent {
+  const VoiceLevel(this.level);
+
+  final double level;
+}
+
 /// Everything was said.
 final class VoiceFinished extends VoiceEvent {
   const VoiceFinished();
