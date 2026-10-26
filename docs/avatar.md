@@ -42,7 +42,7 @@ The art is drawn in a design space and shrunk to 92% around its middle when expo
 
 Mouth for the volume (0.0 to 1.0) while speaking: under 0.05 (silence) `boca_0`, under 0.2 `boca_1`, under 0.6 `boca_2`, otherwise `boca_3`.
 
-In the chat, `AvatarController` sets `speaking` when the first sound of a reply plays and `avatarVolumeProvider` carries the volume from the voice layer; the avatar goes back to rest when the sound ends, is paused, is stopped or fails.
+In the voice mode (S6-7) the same avatar is shown large and centered on a pale circle, and flies there from the chat header with a `Hero` (tag `marlix-avatar`). In the chat, `AvatarController` sets `speaking` when the first sound of a reply plays and `avatarVolumeProvider` carries the volume from the voice layer; the avatar goes back to rest when the sound ends, is paused, is stopped or fails.
 
 The ring, thought bubbles and hearts are painted by code, so they need no layer.
 

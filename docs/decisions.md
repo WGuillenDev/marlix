@@ -775,3 +775,22 @@ The voice keeps the **5 steps** that the listeners voted for: 3 steps is faster 
 | Voice | The counter is shared by text and voice, as the card says. The full-screen voice mode (S6-7) has to show this same chip. |
 
 **Checked on the phone (S24 Ultra):** with the cap lowered to 3 for a test account, the chip showed "Te queda 1 mensaje hoy. Se renuevan a medianoche." on an amber background at one left, and the limit card with the locked composer and the help button at zero; the help screen opened from the header. The normal, low, last-one and exhausted states are also covered with widget tests.
+
+
+## 2026-10-25 — The full-screen voice mode: the voice is what stands out (S6-7)
+
+**Decision:** a voice button next to the message field opens the voice mode, a full-screen route that follows wireframes 04a and 04b: close button, "Modo voz" and the help button on top; the avatar large and centered on a pale circle; what marlix is doing ("Aquí estoy", "Pensando…", "Preparando la voz…", "marlix está hablando", "En pausa") and its last reply; and at the bottom a **big central voice button** with **Chat** and **Terminar** small at its sides. The counter of the day (S6-6) is shown under the top bar. Writing is the small option, as in the wireframe.
+
+| Question | Decision |
+| --- | --- |
+| What does the big button do before S6-8? | It pauses and resumes what marlix says. When nothing is being said it is the microphone, off, with the line "Pronto podrás hablarle con tu voz": the place of the wireframe is kept and S6-8 only turns it on. A working microphone button that does nothing was worse than a clearly off one. |
+| How does the person write meanwhile? | The small **Chat** button swaps the buttons for a field; sending closes it and the voice buttons come back. A field that stays open hides the pause button and the avatar. In S6-8 and S6-9 it stays as the way to type instead of speaking. |
+| How is the avatar kept large? | With the keyboard open the last reply and the labels are dropped so the avatar keeps room; the keyboard closes after sending. Seen on the S24: with a permanent field the avatar was about 50 dp. |
+| Replies in the voice mode | `voiceModeProvider` asks for short, clean replies and reading aloud while the screen is open, like the Settings switch does (`repliesAreSpokenProvider`). Leaving by any way (the X, Terminar, back button or gesture) ends the mode and cuts what is being said. |
+| The transition | A route of 380 ms with fade and a slight growth, and the avatar flies from the header to the center with a `Hero`. It is opaque so the chat is not drawn under it. |
+| The voice button in the chat | Left of the field, only while the field is empty (the text gets all the width while writing; with it, a 320 px screen wrapped one line and overflowed). Off when the daily limit is reached. |
+| The model download | The card appears only when there is something to decide: "Dale a marlix su voz" (401 MB) with **Descargar con wifi**; over mobile data it says what it costs and asks for **Descargar con datos móviles**; with no connection it says so and offers nothing; downloading shows the progress and says replies go on with the phone's voice; if it stops it says why and **Continuar la descarga** resumes it; a phone with no Spanish voice says the text chat keeps working. When the voice works nothing is shown. The download runs in `VoiceService`, so leaving the screen does not stop it. |
+
+**Not in this card.** Listening with the microphone (S6-8) and the turns with interruption (S6-9), which will add the "Te escucho…" state of 04a. The "Preparando la voz…" of the chat bar is S6-15.
+
+**Checked on the S24 Ultra:** the opening transition, the large avatar, a message written with **Chat** (Pensando → Preparando la voz → hablando with the mouth moving), the keyboard layout, and the whole model download (the model was moved aside, the card offered it, showed 92 of 401 MB and disappeared when it ended).
