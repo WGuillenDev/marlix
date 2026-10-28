@@ -794,3 +794,19 @@ The voice keeps the **5 steps** that the listeners voted for: 3 steps is faster 
 **Not in this card.** Listening with the microphone (S6-8) and the turns with interruption (S6-9), which will add the "Te escucho…" state of 04a. The "Preparando la voz…" of the chat bar is S6-15.
 
 **Checked on the S24 Ultra:** the opening transition, the large avatar, a message written with **Chat** (Pensando → Preparando la voz → hablando with the mouth moving), the keyboard layout, and the whole model download (the model was moved aside, the card offered it, showed 92 of 401 MB and disappeared when it ended).
+
+## 2026-10-27 — Speech recognition: the phone's recognizer behind one interface (S6-8)
+
+**Decision:** the person speaks to marlix with the recognizer of the phone (`speech_to_text`), in Spanish, behind `SpeechRecognizer` (`lib/services/voice/speech_recognizer.dart`: `listen`, `stop`, `cancel`, with partial and final results). Screens go through `SpeechController`; no screen imports the package (a rule in `architecture_test.dart`). What is understood goes through `ChatController.send`, the same path as typed text, so `POST /chat` and its crisis filter apply equally. No endpoint changes.
+
+| Question | Decision |
+| --- | --- |
+| Which locale? | The first the phone offers of `es_CR`, `es_419`, `es_MX`, `es_US`, `es_ES` (same order as the native voice). Android writes `es_CR` and iOS `es-CR`; the id the phone gave is the one passed back. No Spanish at all: the phone "cannot recognize the voice" and writing keeps working. |
+| On the device or in Google's service? | `onDevice: true`. On Android it maps to `EXTRA_PREFER_OFFLINE`, a preference: when the language is not downloaded the phone uses its service instead of failing. The onboarding (S5-5) already tells the person that. |
+| What does the big button do? | Idle: the microphone ("Toca el micrófono y háblale."). Listening: a filled stop button ("Terminé de hablar"), the state "Te escucho…" and the words heard so far where the last reply goes. While marlix speaks it still pauses and resumes; interrupting by talking is S6-9. Off while a reply is pending or the daily limit is reached. |
+| Does marlix hear itself? | Starting to listen stops the reading first. Opening the **Chat** field, leaving the mode by any way, or leaving the screen closes the microphone. |
+| The permission | `MicrophonePermission.ask()` now answers `granted`, `denied` or `blocked`. Pressing the microphone asks again if the person said "Ahora no" in onboarding. If the system will not ask again (`blocked`), the same button opens the phone's settings. In both cases the line says to use **Chat**. |
+| Failures | `noSpeech` ("No te escuché"), `unavailable` (no recognizer or language) and `other` each show a line under the buttons; none blocks the text chat. A final result with no words is `noSpeech`: nothing is sent. |
+| Length of a turn | 30 s at most (`listenFor`), so an open microphone ends. Detecting the end of speech and interruptions are S6-9. |
+
+**Not in this card.** End-of-speech detection and interruption (S6-9). Whisper in Groq (shares the quota and the audio leaves the phone) or in the phone (heavier) stay as alternatives behind `SpeechRecognizer`, a candidate for v2.
