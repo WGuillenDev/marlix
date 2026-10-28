@@ -12,6 +12,7 @@ import '../chat/avatar_controller.dart';
 import '../chat/chat_controller.dart';
 import '../chat/reply_reader.dart';
 import '../help_screen.dart';
+import 'speech_controller.dart';
 import 'voice_controller.dart';
 import 'voice_model_card.dart';
 
@@ -20,8 +21,8 @@ import 'voice_model_card.dart';
 const marlixAvatarHero = 'marlix-avatar';
 
 /// The full-screen voice mode (wireframes 04a and 04b, S6-7). Replies come short
-/// and are read aloud; the person can still write. Listening with the microphone
-/// arrives in S6-8, and the turns with interruption in S6-9.
+/// and are read aloud; the person can speak with the microphone (S6-8) or write.
+/// The turns with interruption arrive in S6-9.
 class VoiceModeScreen extends ConsumerStatefulWidget {
   const VoiceModeScreen({super.key});
 
@@ -79,25 +80,54 @@ class _VoiceModeScreenState extends ConsumerState<VoiceModeScreen> {
     super.dispose();
   }
 
-  /// Any way out (the X, the back button or the gesture) ends the mode and cuts
-  /// what is being said.
+  /// Any way out (the X, the back button or the gesture) ends the mode, cuts what
+  /// is being said and closes the microphone.
   void _left(bool didPop, Object? result) {
     if (!didPop) return;
     ref.read(voiceModeProvider.notifier).set(false);
     unawaited(ref.read(replyReaderProvider.notifier).stop());
+    unawaited(ref.read(speechControllerProvider.notifier).cancel());
   }
 
   /// What the big central button does and what the line under the buttons says.
-  (String, _Main) _hintAndMain(Reading reading, bool limitReached) => switch (reading) {
-    Reading.speaking => ('Toca el botón para pausar a marlix.', _Main.pause),
-    Reading.paused => ('Toca el botón para que marlix continúe.', _Main.resume),
-    Reading.idle => (
-      limitReached
-          ? 'Mañana volvemos a hablar.'
-          : 'Por ahora escríbele con el botón Chat. Pronto podrás hablarle con tu voz.',
-      _Main.microphone,
-    ),
-  };
+  (String, _Main) _hintAndMain(Reading reading, SpeechState speech, bool limitReached) {
+    if (limitReached) return ('Mañana volvemos a hablar.', _Main.microphone);
+    return switch (speech) {
+      SpeechListening() => ('Toca el botón cuando termines de hablar.', _Main.done),
+      SpeechDenied(blocked: false) => (
+        'Necesito el micrófono para escucharte. Toca el botón para permitirlo o escríbele con el botón Chat.',
+        _Main.microphone,
+      ),
+      SpeechDenied(blocked: true) => (
+        'El micrófono está bloqueado. Toca el botón para abrir los Ajustes o escríbele con el botón Chat.',
+        _Main.microphone,
+      ),
+      SpeechProblem(failure: SpeechFailure.noSpeech) => (
+        'No te escuché. Toca el micrófono e inténtalo otra vez.',
+        _Main.microphone,
+      ),
+      SpeechProblem(failure: SpeechFailure.unavailable) => (
+        'Este teléfono no puede reconocer la voz. Escríbele con el botón Chat.',
+        _Main.microphone,
+      ),
+      SpeechProblem() => (
+        'No pude escucharte. Inténtalo otra vez o escríbele con el botón Chat.',
+        _Main.microphone,
+      ),
+      SpeechIdle() => switch (reading) {
+        Reading.speaking => ('Toca el botón para pausar a marlix.', _Main.pause),
+        Reading.paused => ('Toca el botón para que marlix continúe.', _Main.resume),
+        Reading.idle => ('Toca el micrófono y háblale.', _Main.microphone),
+      },
+    };
+  }
+
+  Future<void> _microphone(SpeechState speech) async {
+    final controller = ref.read(speechControllerProvider.notifier);
+    if (speech is SpeechDenied && speech.blocked) return controller.openSettings();
+    if (speech is SpeechListening) return controller.finish();
+    await controller.listen();
+  }
 
   Future<void> _send() async {
     final text = _input.text;
@@ -118,25 +148,32 @@ class _VoiceModeScreenState extends ConsumerState<VoiceModeScreen> {
   Widget build(BuildContext context) {
     final chat = ref.watch(chatControllerProvider);
     final reading = ref.watch(replyReaderProvider);
+    final speech = ref.watch(speechControllerProvider);
     final avatar = ref.watch(avatarStateProvider);
     final last = chat.entries.lastOrNull;
     final canSend = _input.text.trim().isNotEmpty && !chat.sending && !chat.limitReached;
     // Read here: the Scaffold hides the keyboard from its body. While typing the
     // avatar needs the room more than the last reply does.
     final typing = MediaQuery.viewInsetsOf(context).bottom > 0;
-    final (hint, big) = _hintAndMain(reading, chat.limitReached);
+    final (hint, big) = _hintAndMain(reading, speech, chat.limitReached);
 
-    final status = switch ((chat.limitReached, chat.sending, reading, avatar)) {
-      (true, _, _, _) => 'Por hoy llegamos al límite',
-      (_, true, _, _) => 'Pensando…',
-      (_, _, Reading.paused, _) => 'En pausa',
-      (_, _, Reading.speaking, AvatarState.speaking) => 'marlix está hablando',
-      (_, _, Reading.speaking, _) => 'Preparando la voz…',
+    final listening = speech is SpeechListening;
+    final status = switch ((chat.limitReached, chat.sending, listening, reading, avatar)) {
+      (true, _, _, _, _) => 'Por hoy llegamos al límite',
+      (_, true, _, _, _) => 'Pensando…',
+      (_, _, true, _, _) => 'Te escucho…',
+      (_, _, _, Reading.paused, _) => 'En pausa',
+      (_, _, _, Reading.speaking, AvatarState.speaking) => 'marlix está hablando',
+      (_, _, _, Reading.speaking, _) => 'Preparando la voz…',
       _ => 'Aquí estoy',
     };
+    // While the person talks, their words take the place of the last reply.
     final caption = chat.limitReached
         ? 'Los mensajes se renuevan a medianoche.'
-        : (last is MarlixEntry ? last.message.content : null);
+        : switch (speech) {
+            SpeechListening(:final heard) => heard.isEmpty ? null : heard,
+            _ => last is MarlixEntry ? last.message.content : null,
+          };
 
     return PopScope(
       onPopInvokedWithResult: _left,
@@ -203,10 +240,15 @@ class _VoiceModeScreenState extends ConsumerState<VoiceModeScreen> {
               else
                 _Actions(
                   writeEnabled: !chat.limitReached,
-                  onWrite: () => setState(() => _writing = true),
+                  onWrite: () {
+                    unawaited(ref.read(speechControllerProvider.notifier).cancel());
+                    setState(() => _writing = true);
+                  },
                   onEnd: () => Navigator.of(context).maybePop(),
                   main: big,
                   hint: hint,
+                  micEnabled: !chat.limitReached && !chat.sending,
+                  onMicrophone: () => _microphone(speech),
                 ),
             ],
           ),
@@ -302,11 +344,11 @@ class _BigAvatar extends ConsumerWidget {
   }
 }
 
-enum _Main { pause, resume, microphone }
+enum _Main { pause, resume, microphone, done }
 
 /// The buttons of the wireframe: "Chat" and "Terminar" small at the sides and the
 /// voice button big in the middle, so the voice is what stands out. The middle
-/// one pauses and resumes what marlix says; it becomes the microphone in S6-8.
+/// one is the microphone; while marlix talks it pauses and resumes it instead.
 class _Actions extends ConsumerWidget {
   const _Actions({
     required this.writeEnabled,
@@ -314,6 +356,8 @@ class _Actions extends ConsumerWidget {
     required this.onEnd,
     required this.main,
     required this.hint,
+    required this.micEnabled,
+    required this.onMicrophone,
   });
 
   final bool writeEnabled;
@@ -321,6 +365,8 @@ class _Actions extends ConsumerWidget {
   final VoidCallback onEnd;
   final _Main main;
   final String hint;
+  final bool micEnabled;
+  final VoidCallback onMicrophone;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -343,24 +389,27 @@ class _Actions extends ConsumerWidget {
                 onPressed: switch (main) {
                   _Main.pause => reader.pause,
                   _Main.resume => reader.resume,
-                  _Main.microphone => null,
+                  _Main.microphone => micEnabled ? onMicrophone : null,
+                  _Main.done => onMicrophone,
                 },
                 tooltip: switch (main) {
                   _Main.pause => 'Pausar',
                   _Main.resume => 'Continuar',
-                  _Main.microphone => 'Pronto podrás hablar',
+                  _Main.microphone => 'Hablar',
+                  _Main.done => 'Terminé de hablar',
                 },
                 icon: Icon(switch (main) {
                   _Main.pause => Icons.pause_rounded,
                   _Main.resume => Icons.play_arrow_rounded,
                   _Main.microphone => Icons.mic_rounded,
+                  _Main.done => Icons.stop_rounded,
                 }),
                 iconSize: 40,
                 style: IconButton.styleFrom(
                   fixedSize: const Size(88, 88),
-                  foregroundColor: AppColors.tanDark,
+                  foregroundColor: main == _Main.done ? AppColors.white : AppColors.tanDark,
                   disabledForegroundColor: AppColors.textSecondary,
-                  backgroundColor: AppColors.white,
+                  backgroundColor: main == _Main.done ? AppColors.tanDark : AppColors.white,
                   side: const BorderSide(color: AppColors.line, width: 2),
                 ),
               ),

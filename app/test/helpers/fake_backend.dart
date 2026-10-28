@@ -378,13 +378,24 @@ class FakeDialer implements Dialer {
 /// The microphone dialog of the system: the test decides what the person answers.
 class FakeMicrophone implements MicrophonePermission {
   bool allows = true;
+
+  /// When it does not allow: the system will not show its dialog again.
+  bool blocked = false;
   int asked = 0;
+  int settingsOpened = 0;
 
   @override
-  Future<bool> request() async {
+  Future<bool> request() async => (await ask()) == MicrophoneAccess.granted;
+
+  @override
+  Future<MicrophoneAccess> ask() async {
     asked++;
-    return allows;
+    if (allows) return MicrophoneAccess.granted;
+    return blocked ? MicrophoneAccess.blocked : MicrophoneAccess.denied;
   }
+
+  @override
+  Future<void> openSettings() async => settingsOpened++;
 }
 
 /// A reminder as the phone would hold it, repeating every week until cancelled.

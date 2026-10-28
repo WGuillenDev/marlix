@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:marlix/models/voice_config.dart';
 import 'package:marlix/services/voice/device_facts.dart';
+import 'package:marlix/services/voice/speech_recognizer.dart';
 import 'package:marlix/services/voice/voice_engine.dart';
 import 'package:marlix/services/voice/voice_model_store.dart';
 
@@ -169,4 +170,43 @@ class FakeEngine implements MeasurableVoiceEngine, PrefetchingVoiceEngine {
 
   @override
   Future<void> dispose() async => disposed = true;
+}
+
+/// A recognizer the test talks through: it says what the person "says".
+class FakeRecognizer implements SpeechRecognizer {
+  var listens = 0;
+  var stops = 0;
+  var cancels = 0;
+  StreamController<SpeechEvent>? _stream;
+
+  bool get isListening => _stream != null && !_stream!.isClosed;
+
+  @override
+  Stream<SpeechEvent> listen() {
+    listens++;
+    _stream = StreamController<SpeechEvent>();
+    return _stream!.stream;
+  }
+
+  void hear(String text) => _stream!.add(SpeechPartial(text));
+
+  /// What the real one does after `stop`: the final result, then the end.
+  void finish(String text) {
+    _stream!.add(SpeechFinal(text));
+    unawaited(_stream!.close());
+  }
+
+  void fail(SpeechFailure failure) {
+    _stream!.addError(SpeechException(failure));
+    unawaited(_stream!.close());
+  }
+
+  @override
+  Future<void> stop() async => stops++;
+
+  @override
+  Future<void> cancel() async {
+    cancels++;
+    unawaited(_stream?.close());
+  }
 }

@@ -7,6 +7,7 @@ import '../help_resources.dart';
 import 'device_facts.dart';
 import 'native_voice_engine.dart';
 import 'supertonic_voice_engine.dart';
+import 'speech_recognizer.dart';
 import 'voice_engine.dart';
 import 'voice_memory.dart';
 import 'voice_model_store.dart';
@@ -46,6 +47,9 @@ final supertonicEngineFactoryProvider =
       (ref) =>
           (config) => SupertonicVoiceEngine(config: config),
     );
+
+/// Overridden in tests: there is no recognizer without a phone.
+final speechRecognizerProvider = Provider<SpeechRecognizer>((ref) => SpeechToTextRecognizer());
 
 final nativeEngineFactoryProvider = Provider<VoiceEngine Function(VoiceConfig config)>(
   (ref) =>
