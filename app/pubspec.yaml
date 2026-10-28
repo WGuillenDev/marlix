@@ -23,6 +23,7 @@ dependencies:
   path_provider: ^2.1.6
   permission_handler: ^12.0.1
   shared_preferences: ^2.5.6
+  speech_to_text: ^7.5.0
   supabase_flutter: ^2.18.3
   # Unofficial port of Supertonic 3 (S6-1): pinned, so a new version is a decision.
   supertonic_flutter: 2.0.0

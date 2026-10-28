@@ -75,6 +75,7 @@ void main() {
       'package:audioplayers/',
       'package:device_info_plus/',
       'package:connectivity_plus/',
+      'package:speech_to_text/',
     ];
     final offenders = [
       for (final file in sources)

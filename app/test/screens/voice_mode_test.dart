@@ -11,6 +11,7 @@ import 'package:marlix/screens/voice/voice_mode_screen.dart';
 import 'package:marlix/services/read_aloud.dart';
 import 'package:marlix/services/voice/device_facts.dart';
 import 'package:marlix/services/voice/voice_engine.dart';
+import 'package:marlix/screens/voice/speech_controller.dart' show SpeechFailure;
 import 'package:marlix/services/voice/voice_providers.dart';
 import 'package:marlix/widgets/avatar_marlix.dart';
 
@@ -253,15 +254,163 @@ void main() {
       final container = ProviderScope.containerOf(tester.element(find.byType(ChatScreen)));
       expect(container.read(voiceModeProvider), isFalse);
     });
+  });
 
-    testWidgets('the microphone is there for S6-8 but cannot be used yet', (tester) async {
-      await openChat(tester, overrides: _Phone().overrides);
+  group('speaking to marlix (S6-8)', () {
+    Future<(FakeBackend, FakeRecognizer, FakeMicrophone)> open(
+      WidgetTester tester, {
+      FakeMicrophone? microphone,
+    }) async {
+      final recognizer = FakeRecognizer();
+      final mic = microphone ?? FakeMicrophone();
+      final backend = await openChat(
+        tester,
+        microphone: mic,
+        overrides: [..._Phone().overrides, speechRecognizerProvider.overrideWithValue(recognizer)],
+      );
       await tester.pump();
       await _openVoiceMode(tester);
+      return (backend, recognizer, mic);
+    }
+
+    testWidgets('the microphone listens and shows what is heard', (tester) async {
+      final (_, recognizer, _) = await open(tester);
+
+      expect(find.text('Toca el micrófono y háblale.'), findsOneWidget);
+      await tester.tap(find.byTooltip('Hablar'));
+      await _settle(tester);
+
+      expect(recognizer.listens, 1);
+      expect(find.text('Te escucho…'), findsOneWidget);
+      expect(find.byTooltip('Terminé de hablar'), findsOneWidget);
+
+      recognizer.hear('hola, qué tal');
+      await _settle(tester);
+      expect(find.text('hola, qué tal'), findsOneWidget);
+    });
+
+    testWidgets('what is understood goes through the same chat as typed text', (tester) async {
+      final (backend, recognizer, _) = await open(tester);
+
+      await tester.tap(find.byTooltip('Hablar'));
+      await _settle(tester);
+      await tester.tap(find.byTooltip('Terminé de hablar'));
+      await tester.pump();
+      expect(recognizer.stops, 1);
+
+      recognizer.finish('mae, qué tuanis el día');
+      await _settle(tester);
+
+      expect(backend.sent, ['mae, qué tuanis el día']);
+      expect(find.text('Te escucho…'), findsNothing);
+      backend.answer('mae, qué tuanis el día', 'Qué bueno oírte');
+      await _settle(tester);
+    });
+
+    testWidgets('a person who refused the microphone is told, and can keep writing', (
+      tester,
+    ) async {
+      final (backend, recognizer, mic) = await open(
+        tester,
+        microphone: FakeMicrophone()..allows = false,
+      );
+
+      await tester.tap(find.byTooltip('Hablar'));
+      await _settle(tester);
+
+      expect(mic.asked, 1);
+      expect(recognizer.listens, 0);
+      expect(find.textContaining('Necesito el micrófono'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Chat'));
+      await tester.pump();
+      await tester.enterText(find.byType(TextField), 'hola');
+      await tester.pump();
+      await tester.tap(find.byTooltip('Enviar'));
+      await _settle(tester);
+      expect(backend.sent, ['hola']);
+      backend.answer('hola', 'Hola');
+      await _settle(tester);
+    });
+
+    testWidgets('a blocked microphone sends the person to the settings', (tester) async {
+      final (_, recognizer, mic) = await open(
+        tester,
+        microphone: FakeMicrophone()
+          ..allows = false
+          ..blocked = true,
+      );
+
+      await tester.tap(find.byTooltip('Hablar'));
+      await _settle(tester);
+      expect(find.textContaining('Toca el botón para abrir los Ajustes'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Hablar'));
+      await _settle(tester);
+      expect(mic.settingsOpened, 1);
+      expect(recognizer.listens, 0);
+    });
+
+    testWidgets('when nothing was heard it says so and nothing is sent', (tester) async {
+      final (backend, recognizer, _) = await open(tester);
+
+      await tester.tap(find.byTooltip('Hablar'));
+      await _settle(tester);
+      recognizer.fail(SpeechFailure.noSpeech);
+      await _settle(tester);
+
+      expect(find.textContaining('No te escuché'), findsOneWidget);
+      expect(backend.sent, isEmpty);
+      expect(find.byTooltip('Hablar'), findsOneWidget, reason: 'it can try again');
+    });
+
+    testWidgets('a phone without a recognizer says so and leaves the text chat alone', (
+      tester,
+    ) async {
+      final (_, recognizer, _) = await open(tester);
+
+      await tester.tap(find.byTooltip('Hablar'));
+      await _settle(tester);
+      recognizer.fail(SpeechFailure.unavailable);
+      await _settle(tester);
+
+      expect(find.textContaining('no puede reconocer la voz'), findsOneWidget);
+      expect(find.byTooltip('Chat'), findsOneWidget);
+    });
+
+    testWidgets('opening the writing field or leaving closes the microphone', (tester) async {
+      final (_, recognizer, _) = await open(tester);
+
+      await tester.tap(find.byTooltip('Hablar'));
+      await _settle(tester);
+      await tester.tap(find.byTooltip('Chat'));
+      await _settle(tester);
+      expect(recognizer.cancels, greaterThanOrEqualTo(1));
+      expect(find.text('Te escucho…'), findsNothing);
+
+      final before = recognizer.cancels;
+      await tester.tap(find.byTooltip('Volver a la voz'));
+      await tester.pump();
+      await tester.tap(find.byTooltip('Hablar'));
+      await _settle(tester);
+      await tester.tap(find.byTooltip('Volver al chat'));
+      await tester.pumpAndSettle();
+      expect(recognizer.cancels, greaterThan(before));
+    });
+
+    testWidgets('the microphone is off once the daily limit is reached', (tester) async {
+      final (backend, recognizer, _) = await open(tester);
+
+      await tester.tap(find.byTooltip('Hablar'));
+      await _settle(tester);
+      recognizer.finish('hola');
+      await _settle(tester);
+      backend.answer('hola', 'Hasta mañana', remaining: 0);
+      await _settle(tester);
 
       final mic = tester.widget<IconButton>(find.widgetWithIcon(IconButton, Icons.mic_rounded));
       expect(mic.onPressed, isNull);
-      expect(find.textContaining('Pronto podrás hablarle'), findsOneWidget);
+      expect(find.text('Mañana volvemos a hablar.'), findsOneWidget);
     });
   });
 
