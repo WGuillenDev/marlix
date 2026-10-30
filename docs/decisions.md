@@ -882,3 +882,24 @@ The voice keeps the **5 steps** that the listeners voted for: 3 steps is faster 
 **Why:** the Sprint 5 audit found that, since S5-5, only `POST /v1/onboarding` writes those columns, with the service key. The grant was unused, and with the public key and their own token a user could clear their consent date or repeat the onboarding through the Supabase API. The record of the consent must be written only by the server.
 
 **Checked:** the backend writes with `SUPABASE_SECRET_KEY` (`server.ts`), which does not depend on the grant; the app never reads or writes `users` directly, and there is no `PATCH /v1/settings` route yet, so when US-14 adds it, it has to write through the backend like the rest. `schema-test.sql` now proves the three columns cannot be updated, and that an `update` of each fails with "permission denied".
+
+---
+
+## 2026-10-29 — Migrations are checked by a query, and a failed counter shows in /health (S6-16)
+
+**Decision:** [`docs/verify-migrations.sql`](verify-migrations.sql) lists, for every file in `docs/migrations/`, what it creates (columns, functions, execute grants, constraints, column privileges) and shows `ok` or `MISSING`. It also checks that every table in `public` has RLS. It is run in the SQL Editor after a migration, and by the CI against `schema.sql`, so the query itself cannot drift from the schema. The steps are in [CONTRIBUTING.md](../CONTRIBUTING.md#database-migrations). `GET /health` answers `"status": "degraded"` with `"problems": ["usage_counter"]` after a failed count, until one succeeds.
+
+**Why:** `record_interaction` (S4-13) was missing in production. Every count failed with `PGRST202`, the backend logged only the error code and kept answering, so the daily cap was not enforced and nobody noticed.
+
+| Option for the limit when it cannot count | Verdict |
+|---|---|
+| Keep failing open after the reply (as in S4-13) and make the failure visible | **Chosen.** The person already has the reply, and refusing the next ones would lock everyone out for a deploy mistake. The cost is the uncounted replies while the counter is down, which `/health` now reports. |
+| Fail closed: refuse to answer if the last count failed | Discarded. A database hiccup would stop the whole chat, and the cap protects the free Groq quota, not safety. Reading the count already fails closed (`500` before the model), so a database that is really down does stop messages. |
+
+| Option for showing it | Verdict |
+|---|---|
+| `200` with `"degraded"` in the body | **Chosen.** `render.yaml` sets `healthCheckPath: /health`: a `503` would make Render restart a healthy process for a problem a restart does not fix. The external monitor (S7-6) looks for `"status":"ok"` in the body. |
+| `503` when the counter fails | Discarded for the restart loop above. |
+| Only the log line | Discarded. It already existed and nobody read it. |
+
+**Limits.** The flag lives in memory and is set by real traffic: after a deploy it says `ok` until the first reply is counted, and it cannot see a problem while nobody chats. That is why the query, not `/health`, is the check to run before merging. Applying a migration stays manual (an automatic migration tool is out of scope).

@@ -147,7 +147,7 @@ Usage limits: 100 replies a day per person, resetting at midnight Costa Rica tim
 
 | Endpoint | Access |
 |---|---|
-| `GET /health` | Public. Used by the uptime monitor. |
+| `GET /health` | Public. Used by the uptime monitor; says `degraded` if the usage counter fails. |
 | `GET /v1/help-resources` | Public. The help resources the app shows, from `api/config/crisis.json`. |
 | Rest of `/v1/*` | Only with a Supabase session, `Authorization: Bearer <access token>`; anything else gets `401`. Each account has its own daily limit. |
 
