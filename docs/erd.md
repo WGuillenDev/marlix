@@ -204,7 +204,7 @@ It runs on every pull request in the CI's Database job, against Supabase's Postg
 
 ## How to test
 
-Start the local database with Docker (see [Local database](../README.md#local-database) in the README). On the first start it applies [`schema.sql`](schema.sql) to a clean database; check the seven tables exist.
+Start the local database with Docker (see [Local database](development.md#local-database) in the development guide). On the first start it applies [`schema.sql`](schema.sql) to a clean database; check the seven tables exist.
 
 Then run the privilege and RLS tests in [`schema-test.sql`](schema-test.sql):
 

@@ -1,6 +1,6 @@
 # marlix app
 
-The Flutter app (Android first). Setup and commands are in the [main README](../README.md#app).
+The Flutter app (Android first). Setup and commands are in the [development guide](../docs/development.md#app).
 
 | Folder | Contents |
 |---|---|
