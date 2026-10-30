@@ -162,7 +162,7 @@ What a signed-in user (`authenticated`) can do, always limited to their own rows
 
 | Table | Read | Create | Update | Delete |
 |---|---|---|---|---|
-| `users` | ✅ | — (trigger) | Only `data_consent_at`, `onboarding_completed_at` and `reminders_enabled` | — (account deletion) |
+| `users` | ✅ | — (trigger) | — (the backend writes consent, onboarding and settings) | — (account deletion) |
 | `plan_limits` | ✅ all rows | — | — | — |
 | `avatars` | ✅ all rows | — | — | — |
 | `conversations` | ✅ | — | — | — |
@@ -179,7 +179,7 @@ RLS decides **which rows** a user reaches; table privileges decide **which opera
 | Role | Privileges in `public` |
 |---|---|
 | `anon` | None. |
-| `authenticated` | `SELECT` on the seven tables; `UPDATE` only on `users (data_consent_at, onboarding_completed_at, reminders_enabled)` and `memories (fact)`; `DELETE` only on `memories`. Never `INSERT`, `TRUNCATE`, `REFERENCES` or `TRIGGER`. |
+| `authenticated` | `SELECT` on the seven tables; `UPDATE` only on `memories (fact)`; `DELETE` only on `memories`. Never `INSERT`, `TRUNCATE`, `REFERENCES` or `TRIGGER`. |
 | `service_role` (backend) | Unchanged: full access, bypasses RLS. |
 
 - **Functions:** `set_updated_at` and `handle_new_auth_user` run only as triggers, so nobody else can execute them (`public`, `anon` and `authenticated` have no `EXECUTE`). A trigger fires without that privilege.
