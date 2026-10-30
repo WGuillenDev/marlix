@@ -95,3 +95,9 @@ jobs:
         run: >-
           docker exec -i db psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f -
           < docs/schema-test.sql
+      - name: Check that the migrations are all reflected in the schema
+        # The same query that is run in production (S6-16): none may be MISSING.
+        run: |
+          docker exec -i db psql -U postgres -d postgres -tA -v ON_ERROR_STOP=1 -f - \
+            < docs/verify-migrations.sql | tee verification.txt
+          ! grep -q '^MISSING' verification.txt
