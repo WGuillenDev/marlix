@@ -156,7 +156,8 @@ class SpeechController extends Notifier<SpeechState> {
     switch (event) {
       case SpeechVoice():
         _carryTimer?.cancel();
-        if (ref.read(replyReaderProvider) == Reading.speaking) {
+        final reading = ref.read(replyReaderProvider);
+        if (reading == Reading.speaking || reading == Reading.preparing) {
           _heldReply = true;
           unawaited(ref.read(replyReaderProvider.notifier).pause());
         }
