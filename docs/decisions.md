@@ -4,6 +4,21 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-10-29 — Natural pauses in the voice: each piece said whole, its edges cut (S6-14)
+
+**Decision:** Supertonic says each piece of a reply in one pass and the model sets the tone and the pauses of its commas. The silence the model leaves at both edges is cut (`trimSilence`: 10 ms windows under an RMS of 0.01, 30 ms kept on each side), and the pause of the final punctuation is added: **180 ms** after a comma, **280 ms** after a semicolon or a colon, **350 ms** after a full stop, a question or an exclamation (`pauseAfter` in `sentences.dart`). The first sentence is still cut at its commas so the first sound comes sooner (S6-9); those pieces get the comma pause.
+
+**Why:** measured on the S24, every piece Supertonic makes starts with 270 to 430 ms of silence and ends with 420 to 590 ms. Before, each sentence was cut at its commas and 200 ms were added between pieces, so a comma sounded as about one second of silence: "Claro, mae, te cuento, fue un buen día, la verdad, aunque estuve algo cansado, pero bien." took 11.2 s, and 5 to 5.6 s once the edges were cut. Between sentences the same edges left a gap of almost a second.
+
+| Option | Verdict |
+| --- | --- |
+| A. Cut at commas and add 200 / 300 ms (before) | Discarded: two silences added up and the voice sounded broken. |
+| B. Cut at commas, cut the edges, add 180 / 280 ms | Good in the listening test, but every piece is a separate utterance and loses the tone of the sentence. Kept only for the first sentence. |
+| C. As B with 90 / 180 ms | Not chosen in the listening test. |
+| **D. The piece said whole, edges cut, the pause of its final punctuation** | **Chosen.** It is how the voice assistants of the big companies and the call apps such as WhatsApp sound: the whole sentence comes out of the model with its own rhythm, the pauses follow the punctuation (a comma shorter than a full stop) and there is no dead gap at the edges. |
+
+**How it was chosen:** a blind listening test on the S24 with the same phrases in each version (one with many commas, a song and a short one), played by the app itself through the call route. The user chose B over A and C, and then asked for the version closest to the voice assistants of the big companies: D. Changing the voice or the model was out of scope.
+
 ## 2026-10-29 — The app says marlix and its voice are an AI (S6-13)
 
 **Decision:** two notices, both short and without drama. The onboarding welcome (the first screen, before the consent) says "Soy una inteligencia artificial, no una persona. Mi voz también la genera una máquina." The voice mode shows "Voz generada por IA" under its title, always visible while the mode is open.

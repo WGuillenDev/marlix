@@ -107,39 +107,49 @@ void main() {
   });
 
   group('splitClauses', () {
-    test('splits at each comma and keeps the comma, with a short pause after it', () {
+    test('splits at each comma, semicolon and colon and keeps the punctuation', () {
       expect(splitClauses('Buenas, qué gusto saludarte, ¿cómo amaneciste?'), [
-        (text: 'Buenas,', pause: commaPause),
-        (text: 'qué gusto saludarte,', pause: commaPause),
-        (text: '¿cómo amaneciste?', pause: Duration.zero),
+        'Buenas,',
+        'qué gusto saludarte,',
+        '¿cómo amaneciste?',
       ]);
+      expect(splitClauses('Mira: ya casi; falta poco.'), ['Mira:', 'ya casi;', 'falta poco.']);
     });
 
-    test('a semicolon or a colon pauses a little longer', () {
-      expect(splitClauses('Mira: ya casi; falta poco.'), [
-        (text: 'Mira:', pause: semicolonPause),
-        (text: 'ya casi;', pause: semicolonPause),
-        (text: 'falta poco.', pause: Duration.zero),
-      ]);
-      expect(semicolonPause, greaterThan(commaPause));
-    });
-
-    test('a sentence with no comma is one clause with no pause', () {
-      expect(splitClauses('Aquí estoy para escucharte.'), [
-        (text: 'Aquí estoy para escucharte.', pause: Duration.zero),
-      ]);
+    test('a sentence with no comma is one clause', () {
+      expect(splitClauses('Aquí estoy para escucharte.'), ['Aquí estoy para escucharte.']);
     });
 
     test('a comma inside a number does not split', () {
-      expect(splitClauses('Mide 3,5 metros, más o menos.'), [
-        (text: 'Mide 3,5 metros,', pause: commaPause),
-        (text: 'más o menos.', pause: Duration.zero),
-      ]);
+      expect(splitClauses('Mide 3,5 metros, más o menos.'), ['Mide 3,5 metros,', 'más o menos.']);
     });
 
     test('nothing to say gives no clauses', () {
       expect(splitClauses(''), isEmpty);
       expect(splitClauses(' , '), isEmpty);
+    });
+  });
+
+  group('pauseAfter (S6-14)', () {
+    test('a comma pauses short, a semicolon longer and a sentence end the longest', () {
+      expect(pauseAfter('Claro,'), commaPause);
+      expect(pauseAfter('Mira:'), semicolonPause);
+      expect(pauseAfter('ya casi;'), semicolonPause);
+      expect(pauseAfter('Fue un buen día.'), sentencePause);
+      expect(pauseAfter('¿Qué hacemos?'), sentencePause);
+      expect(pauseAfter('¡Qué bien!'), sentencePause);
+      expect(commaPause, lessThan(semicolonPause));
+      expect(semicolonPause, lessThan(sentencePause));
+    });
+
+    test('looks past closing quotes and spaces', () {
+      expect(pauseAfter('Me dijo «ya voy». '), sentencePause);
+      expect(pauseAfter('(eso creo),'), commaPause);
+    });
+
+    test('a piece with no final punctuation gets no pause', () {
+      expect(pauseAfter('y entonces'), Duration.zero);
+      expect(pauseAfter(''), Duration.zero);
     });
   });
 
