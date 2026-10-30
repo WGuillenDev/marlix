@@ -22,7 +22,7 @@ marlix is designed for people facing social isolation who need accessible emotio
 | Database and auth | Supabase (PostgreSQL) |
 | LLM | Groq |
 | Avatar voice (TTS) | Supertonic 3, on device |
-| Speech recognition | Device recognizer |
+| Speech recognition | Whisper in Groq, through the backend |
 
 ## Repository structure
 
