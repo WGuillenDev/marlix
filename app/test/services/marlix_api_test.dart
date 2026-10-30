@@ -342,6 +342,172 @@ void main() {
     });
   });
 
+  group('POST /v1/chat as a stream (S6-10)', () {
+    String event(String name, Object data) => 'event: $name\ndata: ${jsonEncode(data)}\n\n';
+
+    http.Response stream(List<String> events, {int status = 200}) => http.Response(
+      events.join(),
+      status,
+      headers: {'content-type': 'text/event-stream; charset=utf-8'},
+    );
+
+    final done = {
+      'type': 'reply',
+      'tone': 'positive',
+      'userMessage': message('user', 'Hoy me fue bien'),
+      'reply': message('assistant', '¡Qué dicha! Contame más.'),
+      'usage': usage,
+    };
+
+    test('asks for a stream in voice mode and gives each sentence before the reply', () async {
+      late http.Request sent;
+      final api = apiReturning((request) {
+        sent = request;
+        return stream([
+          event('sentence', {'index': 0, 'text': '¡Qué dicha!'}),
+          event('sentence', {'index': 1, 'text': 'Contame más.'}),
+          event('done', done),
+        ]);
+      });
+      final sentences = <String>[];
+
+      final response = await api.sendVoiceMessage('Hoy me fue bien', onSentence: sentences.add);
+
+      expect(sent.url.path, '/v1/chat');
+      expect(sent.headers['Accept'], 'text/event-stream');
+      expect(sent.headers['Authorization'], 'Bearer $token');
+      expect(jsonDecode(sent.body), {'message': 'Hoy me fue bien', 'mode': 'voice'});
+      expect(sentences, ['¡Qué dicha!', 'Contame más.']);
+      expect(response, isA<ChatReply>());
+      expect(response.reply.content, '¡Qué dicha! Contame más.');
+      expect(response.tone, MessageTone.positive);
+      expect(response.usage?.remaining, 87);
+    });
+
+    test('gives the first sentence while the rest is still being written', () async {
+      final body = StreamController<List<int>>();
+      final api = MarlixApi(
+        client: MockClient.streaming(
+          (request, _) async => http.StreamedResponse(
+            body.stream,
+            200,
+            headers: {'content-type': 'text/event-stream'},
+          ),
+        ),
+        baseUrl: baseUrl,
+      );
+      final sentences = <String>[];
+
+      final reply = api.sendVoiceMessage('Hola', onSentence: sentences.add);
+      body.add(utf8.encode(event('sentence', {'index': 0, 'text': '¡Qué dicha!'})));
+      await pumpEventQueue();
+
+      expect(sentences, ['¡Qué dicha!'], reason: 'before the reply is complete');
+
+      body.add(utf8.encode(event('done', done)));
+      await body.close();
+      expect((await reply).reply.content, '¡Qué dicha! Contame más.');
+    });
+
+    test('a crisis comes without sentences', () async {
+      final api = apiReturning(
+        (_) => stream([
+          event('crisis', {
+            'type': 'crisis',
+            'tone': 'neutral',
+            'userMessage': message('user', '…'),
+            'reply': message('assistant', 'Por favor llamá al 9-1-1 ahora.'),
+            'resources': [resource],
+            'usage': usage,
+          }),
+        ]),
+      );
+      final sentences = <String>[];
+
+      final response = await api.sendVoiceMessage('…', onSentence: sentences.add);
+
+      expect(response, isA<CrisisReply>());
+      expect(sentences, isEmpty);
+    });
+
+    test('an error event after the first sentence is the error of the contract', () async {
+      final api = apiReturning(
+        (_) => stream([
+          event('sentence', {'index': 0, 'text': '¡Qué dicha!'}),
+          event('error', {
+            'error': {'code': 'LLM_UNAVAILABLE', 'message': 'The model is not available.'},
+          }),
+        ]),
+      );
+      final sentences = <String>[];
+
+      await expectLater(
+        api.sendVoiceMessage('hola', onSentence: sentences.add),
+        throwsA(isA<LlmUnavailableException>()),
+      );
+      expect(sentences, ['¡Qué dicha!']);
+    });
+
+    test('an error before the stream opens is a normal JSON error', () async {
+      final api = apiReturning(
+        (_) => errorResponse(
+          429,
+          'DAILY_LIMIT_REACHED',
+          details: {'resetsAt': '2026-10-16T06:00:00Z'},
+        ),
+      );
+
+      await expectLater(
+        api.sendVoiceMessage('hola', onSentence: (_) {}),
+        throwsA(isA<DailyLimitReachedException>()),
+      );
+    });
+
+    test('a backend that answers plain JSON still works', () async {
+      final api = apiReturning((_) => jsonResponse(done, 200));
+      final sentences = <String>[];
+
+      final response = await api.sendVoiceMessage('hola', onSentence: sentences.add);
+
+      expect(response.reply.content, '¡Qué dicha! Contame más.');
+      expect(sentences, isEmpty);
+    });
+
+    test('a stream that ends before the reply is complete is a NetworkException', () async {
+      final api = apiReturning(
+        (_) => stream([
+          event('sentence', {'index': 0, 'text': '¡Qué dicha!'}),
+        ]),
+      );
+
+      await expectLater(
+        api.sendVoiceMessage('hola', onSentence: (_) {}),
+        throwsA(isA<NetworkException>()),
+      );
+    });
+
+    test('a stream that goes quiet is an ApiTimeoutException', () async {
+      final body = StreamController<List<int>>();
+      final api = MarlixApi(
+        client: MockClient.streaming(
+          (request, _) async => http.StreamedResponse(
+            body.stream,
+            200,
+            headers: {'content-type': 'text/event-stream'},
+          ),
+        ),
+        baseUrl: baseUrl,
+        timeout: const Duration(milliseconds: 20),
+      );
+
+      await expectLater(
+        api.sendVoiceMessage('hola', onSentence: (_) {}),
+        throwsA(isA<ApiTimeoutException>()),
+      );
+      await body.close();
+    });
+  });
+
   group('error codes', () {
     test('REAUTHENTICATION_REQUIRED is not an ended session', () async {
       final api = apiReturning((_) => errorResponse(401, 'REAUTHENTICATION_REQUIRED'));

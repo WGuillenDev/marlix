@@ -19,6 +19,11 @@ function flakyProvider(failures: LlmErrorKind[]) {
       if (kind) throw new LlmError(kind, kind);
       return { content: 'ok' };
     },
+    async *stream() {
+      const kind = failures[calls++];
+      if (kind) throw new LlmError(kind, kind);
+      yield 'ok';
+    },
   };
   return { provider, calls: () => calls };
 }
@@ -70,5 +75,48 @@ describe('withRetry', () => {
       { kind: 'timeout' },
     );
     assert.equal(flaky.calls(), 1);
+  });
+
+  describe('stream', () => {
+    const collect = async (pieces: AsyncIterable<string>) => {
+      const all: string[] = [];
+      for await (const piece of pieces) all.push(piece);
+      return all;
+    };
+
+    it('retries when the stream fails before any piece', async () => {
+      const flaky = flakyProvider(['unavailable']);
+      const { result } = await captureConsole(() =>
+        collect(withRetry(flaky.provider, quickRetry).stream(request)),
+      );
+
+      assert.deepEqual(result, ['ok']);
+      assert.equal(flaky.calls(), 2);
+    });
+
+    it('does not start over once a piece was delivered, so nothing is said twice', async () => {
+      let calls = 0;
+      const midway: LlmProvider = {
+        ...flakyProvider([]).provider,
+        async *stream() {
+          calls++;
+          yield 'Hola. ';
+          throw new LlmError('timeout', 'cut');
+        },
+      };
+
+      await assert.rejects(collect(withRetry(midway, quickRetry).stream(request)), {
+        kind: 'timeout',
+      });
+      assert.equal(calls, 1);
+    });
+
+    it('does not retry a quota error', async () => {
+      const flaky = flakyProvider(['rate_limited']);
+      await assert.rejects(collect(withRetry(flaky.provider, quickRetry).stream(request)), {
+        kind: 'rate_limited',
+      });
+      assert.equal(flaky.calls(), 1);
+    });
   });
 });

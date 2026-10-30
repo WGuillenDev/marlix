@@ -2,6 +2,7 @@ import 'dart:async';
 
 import '../../models/voice_config.dart';
 import 'device_facts.dart';
+import 'sentence_feed.dart';
 import 'sentences.dart';
 import 'voice_engine.dart';
 import 'voice_memory.dart';
@@ -92,6 +93,9 @@ class VoiceService {
 
   /// Open while the speech is paused: the sentence loop waits on it.
   Completer<void>? _pause;
+
+  /// The sentences of the reply being spoken, closed when it is cut.
+  SentenceFeed? _feed;
 
   VoiceStatus get status => _status;
 
@@ -247,29 +251,38 @@ class VoiceService {
   /// The stream carries one [VoiceStarted], the progress over the whole text, the
   /// level of the sound and one [VoiceFinished]; if no engine can speak it carries an error. While the
   /// model is downloading, the native voice speaks.
-  Stream<VoiceEvent> speak(String text) {
+  Stream<VoiceEvent> speak(String text) => _speak(SentenceFeed.complete(splitForSpeech(text)));
+
+  /// Speaks a reply that is still being written (S6-10): each sentence of
+  /// [sentences] is said as soon as it arrives, and the voice waits for the next
+  /// one if it gets ahead. The events are the same as [speak]'s, with the
+  /// progress over the text that has arrived so far.
+  Stream<VoiceEvent> speakSentences(Stream<String> sentences) =>
+      _speak(SentenceFeed.live(sentences));
+
+  Stream<VoiceEvent> _speak(SentenceFeed feed) {
     final controller = StreamController<VoiceEvent>();
-    unawaited(_speakAll(text, controller));
+    unawaited(_speakAll(feed, controller));
     return controller.stream;
   }
 
-  Future<void> _speakAll(String text, StreamController<VoiceEvent> controller) async {
+  Future<void> _speakAll(SentenceFeed feed, StreamController<VoiceEvent> controller) async {
     final turn = ++_generation;
+    _feed?.cancel();
+    _feed = feed;
     _openPause();
     await _stopEngines();
     bool stopped() => turn != _generation;
 
-    final sentences = splitForSpeech(text);
-    final totalChars = sentences.fold(0, (sum, sentence) => sum + sentence.length);
     var spokenChars = 0;
     var started = false;
     // Once Supertonic fails in a reply, the rest of that reply is native.
     var degraded = false;
 
     try {
-      for (var index = 0; index < sentences.length; index++) {
-        final sentence = sentences[index];
-        final next = index + 1 < sentences.length ? sentences[index + 1] : null;
+      while (true) {
+        final sentence = await feed.next();
+        if (sentence == null || stopped()) break;
         var done = false;
         while (!done && !stopped()) {
           // Paused between two sentences: the next one waits for the resume.
@@ -295,10 +308,12 @@ class VoiceService {
                   }
                   // Sound is playing: get the next sentence ready now, so there is
                   // no silence between the two.
-                  if (next != null && engine is PrefetchingVoiceEngine) engine.warm(next);
+                  if (feed.upcoming case final next? when engine is PrefetchingVoiceEngine) {
+                    engine.warm(next);
+                  }
                 case VoiceProgress(:final fraction):
                   controller.add(
-                    VoiceProgress((spokenChars + fraction * sentence.length) / totalChars),
+                    VoiceProgress((spokenChars + fraction * sentence.length) / feed.totalChars),
                   );
                 case VoiceLevel():
                   controller.add(event);
@@ -331,6 +346,7 @@ class VoiceService {
       }
       if (!stopped()) controller.add(const VoiceFinished());
     } finally {
+      feed.cancel();
       await controller.close();
     }
   }
@@ -365,6 +381,7 @@ class VoiceService {
 
   Future<void> stop() async {
     _generation++;
+    _feed?.cancel();
     _openPause();
     await _stopEngines();
   }
@@ -383,6 +400,7 @@ class VoiceService {
 
   Future<void> _release() async {
     _generation++;
+    _feed?.cancel();
     _openPause();
     final supertonic = _supertonic;
     final native = _native;

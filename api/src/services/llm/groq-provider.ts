@@ -64,31 +64,16 @@ export class GroqProvider implements LlmProvider {
   }
 
   async complete(request: LlmCompletionRequest): Promise<LlmCompletion> {
-    const waitSeconds = Math.ceil((this.#blockedUntil - this.#now()) / 1000);
-    if (waitSeconds > 0) {
-      throw new LlmError('rate_limited', 'Groq quota exhausted; waiting before calling again', {
-        retryAfterSeconds: waitSeconds,
-      });
-    }
+    this.#assertNotBlocked();
 
     let completion: OpenAI.Chat.Completions.ChatCompletion;
     try {
       completion = await this.#client.chat.completions.create(
-        {
-          model: this.model,
-          messages: request.messages.map(({ role, content }) => ({ role, content })),
-          ...(request.maxOutputTokens ? { max_completion_tokens: request.maxOutputTokens } : {}),
-          ...(request.temperature !== undefined ? { temperature: request.temperature } : {}),
-          ...(this.#reasoningEffort ? { reasoning_effort: this.#reasoningEffort } : {}),
-        },
+        this.#params(request),
         request.signal ? { signal: request.signal } : undefined,
       );
     } catch (error) {
-      const llmError = translateGroqError(error);
-      if (llmError.retryAfterSeconds) {
-        this.#blockedUntil = this.#now() + llmError.retryAfterSeconds * 1000;
-      }
-      throw llmError;
+      throw this.#translate(error);
     }
 
     const content = completion.choices[0]?.message.content?.trim();
@@ -110,6 +95,50 @@ export class GroqProvider implements LlmProvider {
           }
         : {}),
     };
+  }
+
+  async *stream(request: LlmCompletionRequest): AsyncGenerator<string> {
+    this.#assertNotBlocked();
+
+    try {
+      const chunks = await this.#client.chat.completions.create(
+        { ...this.#params(request), stream: true },
+        request.signal ? { signal: request.signal } : undefined,
+      );
+      for await (const chunk of chunks) {
+        const piece = chunk.choices[0]?.delta.content;
+        if (piece) yield piece;
+      }
+    } catch (error) {
+      throw this.#translate(error);
+    }
+  }
+
+  #params(request: LlmCompletionRequest) {
+    return {
+      model: this.model,
+      messages: request.messages.map(({ role, content }) => ({ role, content })),
+      ...(request.maxOutputTokens ? { max_completion_tokens: request.maxOutputTokens } : {}),
+      ...(request.temperature !== undefined ? { temperature: request.temperature } : {}),
+      ...(this.#reasoningEffort ? { reasoning_effort: this.#reasoningEffort } : {}),
+    };
+  }
+
+  #assertNotBlocked(): void {
+    const waitSeconds = Math.ceil((this.#blockedUntil - this.#now()) / 1000);
+    if (waitSeconds > 0) {
+      throw new LlmError('rate_limited', 'Groq quota exhausted; waiting before calling again', {
+        retryAfterSeconds: waitSeconds,
+      });
+    }
+  }
+
+  #translate(error: unknown): LlmError {
+    const llmError = translateGroqError(error);
+    if (llmError.retryAfterSeconds) {
+      this.#blockedUntil = this.#now() + llmError.retryAfterSeconds * 1000;
+    }
+    return llmError;
   }
 }
 

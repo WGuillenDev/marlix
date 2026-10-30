@@ -98,9 +98,9 @@ It lives in code, not in the system prompt, because a model can be wrong or mani
 
 The personality prompt forbids clinical advice, diagnoses and the rest of marlix's limits, but a model can still break them. So every reply goes through a review in code (S2-4, `api/src/services/review/`) before it reaches the person:
 
-- The reply is split into sentences and **each sentence is reviewed on its own**. The voice mode will send the reply sentence by sentence (S6-10) and reuses the same check.
+- The reply is split into sentences and **each sentence is reviewed on its own**. The voice mode sends the reply sentence by sentence while the model writes it (S6-10) and reuses the same check on each one.
 - Rules, checked most serious first: harmful information (lethal doses, methods), clinical advice (medication, doses), diagnoses, claiming to be a professional, discouraging professional help and encouraging dependence. The phrases are in [`rules.ts`](../api/src/services/review/rules.ts) and are normalized like the crisis signals; a phrase right after "no" does not count, so "no soy tu terapeuta" passes.
-- If a sentence fails, **the whole reply is replaced** by a safe text that gives no advice and invites the person to keep talking. The log only says which rule fired, never the reply.
+- If a sentence fails, **the reply is replaced** by a safe text that gives no advice and invites the person to keep talking. In the text chat the whole reply is replaced; in the voice stream the sentences already approved stay and the safe text follows them. The log only says which rule fired, never the reply.
 - It is a few regular expressions per sentence: no second model call and no noticeable delay (well under 5 ms per reply).
 
 ## Ready to change providers

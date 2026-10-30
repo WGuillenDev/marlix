@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/chat.dart';
@@ -201,10 +203,26 @@ class ChatController extends Notifier<ChatState> {
   }
 
   Future<void> _deliver(String id, String text) async {
+    StreamController<String>? live;
     try {
-      // Replies that will be read aloud come short and clean (S6-3).
-      final mode = ref.read(repliesAreSpokenProvider) ? ChatMode.voice : ChatMode.text;
-      final response = await _api.sendMessage(text, mode: mode);
+      // Replies that will be read aloud come short and clean (S6-3), and one
+      // sentence at a time so the voice starts early (S6-10).
+      final ChatResponse response;
+      if (ref.read(repliesAreSpokenProvider)) {
+        response = await _api.sendVoiceMessage(
+          text,
+          onSentence: (sentence) {
+            if (!ref.mounted) return;
+            if (live == null) {
+              live = StreamController<String>();
+              ref.read(liveReplyProvider.notifier).set(live!.stream);
+            }
+            live!.add(sentence);
+          },
+        );
+      } else {
+        response = await _api.sendMessage(text);
+      }
       if (!ref.mounted) return;
       final reply = switch (response) {
         CrisisReply(:final reply, :final resources) => CrisisEntry(reply, resources),
@@ -239,6 +257,9 @@ class ChatController extends Notifier<ChatState> {
       // Supabase refreshes the token by itself, so a rejected one means the
       // session really ended (expired, or the account was deleted).
       if (error is UnauthorizedException) await _endSession();
+    } finally {
+      unawaited(live?.close());
+      if (ref.mounted) ref.read(liveReplyProvider.notifier).set(null);
     }
   }
 
@@ -265,3 +286,15 @@ class ChatController extends Notifier<ChatState> {
 }
 
 final chatControllerProvider = NotifierProvider<ChatController, ChatState>(ChatController.new);
+
+/// The sentences of the reply being written, as they arrive, so the voice can
+/// start before the reply is complete (S6-10). Set with the first sentence and
+/// cleared when the turn ends.
+class LiveReply extends Notifier<Stream<String>?> {
+  @override
+  Stream<String>? build() => null;
+
+  void set(Stream<String>? sentences) => state = sentences;
+}
+
+final liveReplyProvider = NotifierProvider<LiveReply, Stream<String>?>(LiveReply.new);
