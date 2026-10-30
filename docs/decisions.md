@@ -850,3 +850,11 @@ The voice keeps the **5 steps** that the listeners voted for: 3 steps is faster 
 | Trap | `await for` over the events with a `return` inside waited for the cancellation of the subscription of a stream that had already ended, and the chat stayed on "thinking" for ever with the reply complete. The events are read with a plain subscription and its `cancel()` is not awaited. |
 
 **Measured** against Groq from the PC, voice mode, the same stream: the first sentence arrives 0.5 to 0.7 s before the reply is complete (1.36 s vs 2.06 s, 1.17 s vs 1.70 s, 1.89 s vs 2.38 s). The gain is modest because voice replies are short and most of the wait is the model's first token; it grows with longer replies. The time until the voice makes its first sound still depends on the phone (S6-1).
+
+## 2026-10-29 — Only the backend writes the consent and the onboarding (S6-11)
+
+**Decision:** `authenticated` has no `UPDATE` on any column of `users`. Migration `docs/migrations/2026-10-29-revoke-users-update.sql` revokes the column grant on `data_consent_at`, `onboarding_completed_at` and `reminders_enabled`, and `schema.sql`, `schema-test.sql` and `erd.md` follow.
+
+**Why:** the Sprint 5 audit found that, since S5-5, only `POST /v1/onboarding` writes those columns, with the service key. The grant was unused, and with the public key and their own token a user could clear their consent date or repeat the onboarding through the Supabase API. The record of the consent must be written only by the server.
+
+**Checked:** the backend writes with `SUPABASE_SECRET_KEY` (`server.ts`), which does not depend on the grant; the app never reads or writes `users` directly, and there is no `PATCH /v1/settings` route yet, so when US-14 adds it, it has to write through the backend like the rest. `schema-test.sql` now proves the three columns cannot be updated, and that an `update` of each fails with "permission denied".
