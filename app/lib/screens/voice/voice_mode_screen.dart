@@ -295,7 +295,18 @@ class _TopBar extends StatelessWidget {
           Expanded(
             child: Semantics(
               header: true,
-              child: const Text('Modo voz', style: AppText.title, textAlign: TextAlign.center),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Modo voz', style: AppText.title, textAlign: TextAlign.center),
+                  // The Supertonic license asks to say the voice is machine-made (S6-13).
+                  Text(
+                    'Voz generada por IA',
+                    style: AppText.caption.copyWith(color: AppColors.textSecondary),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
           ),
           // Always visible, as in the chat.
