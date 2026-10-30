@@ -4,6 +4,15 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-10-29 — The app says marlix and its voice are an AI (S6-13)
+
+**Decision:** two notices, both short and without drama. The onboarding welcome (the first screen, before the consent) says "Soy una inteligencia artificial, no una persona. Mi voz también la genera una máquina." The voice mode shows "Voz generada por IA" under its title, always visible while the mode is open.
+
+- **Why:** the Supertonic 3 license (OpenRAIL-M) asks to say that generated content is produced by a machine. Until now only the system prompt made marlix say it when asked; no screen did (finding of S6-1).
+- **Welcome, not the consent step.** It is the first thing read, and the consent screen is already full of data rules. A card with the sentence stands out from the greeting without a second screen.
+- **Under the title, not in the hint line.** The hint under the buttons changes with every phase and can be replaced by an error; the title bar never changes, so the notice is always there.
+- **The wording avoids any claim of being a person**, in line with the rule that marlix never presents itself as therapy or as a human. The system prompt is not touched.
+
 ## 2026-10-17 — Usage in the database: an atomic function, and a cap read every minute (S4-13)
 
 **Decision:** the daily count is the `daily_usage` row of the person for the Costa Rica day, and the cap is `plan_limits.daily_interactions` of their plan. `plans.json` keeps only the per-minute limit. This replaces the in-memory counters of [S2-6](#2026-10-14--usage-limits-configuration-file-and-in-memory-counters-until-sprint-4-s2-6).
