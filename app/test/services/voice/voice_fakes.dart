@@ -175,6 +175,12 @@ class FakeEngine implements MeasurableVoiceEngine, PrefetchingVoiceEngine {
 /// A recognizer the test talks through: it says what the person "says".
 class FakeRecognizer implements SpeechRecognizer {
   var listens = 0;
+
+  @override
+  Duration get reopenDelay => const Duration(milliseconds: 200);
+
+  /// The `silence` the last `listen` asked for.
+  Duration? lastSilence;
   var stops = 0;
   var cancels = 0;
   StreamController<SpeechEvent>? _stream;
@@ -182,13 +188,23 @@ class FakeRecognizer implements SpeechRecognizer {
   bool get isListening => _stream != null && !_stream!.isClosed;
 
   @override
-  Stream<SpeechEvent> listen() {
+  Stream<SpeechEvent> listen({Duration? silence, bool Function()? marlixSpeaking}) {
     listens++;
+    lastSilence = silence;
     _stream = StreamController<SpeechEvent>();
     return _stream!.stream;
   }
 
   void hear(String text) => _stream!.add(SpeechPartial(text));
+
+  /// The detector heard a voice that is not the end of the turn.
+  void voice() => _stream!.add(const SpeechVoice());
+
+  /// The turn ended and its audio went to be transcribed.
+  void understanding() => _stream!.add(const SpeechUnderstanding());
+
+  /// The turn ended by itself with nothing said.
+  void end() => unawaited(_stream!.close());
 
   /// What the real one does after `stop`: the final result, then the end.
   void finish(String text) {

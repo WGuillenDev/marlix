@@ -32,7 +32,8 @@ final avatarFolderProvider = Provider<String>(
 ///
 /// It follows the conversation: `thinking` while marlix replies, a brief
 /// `happy` after a reply to a positive message, `idle` otherwise. The voice
-/// (S6-5) sets `speaking` while its audio plays.
+/// (S6-5) sets `speaking` while its audio plays, and the microphone (S6-9)
+/// sets `listening`.
 class AvatarController extends Notifier<AvatarState> {
   /// How long the avatar celebrates before going back to rest.
   static const happyFor = Duration(seconds: 3);
@@ -56,6 +57,27 @@ class AvatarController extends Notifier<AvatarState> {
       }
     });
     return AvatarState.idle;
+  }
+
+  /// The microphone is open and the person is being heard (S6-9).
+  void listen() => _show(AvatarState.listening);
+
+  /// The microphone closed. It only ends `listening`: a reply being thought or
+  /// said keeps its own state.
+  void stopListening() {
+    if (state == AvatarState.listening) _show(AvatarState.idle);
+  }
+
+  /// What the person said is being turned into text: marlix is already
+  /// thinking, before the message is sent.
+  void think() => _show(AvatarState.thinking);
+
+  /// What was heard came to nothing, or is about to be sent. It only ends a
+  /// `thinking` that the chat is not behind.
+  void stopThinking() {
+    if (state == AvatarState.thinking && !ref.read(chatControllerProvider).sending) {
+      _show(AvatarState.idle);
+    }
   }
 
   /// The first sound of a reply is playing.

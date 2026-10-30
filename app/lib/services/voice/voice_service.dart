@@ -259,7 +259,7 @@ class VoiceService {
     await _stopEngines();
     bool stopped() => turn != _generation;
 
-    final sentences = splitSentences(text);
+    final sentences = splitForSpeech(text);
     final totalChars = sentences.fold(0, (sum, sentence) => sum + sentence.length);
     var spokenChars = 0;
     var started = false;

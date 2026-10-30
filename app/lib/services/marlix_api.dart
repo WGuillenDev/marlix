@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
@@ -53,6 +54,17 @@ class MarlixApi {
     body: {'message': message, 'mode': mode.name},
     authenticated: true,
     parse: ChatResponse.fromJson,
+  );
+
+  /// `POST /v1/transcribe` (S6-9): the text of what the person said. [wav] is
+  /// 16 kHz mono 16-bit PCM in a WAV file. Empty when nothing was understood.
+  Future<String> transcribe(Uint8List wav) => _send(
+    'POST',
+    '/v1/transcribe',
+    bytes: wav,
+    contentType: 'audio/wav',
+    authenticated: true,
+    parse: (json) => json.requireString('text'),
   );
 
   /// `GET /v1/history`: the newest page, or the one before [before], a cursor
@@ -117,6 +129,8 @@ class MarlixApi {
     String path, {
     required T Function(Map<String, Object?> json)? parse,
     Map<String, Object?>? body,
+    Uint8List? bytes,
+    String? contentType,
     Map<String, String>? query,
     bool authenticated = false,
   }) async {
@@ -130,6 +144,9 @@ class MarlixApi {
     if (body != null) {
       request.headers['Content-Type'] = 'application/json';
       request.body = jsonEncode(body);
+    } else if (bytes != null) {
+      request.headers['Content-Type'] = contentType ?? 'application/octet-stream';
+      request.bodyBytes = bytes;
     }
 
     final http.Response response;
