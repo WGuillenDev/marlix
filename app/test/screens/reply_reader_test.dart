@@ -121,6 +121,78 @@ void main() {
     expect(find.text('marlix está hablando'), findsNothing);
   });
 
+  testWidgets('the bar says the voice is being prepared until the first sound', (tester) async {
+    final voices = _Voices()
+      ..supertonic.startHold = Completer<void>()
+      ..supertonic.hold = Completer<void>();
+    final backend = await openChat(
+      tester,
+      overrides: voices.overrides,
+      savedPreferences: _readAloud,
+    );
+    await _ask(tester, backend, 'Cuéntame más.');
+
+    expect(find.text('Preparando la voz…'), findsOneWidget);
+    expect(find.text('marlix está hablando'), findsNothing);
+
+    voices.supertonic.startHold!.complete();
+    await _settle(tester);
+    expect(find.text('Preparando la voz…'), findsNothing);
+    expect(find.text('marlix está hablando'), findsOneWidget);
+  });
+
+  testWidgets('stop works while the voice is being prepared', (tester) async {
+    final voices = _Voices()..supertonic.startHold = Completer<void>();
+    final backend = await openChat(
+      tester,
+      overrides: voices.overrides,
+      savedPreferences: _readAloud,
+    );
+    await _ask(tester, backend, 'Cuéntame más.');
+    expect(find.text('Preparando la voz…'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Detener'));
+    await _settle(tester);
+
+    expect(voices.supertonic.stops, greaterThan(0));
+    expect(find.byTooltip('Detener'), findsNothing);
+    expect(find.text('Preparando la voz…'), findsNothing);
+  });
+
+  testWidgets('pausing while preparing and resuming goes back to preparing', (tester) async {
+    final voices = _Voices()..supertonic.startHold = Completer<void>();
+    final backend = await openChat(
+      tester,
+      overrides: voices.overrides,
+      savedPreferences: _readAloud,
+    );
+    await _ask(tester, backend, 'Cuéntame más.');
+
+    await tester.tap(find.byTooltip('Pausar'));
+    await _settle(tester);
+    expect(find.text('En pausa'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Continuar'));
+    await _settle(tester);
+    expect(find.text('Preparando la voz…'), findsOneWidget);
+  });
+
+  testWidgets('if the voice fails before sounding the bar goes away', (tester) async {
+    final voices = _Voices();
+    voices.supertonic.scripts.add([Exception('no model')]);
+    voices.native.scripts.add([Exception('no voice')]);
+    final backend = await openChat(
+      tester,
+      overrides: voices.overrides,
+      savedPreferences: _readAloud,
+    );
+    await _ask(tester, backend, 'Cuéntame más.');
+
+    expect(find.text('Preparando la voz…'), findsNothing);
+    expect(find.byTooltip('Detener'), findsNothing);
+    expect(find.text('Cuéntame más.'), findsOneWidget);
+  });
+
   testWidgets('the person can pause, resume and stop', (tester) async {
     final voices = _Voices()..supertonic.hold = Completer<void>();
     final backend = await openChat(
@@ -292,7 +364,7 @@ void main() {
 
       await _ask(tester, backend, 'Cuéntame más.');
 
-      expect(find.text('marlix está hablando'), findsOneWidget);
+      expect(find.text('Preparando la voz…'), findsOneWidget);
       expect(_avatar(tester).state, AvatarState.idle);
     });
 

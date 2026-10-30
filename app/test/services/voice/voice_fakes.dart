@@ -104,6 +104,9 @@ class FakeEngine implements MeasurableVoiceEngine, PrefetchingVoiceEngine {
   /// While set, `speak` stays open until it completes: a long sentence.
   Completer<void>? hold;
 
+  /// While set, the first sound waits until it completes: a slow synthesis.
+  Completer<void>? startHold;
+
   @override
   Future<void> prepare() async {
     prepared++;
@@ -134,6 +137,10 @@ class FakeEngine implements MeasurableVoiceEngine, PrefetchingVoiceEngine {
     final controller = StreamController<VoiceEvent>();
     unawaited(() async {
       for (final step in script) {
+        if (step is VoiceStarted && startHold != null) {
+          await startHold!.future;
+          if (_stopped) break;
+        }
         if (step is VoiceFinished && hold != null) {
           // A long sentence: it is still being said until the hold is released.
           await hold!.future;
@@ -166,6 +173,7 @@ class FakeEngine implements MeasurableVoiceEngine, PrefetchingVoiceEngine {
     _stopped = true;
     // Stopping an engine that is not speaking changes nothing.
     if (_speaking && hold != null && !hold!.isCompleted) hold!.complete();
+    if (_speaking && startHold != null && !startHold!.isCompleted) startHold!.complete();
   }
 
   @override
