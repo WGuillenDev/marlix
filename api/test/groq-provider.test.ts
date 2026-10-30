@@ -175,4 +175,54 @@ describe('parseRetryAfterSeconds', () => {
     assert.equal(parseRetryAfterSeconds(new Headers()), 10);
     assert.equal(parseRetryAfterSeconds(new Headers({ 'x-ratelimit-reset-tokens': 'soon' })), 10);
   });
+
+  describe('stream (S6-10)', () => {
+    const chunk = (delta: object) =>
+      `data: ${JSON.stringify({
+        id: 'chatcmpl-1',
+        object: 'chat.completion.chunk',
+        created: 0,
+        model: 'test-model',
+        choices: [{ index: 0, delta, finish_reason: null }],
+      })}\n\n`;
+    const sse = (...deltas: object[]) =>
+      new Response([...deltas.map(chunk), 'data: [DONE]\n\n'].join(''), {
+        status: 200,
+        headers: { 'content-type': 'text/event-stream' },
+      });
+    const collect = async (pieces: AsyncIterable<string>) => {
+      const all: string[] = [];
+      for await (const piece of pieces) all.push(piece);
+      return all;
+    };
+
+    it('yields the text pieces and asks Groq for a stream', async () => {
+      const { provider, requests } = createProvider(() =>
+        sse({ role: 'assistant', content: '' }, { content: '¡Qué ' }, { reasoning: 'hm' }, { content: 'dicha!' }),
+      );
+
+      const pieces = await collect(provider.stream({ messages, maxOutputTokens: 256 }));
+
+      assert.deepEqual(pieces, ['¡Qué ', 'dicha!']);
+      const body = (await requests[0]!.json()) as any;
+      assert.equal(body.stream, true);
+      assert.equal(body.max_completion_tokens, 256);
+      assert.equal(body.reasoning_effort, 'low');
+    });
+
+    it('turns a Groq error into an LlmError without the key', async () => {
+      const { provider } = createProvider(() => jsonResponse(401, { error: { code: 'invalid_api_key' } }));
+      await rejectsWith(collect(provider.stream({ messages })), 'authentication');
+    });
+
+    it('shares the wait after a 429 with the calls that are not streamed', async () => {
+      const { provider, requests } = createProvider(() =>
+        jsonResponse(429, { error: { code: 'rate_limit_exceeded' } }, { 'retry-after': '30' }),
+      );
+
+      await rejectsWith(collect(provider.stream({ messages })), 'rate_limited');
+      await rejectsWith(provider.complete({ messages }), 'rate_limited');
+      assert.equal(requests.length, 1, 'the second call did not reach Groq');
+    });
+  });
 });

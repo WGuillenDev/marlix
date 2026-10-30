@@ -16,6 +16,8 @@ import { createFakeProfiles } from './memory-profiles.js';
 import type { Transcriber } from '../src/services/transcription/transcriber.js';
 import { createMemoryUsageStore } from './memory-usage-store.js';
 
+const STREAM_PIECE = 7;
+
 /** An LlmProvider that records every request and answers with `respond`. */
 export function createFakeLlm(
   respond: (request: LlmCompletionRequest) => string | Promise<string> = () => '¡Qué dicha!',
@@ -28,6 +30,12 @@ export function createFakeLlm(
       requests.push(request);
       return { content: await respond(request) };
     },
+    // Small pieces, so sentences get cut across them like in a real stream.
+    async *stream(request) {
+      requests.push(request);
+      const reply = await respond(request);
+      for (let i = 0; i < reply.length; i += STREAM_PIECE) yield reply.slice(i, i + STREAM_PIECE);
+    },
   };
   return { llm, requests };
 }
@@ -37,6 +45,9 @@ export function failingLlm(error: LlmError): LlmProvider {
     name: 'fake',
     model: 'fake-model',
     complete: () => Promise.reject(error),
+    async *stream() {
+      throw error;
+    },
   };
 }
 
