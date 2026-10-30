@@ -78,6 +78,27 @@ void main() {
     expect(find.byTooltip('Pausar'), findsNothing);
   });
 
+  testWidgets('a streamed reply is read sentence by sentence and not read again when complete', (
+    tester,
+  ) async {
+    final voices = _Voices();
+    final backend = await openChat(
+      tester,
+      overrides: voices.overrides,
+      savedPreferences: _readAloud,
+    );
+
+    await type(tester, 'Hola');
+    await tester.tap(sendButton);
+    await tester.pump();
+    backend.answerStreamed('Hola', ['¡Qué dicha!', 'Contame más.']);
+    await _settle(tester);
+
+    expect(voices.supertonic.spoken, ['¡Qué dicha!', 'Contame más.']);
+    expect(find.text('¡Qué dicha! Contame más.'), findsOneWidget);
+    expect(backend.modes, ['voice']);
+  });
+
   testWidgets('with the setting on the reply is asked in voice mode and read aloud', (
     tester,
   ) async {
@@ -273,6 +294,36 @@ void main() {
 
       expect(find.text('marlix está hablando'), findsOneWidget);
       expect(_avatar(tester).state, AvatarState.idle);
+    });
+
+    testWidgets('a streamed reply keeps the mouth moving after the reply is complete', (
+      tester,
+    ) async {
+      final voices = _Voices()
+        ..supertonic.hold = Completer<void>()
+        ..supertonic.scripts.add([
+          const VoiceStarted(VoiceEngineKind.supertonic),
+          const VoiceLevel(0.9),
+          const VoiceFinished(),
+        ]);
+      final backend = await openChat(
+        tester,
+        overrides: voices.overrides,
+        savedPreferences: _readAloud,
+      );
+
+      await type(tester, 'Hola');
+      await tester.tap(sendButton);
+      await tester.pump();
+      backend.answerStreamed('Hola', ['¡Qué dicha!', 'Contame más.']);
+      await _settle(tester);
+
+      expect(
+        find.text('¡Qué dicha! Contame más.'),
+        findsOneWidget,
+        reason: 'the reply is complete',
+      );
+      expect(_avatar(tester).state, AvatarState.speaking);
     });
 
     testWidgets('a pause closes the mouth and resuming opens it again', (tester) async {

@@ -161,7 +161,8 @@ class _VoiceModeScreenState extends ConsumerState<VoiceModeScreen> with WidgetsB
     final phase = conversationPhase(
       mode: mode,
       speech: speech,
-      thinking: chat.sending,
+      // The reply is still being written while its first sentences are spoken.
+      thinking: chat.sending && reading == Reading.idle,
       reading: reading,
     );
     final hint = _hint(phase, speech, chat.limitReached);

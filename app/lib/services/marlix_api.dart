@@ -56,6 +56,100 @@ class MarlixApi {
     parse: ChatResponse.fromJson,
   );
 
+  /// `POST /v1/chat` in voice mode as a stream (S6-10): [onSentence] gets each
+  /// sentence of the reply as soon as the backend has reviewed it, and the
+  /// result is the complete reply, like [sendMessage]'s. A backend that answers
+  /// with plain JSON works too; it just never calls [onSentence].
+  Future<ChatResponse> sendVoiceMessage(
+    String message, {
+    required void Function(String sentence) onSentence,
+  }) async {
+    const label = 'POST /v1/chat';
+    final streamed = await _open(
+      'POST',
+      '/v1/chat',
+      body: {'message': message, 'mode': ChatMode.voice.name},
+      authenticated: true,
+      accept: 'text/event-stream',
+    );
+    if (!(streamed.headers['content-type'] ?? '').startsWith('text/event-stream')) {
+      return _finish(streamed, label, ChatResponse.fromJson);
+    }
+
+    final result = Completer<ChatResponse>();
+    void fail(Object error) {
+      if (!result.isCompleted) result.completeError(error);
+    }
+
+    var eventName = 'message';
+    final eventData = <String>[];
+    void handle(String name, String raw) {
+      try {
+        final data = _decodeEvent(raw, label);
+        switch (name) {
+          case 'sentence':
+            onSentence(data.requireString('text'));
+          case 'done' || 'crisis':
+            if (!result.isCompleted) result.complete(ChatResponse.fromJson(data));
+          case 'error':
+            fail(_toError(data, statusCode: 503));
+        }
+      } on InvalidJsonException catch (error) {
+        fail(InvalidResponseException('$label: $error'));
+      } on ApiException catch (error) {
+        fail(error);
+      }
+    }
+
+    // A silence longer than [timeout] between two pieces fails it, so a lost
+    // connection does not wait for ever.
+    final subscription = streamed.stream
+        .timeout(timeout, onTimeout: (sink) => sink.addError(TimeoutException('quiet')))
+        .transform(utf8.decoder)
+        .transform(const LineSplitter())
+        .listen(
+          (line) {
+            if (line.isEmpty) {
+              if (eventData.isNotEmpty) handle(eventName, eventData.join('\n'));
+              eventName = 'message';
+              eventData.clear();
+            } else if (line.startsWith('event:')) {
+              eventName = line.substring(6).trim();
+            } else if (line.startsWith('data:')) {
+              eventData.add(line.substring(5).trimLeft());
+            }
+          },
+          onError: (Object error) => fail(switch (error) {
+            TimeoutException() => ApiTimeoutException(
+              '$label went quiet for more than ${timeout.inSeconds} s',
+            ),
+            SocketException(:final message) => NetworkException('$label: $message'),
+            http.ClientException(:final message) => NetworkException('$label: $message'),
+            _ => error,
+          }),
+          onDone: () =>
+              fail(NetworkException('$label: the stream ended before the reply was complete')),
+          cancelOnError: true,
+        );
+    try {
+      return await result.future;
+    } finally {
+      // Not awaited: cancelling the subscription of a stream that already ended
+      // may never answer.
+      unawaited(subscription.cancel());
+    }
+  }
+
+  Map<String, Object?> _decodeEvent(String data, String request) {
+    try {
+      final decoded = jsonDecode(data);
+      if (decoded is Map<String, Object?>) return decoded;
+    } on FormatException {
+      // Falls through to the error below.
+    }
+    throw InvalidResponseException('$request sent an event that is not a JSON object');
+  }
+
   /// `POST /v1/transcribe` (S6-9): the text of what the person said. [wav] is
   /// 16 kHz mono 16-bit PCM in a WAV file. Empty when nothing was understood.
   Future<String> transcribe(Uint8List wav) => _send(
@@ -133,9 +227,33 @@ class MarlixApi {
     String? contentType,
     Map<String, String>? query,
     bool authenticated = false,
+  }) async => _finish(
+    await _open(
+      method,
+      path,
+      body: body,
+      bytes: bytes,
+      contentType: contentType,
+      query: query,
+      authenticated: authenticated,
+    ),
+    '$method $path',
+    parse,
+  );
+
+  /// Sends the request and returns the answer as soon as its headers arrive.
+  Future<http.StreamedResponse> _open(
+    String method,
+    String path, {
+    Map<String, Object?>? body,
+    Uint8List? bytes,
+    String? contentType,
+    Map<String, String>? query,
+    bool authenticated = false,
+    String accept = 'application/json',
   }) async {
     final request = http.Request(method, _baseUrl.resolve(path).replace(queryParameters: query))
-      ..headers['Accept'] = 'application/json';
+      ..headers['Accept'] = accept;
     if (authenticated) {
       if (_accessToken?.call() case final token?) {
         request.headers['Authorization'] = 'Bearer $token';
@@ -149,9 +267,8 @@ class MarlixApi {
       request.bodyBytes = bytes;
     }
 
-    final http.Response response;
     try {
-      response = await http.Response.fromStream(await _client.send(request).timeout(timeout));
+      return await _client.send(request).timeout(timeout);
     } on TimeoutException {
       throw ApiTimeoutException('$method $path took more than ${timeout.inSeconds} s');
     } on SocketException catch (error) {
@@ -159,15 +276,33 @@ class MarlixApi {
     } on http.ClientException catch (error) {
       throw NetworkException('$method $path: ${error.message}');
     }
+  }
+
+  /// Reads a whole answer and turns it into the result, or the error it carries.
+  Future<T> _finish<T>(
+    http.StreamedResponse streamed,
+    String label,
+    T Function(Map<String, Object?> json)? parse,
+  ) async {
+    final http.Response response;
+    try {
+      response = await http.Response.fromStream(streamed);
+    } on SocketException catch (error) {
+      throw NetworkException('$label: ${error.message}');
+    } on http.ClientException catch (error) {
+      throw NetworkException('$label: ${error.message}');
+    }
 
     final failed = response.statusCode < 200 || response.statusCode >= 300;
     if (parse == null && !failed) return null as T;
-    final json = _decode(response, '$method $path');
-    if (failed) throw _toError(response, json);
+    final json = _decode(response, label);
+    if (failed) {
+      throw _toError(json, statusCode: response.statusCode, retryAfter: _retryAfter(response));
+    }
     try {
       return parse!(json);
     } on InvalidJsonException catch (error) {
-      throw InvalidResponseException('$method $path: $error');
+      throw InvalidResponseException('$label: $error');
     }
   }
 
@@ -183,7 +318,11 @@ class MarlixApi {
     );
   }
 
-  ApiErrorException _toError(http.Response response, Map<String, Object?> json) {
+  ApiErrorException _toError(
+    Map<String, Object?> json, {
+    required int statusCode,
+    Duration? retryAfter,
+  }) {
     try {
       final error = json.requireObject('error');
       final code = error.requireString('code');
@@ -191,8 +330,6 @@ class MarlixApi {
       final details = error['details'] is Map<String, Object?>
           ? error['details']! as Map<String, Object?>
           : const <String, Object?>{};
-      final retryAfter = _retryAfter(response);
-
       return switch (code) {
         'VALIDATION_ERROR' => ValidationException(message: message, fields: _fields(details)),
         'UNAUTHORIZED' => UnauthorizedException(message: message),
@@ -208,10 +345,10 @@ class MarlixApi {
           retryAfter: retryAfter ?? const Duration(seconds: 60),
         ),
         'LLM_UNAVAILABLE' => LlmUnavailableException(message: message, retryAfter: retryAfter),
-        _ => UnexpectedApiException(statusCode: response.statusCode, code: code, message: message),
+        _ => UnexpectedApiException(statusCode: statusCode, code: code, message: message),
       };
     } on InvalidJsonException catch (error) {
-      throw InvalidResponseException('Error ${response.statusCode} with an invalid body: $error');
+      throw InvalidResponseException('Error $statusCode with an invalid body: $error');
     }
   }
 

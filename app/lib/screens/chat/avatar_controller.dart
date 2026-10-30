@@ -47,6 +47,8 @@ class AvatarController extends Notifier<AvatarState> {
       if (next.sending) {
         _show(AvatarState.thinking);
       } else if (previous?.sending ?? false) {
+        // The voice began before the reply was complete and keeps its mouth.
+        if (state == AvatarState.speaking) return;
         // Only the moment the reply arrives, not every later change of the chat.
         final last = next.entries.lastOrNull;
         _show(

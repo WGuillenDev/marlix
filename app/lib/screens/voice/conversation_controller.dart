@@ -115,11 +115,12 @@ class ConversationController extends Notifier<ConversationMode> {
   /// may have opened while marlix was still speaking, and nothing else tells the
   /// avatar when it finishes.
   void _followPhase() {
+    final reading = ref.read(replyReaderProvider);
     final phase = conversationPhase(
       mode: state,
       speech: ref.read(speechControllerProvider),
-      thinking: ref.read(chatControllerProvider).sending,
-      reading: ref.read(replyReaderProvider),
+      thinking: ref.read(chatControllerProvider).sending && reading == Reading.idle,
+      reading: reading,
     );
     final avatar = ref.read(avatarStateProvider.notifier);
     if (phase == ConversationPhase.listening &&

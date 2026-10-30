@@ -257,6 +257,28 @@ class FakeBackend {
         }),
       );
 
+  /// The answer of a voice reply as a stream: its sentences and then the complete reply.
+  void answerStreamed(String userText, List<String> sentences, {int remaining = 86}) {
+    String event(String name, Object data) => 'event: $name\ndata: ${jsonEncode(data)}\n\n';
+    reply.complete(
+      http.Response(
+        [
+          for (var i = 0; i < sentences.length; i++)
+            event('sentence', {'index': i, 'text': sentences[i]}),
+          event('done', {
+            'type': 'reply',
+            'tone': 'neutral',
+            'userMessage': messageJson('user', userText),
+            'reply': messageJson('assistant', sentences.join(' ')),
+            'usage': usageJson(remaining: remaining),
+          }),
+        ].join(),
+        200,
+        headers: {'content-type': 'text/event-stream; charset=utf-8'},
+      ),
+    );
+  }
+
   void answerCrisis(String userText, String crisisText) => reply.complete(
     jsonResponse({
       'type': 'crisis',

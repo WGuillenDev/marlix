@@ -27,11 +27,24 @@ class ReplyReader extends Notifier<Reading> {
   /// move; a pause before that leaves nothing to resume on screen.
   var _soundStarted = false;
 
+  /// The reply of the turn that is being answered is already being read as it
+  /// arrives (S6-10), so it is not read again when it is complete.
+  var _readLive = false;
+
   @override
   Reading build() {
     ref.onDispose(() => unawaited(_reading?.cancel()));
+    ref.listen(liveReplyProvider, (_, sentences) {
+      if (sentences == null) return;
+      _readLive = true;
+      unawaited(_start((voice) => voice.speakSentences(sentences)));
+    });
     ref.listen(chatControllerProvider, (previous, next) {
       if (!(previous?.sending ?? false) || next.sending) return;
+      if (_readLive) {
+        _readLive = false;
+        return;
+      }
       final last = next.entries.lastOrNull;
       // A crisis reply stays on screen with its numbers and is not read.
       if (last is MarlixEntry && ref.read(repliesAreSpokenProvider)) {
@@ -62,7 +75,9 @@ class ReplyReader extends Notifier<Reading> {
   }
 
   /// Reads [text], cutting whatever was being read.
-  Future<void> read(String text) async {
+  Future<void> read(String text) => _start((voice) => voice.speak(text));
+
+  Future<void> _start(Stream<VoiceEvent> Function(VoiceController voice) speak) async {
     await _reading?.cancel();
     _pausedByApp = false;
     _soundStarted = false;
@@ -76,7 +91,7 @@ class ReplyReader extends Notifier<Reading> {
       }
     }
 
-    reading = _voice.speak(text).listen(_onEvent, onError: (Object _) => end(), onDone: end);
+    reading = speak(_voice).listen(_onEvent, onError: (Object _) => end(), onDone: end);
     _reading = reading;
   }
 

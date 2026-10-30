@@ -60,6 +60,13 @@ class VoiceController extends Notifier<VoiceStatus> {
     yield* _service.speak(text);
   }
 
+  /// Speaks a reply that is still being written, sentence by sentence as they
+  /// arrive (S6-10).
+  Stream<VoiceEvent> speakSentences(Stream<String> sentences) async* {
+    if (state is VoiceIdle) await start();
+    yield* _service.speakSentences(sentences);
+  }
+
   /// Holds the speech where it is; [resume] continues it.
   Future<void> pause() => _service.pause();
 

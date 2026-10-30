@@ -611,4 +611,100 @@ void main() {
     expect(rig.supertonic, isNot(same(first)));
     expect(rig.status, readyWith(VoiceEngineKind.supertonic));
   });
+
+  group('speaking a reply that is still being written (S6-10)', () {
+    Future<void> flush() async {
+      for (var i = 0; i < 5; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+    }
+
+    test('speaks each sentence as it arrives and finishes once the reply is complete', () async {
+      final rig = await Rig.create();
+      await rig.service.start();
+      final sentences = StreamController<String>();
+      final events = <VoiceEvent>[];
+
+      final speaking = rig.service.speakSentences(sentences.stream).forEach(events.add);
+      sentences.add('¡Qué dicha!');
+      await flush();
+
+      expect(rig.supertonic.spoken, ['¡Qué dicha!'], reason: 'it does not wait for the rest');
+      expect(events.whereType<VoiceStarted>(), hasLength(1));
+      expect(events.whereType<VoiceFinished>(), isEmpty, reason: 'more may still come');
+
+      sentences.add('Contame más.');
+      await flush();
+      expect(rig.supertonic.spoken, ['¡Qué dicha!', 'Contame más.']);
+
+      await sentences.close();
+      await speaking;
+      expect(events.last, isA<VoiceFinished>());
+      expect(events.whereType<VoiceStarted>(), hasLength(1));
+    });
+
+    test('cuts the first sentence at its commas so the first sound comes sooner', () async {
+      final rig = await Rig.create();
+      await rig.service.start();
+      final sentences = StreamController<String>();
+
+      final speaking = rig.service.speakSentences(sentences.stream).drain<void>();
+      sentences
+        ..add('Mae, qué dicha, contame.')
+        ..add('Aquí estoy, tranquila.');
+      await sentences.close();
+      await speaking;
+
+      expect(rig.supertonic.spoken, ['Mae,', 'qué dicha,', 'contame.', 'Aquí estoy, tranquila.']);
+    });
+
+    test('a sentence that is already here is made ready while the one before is said', () async {
+      final rig = await Rig.create();
+      await rig.service.start();
+      rig.supertonic.hold = Completer<void>();
+      final sentences = StreamController<String>();
+
+      final speaking = rig.service.speakSentences(sentences.stream).drain<void>();
+      sentences
+        ..add('Primera.')
+        ..add('Segunda.');
+      await flush();
+
+      expect(rig.supertonic.warmed, ['Segunda.']);
+
+      rig.supertonic.hold!.complete();
+      await sentences.close();
+      await speaking;
+    });
+
+    test('stopping ends it even while it waits for the next sentence', () async {
+      final rig = await Rig.create();
+      await rig.service.start();
+      final sentences = StreamController<String>();
+      final events = <VoiceEvent>[];
+
+      final speaking = rig.service.speakSentences(sentences.stream).forEach(events.add);
+      sentences.add('Hola.');
+      await flush();
+      await rig.service.stop();
+      await speaking.timeout(const Duration(seconds: 1));
+
+      expect(events.whereType<VoiceFinished>(), isEmpty);
+      sentences.add('Ya no se dice.');
+      await flush();
+      expect(rig.supertonic.spoken, ['Hola.']);
+    });
+
+    test('a reply that never gets a sentence ends without saying anything', () async {
+      final rig = await Rig.create();
+      await rig.service.start();
+      final sentences = StreamController<String>();
+
+      final speaking = rig.service.speakSentences(sentences.stream).toList();
+      await sentences.close();
+
+      expect(await speaking, [isA<VoiceFinished>()]);
+      expect(rig.supertonic.spoken, isEmpty);
+    });
+  });
 }
