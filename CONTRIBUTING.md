@@ -20,6 +20,15 @@ The repository is public: no secrets or real user data in it, ever.
 
 `main` must always build and run. It only receives changes through pull requests, and GitHub blocks the merge until the [CI](.github/workflows/ci.yml) passes: the backend's type check, tests and build, the app's format check, analysis and tests, and the database privilege and RLS tests.
 
+## Database migrations
+
+A change to the database is a file in [`docs/migrations/`](docs/migrations/) named `YYYY-MM-DD-what-it-does.sql`, written to run once, in a transaction, and mirrored in [`docs/schema.sql`](docs/schema.sql). Production does not apply it by itself: Render deploys the backend, but nothing runs the SQL. A backend that needs a function or column the database lacks keeps answering and fails quietly (that is how the daily cap went unenforced until S6-16).
+
+1. Add the checks of the new migration to [`docs/verify-migrations.sql`](docs/verify-migrations.sql), in the same pull request. The CI runs it against `schema.sql` and fails if anything is `MISSING`.
+2. **Before merging** a pull request with a migration, open the Supabase project's [SQL Editor](https://supabase.com/dashboard/project/_/sql/new) and run the migration file. If the backend needs it, this must happen before the deploy.
+3. In the same editor, run `docs/verify-migrations.sql`. Every row must say `ok`; a `MISSING` row names the migration that was not applied.
+4. Merge. After the deploy, `GET /health` must answer `{"status": "ok"}`; `"degraded"` with `usage_counter` means the backend cannot count replies, which is what a missing `record_interaction` looks like.
+
 ## Branches
 
 | Type | Use | Example |
