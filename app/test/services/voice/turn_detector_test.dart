@@ -40,7 +40,11 @@ void main() {
       final detector = TurnDetector();
 
       expect(feed(detector, [frames(3000, 0.7, 0.2)]), isEmpty, reason: 'not sure enough');
-      expect(feed(detector, [frames(3000, 0.95, 0.02)]), isEmpty, reason: 'too quiet, like a voice far away');
+      expect(
+        feed(detector, [frames(3000, 0.95, 0.02)]),
+        isEmpty,
+        reason: 'too quiet, like a voice far away',
+      );
     });
 
     test('a click shorter than the minimum is not a turn', () {
