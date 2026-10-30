@@ -282,16 +282,16 @@ Sends a message to marlix and returns the reply. It runs the full flow of the [s
 
 The reply is the fixed crisis text from configuration. `resources` has the same shape as in `GET /v1/help-resources`, so the app can show a button that dials directly. The message never reached the conversation model.
 
-**Streaming** (`Accept: text/event-stream`)
+**Streaming** (`Accept: text/event-stream`, voice mode only)
 
-Voice mode asks for the reply as a stream so the avatar can start speaking with the first sentence (US-11). The response is [Server-Sent Events](https://html.spec.whatwg.org/multipage/server-sent-events.html), and each event's `data` is JSON:
+Voice mode asks for the reply as a stream so the avatar can start speaking with the first sentence while the model keeps writing (US-11, S6-10). `"text"` mode ignores the header and answers JSON, because a text reply keeps its paragraphs. The response is [Server-Sent Events](https://html.spec.whatwg.org/multipage/server-sent-events.html), and each event's `data` is JSON:
 
 | Event | `data` | When |
 |---|---|---|
-| `sentence` | `{ "index": 0, "text": "¡Qué dicha!" }` | Each sentence, once it passed the review (S2-4). |
+| `sentence` | `{ "index": 0, "text": "¡Qué dicha!" }` | Each sentence, once it is complete, cleaned like a voice reply (S6-3) and passed the review (S2-4). |
 | `done` | Same body as the JSON `200` reply, with the full saved reply. | At the end. The stream closes. |
 | `crisis` | Same body as the JSON crisis reply. | Instead of any `sentence`. The stream closes. |
-| `error` | Same body as an error response. | If something fails before `done`. The stream closes. |
+| `error` | Same body as an error response. | If the model fails after the first `sentence`. The stream closes. |
 
 ~~~text
 event: sentence
@@ -304,19 +304,15 @@ event: done
 data: {"type":"reply","userMessage":{…},"reply":{…},"usage":{…}}
 ~~~
 
-Checks that happen before the model (auth, validation, daily limit) still answer with a normal JSON error and HTTP status, not with a stream. If a sentence fails the review, the stream sends an `error` or a safe fallback instead of that sentence; it never sends text that failed the review.
+Everything that can fail before the first event still answers with a normal JSON error and HTTP status, not with a stream: validation, auth, the daily limit and a model that fails before saying anything (`503`, with `Retry-After` when Groq asks for it). The stream only opens with its first event.
+
+A sentence that fails the review is never sent. The safe reply is sent as the next `sentence` instead, the rest of the model's reply is dropped, and the stream ends with `done`. The sentences already sent passed the review, so `reply.content` of `done` is those sentences followed by the safe reply, exactly what the person heard. If the model fails after sending sentences, the stream ends with `error` and the turn is neither saved nor counted. If the app disconnects, the model call is cancelled and nothing is saved. A model failure is retried only while nothing was sent.
 
 Both messages of a turn are saved before the reply is returned, and `userMessage.id` and `reply.id` are the ids the history gives them. A reply that cannot be saved is not returned: the answer is `500 INTERNAL_ERROR`, and nothing is counted. The one exception is a crisis, which is always answered with its fixed reply even if saving fails; in that case it is missing from the history. `interruptedMessageId` must be the id of one of the caller's own assistant messages, otherwise `404 NOT_FOUND`; that message is then marked `interrupted` in the history. A crisis ignores it.
 
 **What the model sees.** The system prompt, then the last messages of the user's open conversation (16 by default, `CHAT_CONTEXT_MESSAGES`), then the new message. The rest of the history is only for the app to show. The messages of a crisis, the user's and the fixed reply, are never part of it ([decision](decisions.md)). If the context cannot be read, the answer is `500 INTERNAL_ERROR` before the model is called.
 
 **Errors:** `400 VALIDATION_ERROR`, `401 UNAUTHORIZED`, `404 NOT_FOUND` (unknown `interruptedMessageId`), `500 INTERNAL_ERROR`, `429 DAILY_LIMIT_REACHED`, `429 RATE_LIMITED`, `503 LLM_UNAVAILABLE`. A `503` caused by Groq's quota comes with a `Retry-After` header in seconds.
-
-**Implementation status.** The endpoint is built in steps; until each card is done, it differs from the full contract like this:
-
-| Part | Until | Meanwhile |
-|---|---|---|
-| Streaming | S6-10 | Only the JSON reply. |
 
 ---
 
