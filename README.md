@@ -1,39 +1,166 @@
-# marlix 🐾
+<p align="center">
+  <img src="app/assets/avatar/marlix.png" alt="marlix, the avatar" width="120">
+</p>
 
-[![CI](https://github.com/WGuillenDev/marlix/actions/workflows/ci.yml/badge.svg)](https://github.com/WGuillenDev/marlix/actions/workflows/ci.yml)
+<h1 align="center">marlix</h1>
 
-Open source mobile app for conversational companionship with an AI avatar.
+<p align="center">
+  Open source mobile app for conversational companionship with an AI avatar that listens, speaks and remembers.
+</p>
 
-marlix is designed for people facing social isolation who need accessible emotional support. It keeps them company without fostering dependency: it encourages users to connect with the people in their lives.
+<p align="center">
+  <a href="https://github.com/WGuillenDev/marlix/actions/workflows/ci.yml"><img src="https://github.com/WGuillenDev/marlix/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white" alt="Flutter">
+  <img src="https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white" alt="Dart">
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js">
+  <img src="https://img.shields.io/badge/Express_5-000000?style=for-the-badge&logo=express&logoColor=white" alt="Express 5">
+  <img src="https://img.shields.io/badge/Supabase-3FCF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase">
+  <img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL">
+  <img src="https://img.shields.io/badge/Groq-F55036?style=for-the-badge&logoColor=white" alt="Groq">
+  <img src="https://img.shields.io/badge/Render-46E3B7?style=for-the-badge&logo=render&logoColor=black" alt="Render">
+</p>
 
 > **marlix is not therapy and does not replace professional mental health care.**
 > In Costa Rica, call **9-1-1** (free, 24/7) for psychological support.
 
-## Status
+---
 
-🚧 Early development. Design (Sprint 0), the backend base (Sprint 1), security (Sprint 2), the chat app (Sprint 3), data and memory (Sprint 4) and the avatars (Sprint 5) are finished; see the [changelog](CHANGELOG.md). People sign up (18 or older) and sign in from the [app](#app), which chats with the [backend](#backend), [deployed](#deployment) with the [crisis filter](docs/crisis-protocol.md), the reply review and the usage limits. marlix keeps the conversation (messages are deleted after 90 days), remembers lasting facts about each person, and the person can see, edit and delete them or delete the whole account. The app has an animated avatar that follows the conversation, an onboarding with the consent, daily reminders without streaks, and the help screen with 9-1-1, also offline. The [CI](.github/workflows/ci.yml) tests the backend, the app and the database on every pull request. Voice comes in the next sprint, and the app is not shared yet. The [local database](#local-database) runs.
+## Screenshots
 
-## Stack
+<p align="center">
+  <img src="docs/screenshots/sign-in.png" alt="Sign-in screen with the marlix avatar" width="180">
+  <img src="docs/screenshots/welcome.png" alt="Onboarding welcome that says marlix and its voice are an AI" width="180">
+  <img src="docs/screenshots/chat.png" alt="Chat with marlix and the daily message counter" width="180">
+  <img src="docs/screenshots/voice-mode.png" alt="Full-screen voice mode listening to the person" width="180">
+</p>
 
-| Layer | Technology |
-|---|---|
-| Mobile app | Flutter (Android first) |
-| Backend | Node.js + TypeScript + Express |
-| Database and auth | Supabase (PostgreSQL) |
-| LLM | Groq |
-| Avatar voice (TTS) | Supertonic 3, on device |
-| Speech recognition | Whisper in Groq, through the backend |
+<p align="center">
+  <sub>Sign in · Onboarding with the AI notice · Chat · Voice mode. Taken on a Samsung Galaxy S24 Ultra.</sub>
+</p>
 
-## Repository structure
+---
 
-~~~
-marlix/
-├── app/                 # Flutter app
-├── api/                 # Node + TypeScript backend
-├── docs/                # Project documentation
-├── infra/               # Local development config (pgAdmin)
-└── docker-compose.yml   # Local database
-~~~
+## Description
+
+**marlix** keeps people company through conversation. It is designed for people facing social isolation who need accessible emotional support, and it does so without fostering dependency: it encourages them to connect with the people in their lives. The person can write or simply talk, and marlix answers with its own voice, generated on the phone, through an animated avatar inspired by Marley, a much-loved dog.
+
+Safety comes before the model: every message goes through a crisis filter before reaching the LLM, a person at risk gets a fixed reply with 9-1-1 first, and every reply of the model is reviewed before it reaches the person. The v1 is for personal and family use, free, with one avatar and zero operating cost, and it is ready to scale without rewriting code.
+
+---
+
+## Features
+
+| Module | What it does |
+| --- | --- |
+| **Chat** | Conversation with marlix, with a saved history paged by the backend. The model sees the last 16 messages of the open conversation and never the ones of a crisis. |
+| **Voice mode** | Full-screen conversation without buttons: a voice detector on the phone knows when the person stops talking, Whisper transcribes it, and marlix replies sentence by sentence while the answer is still being written. The person can interrupt it at any time. |
+| **marlix's voice** | Supertonic 3 runs on the phone, with natural pauses and the avatar's mouth following the volume. The native voice is the fallback. |
+| **Distilled memory** | When a conversation ends, a background job keeps lasting facts about the person. The person sees, edits and deletes them in "Lo que marlix sabe de mí". |
+| **Crisis filter** | Two layers before the model (keywords and an isolated classifier). A crisis gets the fixed reply with 9-1-1 and the model is never called. |
+| **Help screen** | 9-1-1 and other lines one tap away, also without internet. |
+| **Animated avatar** | Five states (resting, listening, thinking, speaking, happy) that follow the conversation. |
+| **Onboarding** | The AI notice, the reminder that marlix does not replace professional care, the explicit data consent, the microphone permission and the reminders offer, once per account. |
+| **Account and data** | Sign up (18 or older, enforced by the database), messages deleted after 90 days, and the whole account deleted in cascade on request. |
+
+### User experience
+
+- Daily reminders at the time the person chooses, with a different warm text each day and no streaks or counters, so they never guilt-trip.
+- A clear daily limit that warns when few messages are left and says when they renew.
+- Error states for no internet, a sleeping server and the daily limit, so the app never stays silent.
+- The avatar rests when the phone asks to remove animations.
+- Everything in Spanish, with the Costa Rican vocabulary passed to the transcription.
+
+---
+
+## Technologies
+
+| Technology | Use in the project |
+| --- | --- |
+| **Flutter + Riverpod** | Android app: chat, voice mode, avatar, onboarding and help screen. |
+| **Node.js 24 + Express 5 + TypeScript** | Backend in strict mode with ESM, validated with zod and tested with `node:test`. |
+| **Supabase (PostgreSQL)** | Accounts, history, memory and usage, with RLS on every table and minimum grants per role. |
+| **Groq** | The chat model, the crisis classifier, the memory extractor and Whisper, with Zero Data Retention on. |
+| **Supertonic 3** | marlix's voice, generated on the phone. |
+| **Silero VAD** | Voice and turn detection on the phone, so voice mode needs no buttons. |
+| **Render** | Hosting of the backend, deployed only when the CI passes. |
+| **GitHub Actions** | CI for the backend, the app and the database on every pull request. |
+
+### External services
+
+| Service | Purpose |
+| --- | --- |
+| [Groq](https://groq.com/) | LLM for the conversation (`openai/gpt-oss-120b`), the crisis classifier and the memory extractor, and Whisper for speech recognition. |
+| [Supabase](https://supabase.com/) | Auth and PostgreSQL database. |
+| [Render](https://render.com/) | Backend hosting on the free plan. |
+| [Hugging Face](https://huggingface.co/Supertone/supertonic-3) | Download of the Supertonic 3 voice model on first use. |
+
+---
+
+## Architecture
+
+```
+marlix
+ ┣ 📂 app                     Flutter app
+ ┃ ┣ 📂 lib
+ ┃ ┃ ┣ 📂 screens             Chat, voice mode, onboarding, help, settings and memories
+ ┃ ┃ ┣ 📂 services            API client, auth, voice (TTS, VAD, recording) and reminders
+ ┃ ┃ ┣ 📂 models              Typed data from the backend
+ ┃ ┃ ┗ 📂 widgets             The animated avatar and shared pieces
+ ┃ ┣ 📂 assets                Avatar layers, fonts and configuration
+ ┃ ┗ 📂 config                Backend URL and Supabase project per environment
+ ┣ 📂 api                     Node + TypeScript backend
+ ┃ ┣ 📂 src
+ ┃ ┃ ┣ 📂 routes              The v1 endpoints
+ ┃ ┃ ┣ 📂 services            LLM, crisis filter, chat, memory, usage and transcription
+ ┃ ┃ ┣ 📂 middleware          Session, security headers and errors
+ ┃ ┃ ┗ 📂 config              Environment validation and the system prompt
+ ┃ ┗ 📂 config                Help resources and usage plans
+ ┣ 📂 docs                    Design, contract, decisions, schema and migrations
+ ┣ 📂 infra                   Local development config (pgAdmin)
+ ┣ 📄 docker-compose.yml      Local database
+ ┗ 📄 render.yaml             Backend deployment
+```
+
+### Data flow
+
+```mermaid
+flowchart LR
+    P[Person] -- text --> A[Flutter app]
+    P -- voice --> V[Voice detector<br/>on the phone]
+    V --> A
+    A -- sign in --> SA[Supabase Auth]
+    A == HTTPS + session ==> B[Backend]
+    B -- audio --> W[Whisper on Groq]
+    B --> C{Crisis filter}
+    C -- risk --> F[Fixed reply<br/>with 9-1-1]
+    C -- normal --> L[LLM on Groq]
+    L --> R[Reply review]
+    R -- sentence by sentence --> A
+    A --> T[Supertonic 3<br/>on the phone]
+    T -- voice --> P
+    B --- DB[(PostgreSQL<br/>RLS)]
+```
+
+The full diagram, with where each key lives, is in [docs/architecture.md](docs/architecture.md).
+
+### Technical decisions
+
+- **The app never talks to the LLM:** only the backend holds the Groq key, and every message goes through the session check, the daily limit and the crisis filter first.
+- **Safety before the model:** a crisis never reaches the LLM; the reply is fixed and the activation is logged without content.
+- **Voice on the phone:** Supertonic 3 generates marlix's voice on the device, so speaking costs nothing and the text never leaves the phone to become audio.
+- **Echo handled by the phone:** marlix speaks through the call audio route, so the phone cancels its own voice and the microphone can stay open to let the person interrupt.
+- **Streaming for voice:** in voice mode the reply arrives by Server-Sent Events, one reviewed sentence at a time, and the first sound comes before the whole answer is written.
+- **Data the person controls:** RLS on every table, the backend writes with the service key, messages expire after 90 days and the memory can be edited or deleted.
+- **Zero operating cost:** Groq's free plan, Render's free plan, Supabase's free tier and voice on the device.
+
+Every choice, with the options that were discarded, is in [docs/decisions.md](docs/decisions.md).
+
+---
 
 ## Getting started
 
@@ -67,6 +194,7 @@ The app opens on the sign-in screen. Create an account there (you must be 18 or 
 | `flutter analyze` | Checks the code with the project's lint rules. |
 | `flutter test` | Runs the automated tests. The [CI](.github/workflows/ci.yml) also runs them, with the format check and `flutter analyze`, on every pull request. |
 | `flutter test integration_test --dart-define-from-file=config/local.json` | Calls every backend endpoint from the app on the emulator. It signs up its own throwaway account (`it-…@marlix.test`) and deletes it with `DELETE /v1/account` at the end, even if a test fails, so it leaves no data in the database. It sends two chat messages; one uses the Groq quota. |
+| `flutter build apk --release --dart-define-from-file=config/production.json` | Builds the release APK against production. Test voice mode on a release build too: R8 shrinks it and the debug build does not. |
 | `dart format lib test integration_test` | Formats the code (100 columns). |
 
 ### Backend
@@ -200,6 +328,27 @@ In pgAdmin the server **marlix (local)** is already registered; it asks for `POS
 
 Both services only listen on `127.0.0.1`, and the data lives in Docker volumes outside the repository.
 
+---
+
+## Project status
+
+```
+🟡 In development: Sprint 7 (closing) of 7
+```
+
+- [x] Sprint 0: design (user stories, use cases, wireframes, ERD, architecture, API contract and system prompt)
+- [x] Sprint 1: backend base on Render with the LLM layer
+- [x] Sprint 2: crisis filter, reply review and usage limits
+- [x] Sprint 3: the chat app and the help screen
+- [x] Sprint 4: accounts, history and distilled memory
+- [x] Sprint 5: the animated avatar, onboarding and daily reminders
+- [x] Sprint 6: voice, with marlix's own voice and a voice mode that can be interrupted
+- [ ] Sprint 7: tests, the signed APK, backups and monitoring
+
+The app is not shared yet. Every change by sprint is in the [changelog](CHANGELOG.md), and the [CI](.github/workflows/ci.yml) tests the backend, the app and the database on every pull request.
+
+---
+
 ## Documentation
 
 Design documents for v1, in the order they are usually read:
@@ -220,6 +369,8 @@ Design documents for v1, in the order they are usually read:
 
 Rules every change must follow are in [CONTRIBUTING.md](CONTRIBUTING.md); security reporting is in [SECURITY.md](SECURITY.md).
 
+---
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -231,3 +382,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 ### Third-party models
 
 marlix's voice is [Supertonic 3](https://huggingface.co/Supertone/supertonic-3) by Supertone Inc. (Copyright (c) 2026 Supertone Inc.). Its model weights are under the [OpenRAIL-M License](https://huggingface.co/Supertone/supertonic-3/blob/main/LICENSE), which allows commercial use and includes use restrictions that apply to anyone who uses the model; its sample code is MIT. The app downloads the model on first use; it is not part of this repository. See the [decision](docs/decisions.md#2026-10-21--voice-supertonic-3-on-the-phone-voice-f4-s6-1).
+
+---
+
+## Author
+
+**[WGuillenDev](https://github.com/WGuillenDev)**<br>
+Junior Software Engineer · Costa Rica
