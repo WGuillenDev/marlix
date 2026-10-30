@@ -89,13 +89,13 @@ begin
 end;
 $$;
 
--- Column-level UPDATE: only the onboarding and settings fields, and a memory's text.
-select pg_temp.expect('authenticated can update users.data_consent_at',
-  has_column_privilege('authenticated', 'public.users', 'data_consent_at', 'UPDATE'));
-select pg_temp.expect('authenticated can update users.onboarding_completed_at',
-  has_column_privilege('authenticated', 'public.users', 'onboarding_completed_at', 'UPDATE'));
-select pg_temp.expect('authenticated can update users.reminders_enabled',
-  has_column_privilege('authenticated', 'public.users', 'reminders_enabled', 'UPDATE'));
+-- Column-level UPDATE: no column of users, only a memory's text.
+select pg_temp.expect('authenticated cannot update users.data_consent_at',
+  not has_column_privilege('authenticated', 'public.users', 'data_consent_at', 'UPDATE'));
+select pg_temp.expect('authenticated cannot update users.onboarding_completed_at',
+  not has_column_privilege('authenticated', 'public.users', 'onboarding_completed_at', 'UPDATE'));
+select pg_temp.expect('authenticated cannot update users.reminders_enabled',
+  not has_column_privilege('authenticated', 'public.users', 'reminders_enabled', 'UPDATE'));
 select pg_temp.expect('authenticated cannot update users.plan',
   not has_column_privilege('authenticated', 'public.users', 'plan', 'UPDATE'));
 select pg_temp.expect('authenticated cannot update users.avatar_id',
@@ -325,16 +325,21 @@ select pg_temp.expect('Ana can read the catalogs',
   (select count(*) from public.avatars) >= 1 and (select count(*) from public.plan_limits) >= 1);
 
 -- Allowed changes on her own rows.
-update public.users set reminders_enabled = true;
 update public.memories set fact = 'Ana tiene una perrita';
-select pg_temp.expect('Ana updated her settings and her memory',
-  (select reminders_enabled from public.users) and (select fact from public.memories) = 'Ana tiene una perrita');
+select pg_temp.expect('Ana updated her memory',
+  (select fact from public.memories) = 'Ana tiene una perrita');
 
 -- Changes on Beto's rows silently affect nothing (RLS).
 update public.memories set fact = 'cambiado' where id = '00000000-0000-4000-8000-0000000000e2';
 delete from public.memories where id = '00000000-0000-4000-8000-0000000000e2';
 
 -- Operations without privilege are refused.
+select pg_temp.expect_denied('authenticated cannot clear their consent date',
+  'update public.users set data_consent_at = null');
+select pg_temp.expect_denied('authenticated cannot repeat the onboarding',
+  'update public.users set onboarding_completed_at = null');
+select pg_temp.expect_denied('authenticated cannot change their reminders flag',
+  'update public.users set reminders_enabled = true');
 select pg_temp.expect_denied('authenticated cannot change their plan',
   $sql$update public.users set plan = 'personal'$sql$);
 select pg_temp.expect_denied('authenticated cannot change their avatar',
