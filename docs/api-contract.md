@@ -86,12 +86,18 @@ When the crisis filter detects risk, `POST /v1/chat` answers **`200`** with `"ty
 
 ### `GET /health`
 
-**Public.** Tells whether the service is up. The uptime monitor calls it every 10 minutes (S7-6). It does not touch the database or Groq.
+**Public.** Tells whether the service is up. The uptime monitor calls it every 10 minutes (S7-6). It does not touch the database or Groq: it reports what the last real requests found.
 
 **Response `200`**
 
 ~~~json
 { "status": "ok" }
+~~~
+
+When the last attempt to count a reply failed (S6-16), it still answers `200`, so Render does not restart a service that a restart cannot fix, but says what is wrong. The next count that works clears it. The monitor must look for `"status":"ok"` in the body, not only for the status code.
+
+~~~json
+{ "status": "degraded", "problems": ["usage_counter"] }
 ~~~
 
 ---

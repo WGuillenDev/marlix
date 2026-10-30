@@ -7,7 +7,7 @@ import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
 import { requireSession, type SessionCheck } from './middleware/require-session.js';
 import { noStore, securityHeaders } from './middleware/security-headers.js';
 import { createChatRouter } from './routes/chat.js';
-import { healthRouter } from './routes/health.js';
+import { createHealthRouter } from './routes/health.js';
 import { createHelpResourcesRouter } from './routes/help-resources.js';
 import { createAccountRouter } from './routes/account.js';
 import { createHistoryRouter } from './routes/history.js';
@@ -91,15 +91,16 @@ export function createApp({
   // A chat message is at most 2,000 characters; anything far bigger is rejected.
   app.use(express.json({ limit: '16kb' }));
 
+  const usageLimiter = createUsageLimiter(plans, usage);
+
   // Public: the uptime monitor calls it.
-  app.use(healthRouter);
+  app.use(createHealthRouter(usageLimiter));
   // Public: the help screen must work without a session or token.
   app.use('/v1', noStore, createHelpResourcesRouter(crisisConfig));
 
   const crisisFilter = createCrisisFilter(
     crisisClassifier ? createAmbiguousClassifier(crisisClassifier) : undefined,
   );
-  const usageLimiter = createUsageLimiter(plans, usage);
   const chatService = createChatService(
     llm,
     crisisFilter,
