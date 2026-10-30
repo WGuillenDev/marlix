@@ -6,6 +6,7 @@ import { withRetry } from './retry.js';
 import type { LlmProvider } from './types.js';
 
 export { LlmError, type LlmErrorKind } from './errors.js';
+export { GroqTranscriber, TRANSCRIPTION_PROMPT } from './groq-transcriber.js';
 export type {
   LlmCompletion,
   LlmCompletionRequest,
