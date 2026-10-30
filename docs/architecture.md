@@ -16,7 +16,7 @@ flowchart TB
     end
 
     subgraph render["☁️ Backend on Render · Node.js + TypeScript + Express"]
-        secrets[("🔑 Environment variables<br/>GROQ_API_KEY<br/>SUPABASE_SERVICE_ROLE_KEY")]
+        secrets[("🔑 Environment variables<br/>GROQ_API_KEY<br/>SUPABASE_SECRET_KEY")]
         auth["1 · Verify session"]
         limit["2 · Daily limit"]
         crisis{"3 · Crisis filter"}
@@ -39,7 +39,7 @@ flowchart TB
     user -- "voice" --> mic --> app
     user -- "text" --> app
     app -- "reply text" --> tts -- "speech" --> user
-    notif -. "2, 5 and 10 days inactive" .-> user
+    notif -. "daily, at the chosen time" .-> user
 
     app -- "sign up / sign in<br/>publishable key" --> sbauth
     app == "HTTPS + session token" ==> auth
@@ -74,7 +74,7 @@ Thick arrows are the path of a normal chat message. Dotted arrows are background
 | Key | Where | Why |
 |---|---|---|
 | `GROQ_API_KEY` | Backend environment variables on Render (`.env` locally, never committed) | Anyone who extracts it from an app could use up or bill the account. |
-| `SUPABASE_SERVICE_ROLE_KEY` | Backend environment variables on Render | It bypasses RLS and gives access to all data. |
+| `SUPABASE_SECRET_KEY` | Backend environment variables on Render | It has `service_role` rights: it bypasses RLS and gives access to all data. |
 | Supabase publishable key | Flutter app (`app/config/`) | Public by design: it only allows sign-in and what RLS permits. |
 | The person's session | Phone, encrypted with a key from the Android Keystore (S4-3), outside backups (S4-11) | It keeps the person signed in; the backend checks it on every request against the project's public keys. |
 
