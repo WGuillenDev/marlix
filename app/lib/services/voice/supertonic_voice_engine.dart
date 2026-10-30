@@ -8,6 +8,7 @@ import 'package:supertonic_flutter/supertonic_flutter.dart';
 
 import '../../models/voice_config.dart';
 import 'sentences.dart';
+import 'silence_trim.dart';
 import 'voice_engine.dart';
 
 /// Supertonic 3 (S6-1): a neural voice that runs on the phone. It sounds much
@@ -93,38 +94,29 @@ class SupertonicVoiceEngine implements MeasurableVoiceEngine, PrefetchingVoiceEn
     return [for (final value in rms) value / loudest];
   }
 
-  /// One sentence, clause by clause, with the pause of each comma in between.
+  /// One piece said whole, as the voice assistants of the big companies do:
+  /// the model sets the tone and the pauses of its commas. Its own silence at
+  /// the edges is cut and the pause of the final punctuation is added
+  /// (S6-14, docs/decisions.md).
   Future<TTSResult> _synthesize(String text) async {
-    final clauses = splitClauses(text);
-    if (clauses.length < 2) return _synthesizeClause(clauses.isEmpty ? text : clauses.single.text);
-
-    final audio = <double>[];
-    var duration = 0.0;
-    int? sampleRate;
-    for (final clause in clauses) {
-      final part = await _synthesizeClause(clause.text);
-      sampleRate = part.sampleRate;
-      audio.addAll(part.audioData);
-      duration += part.duration;
-      if (clause.pause > Duration.zero) {
-        final silence = clause.pause.inMicroseconds / Duration.microsecondsPerSecond;
-        audio.addAll(List.filled((silence * sampleRate).round(), 0.0));
-        duration += silence;
-      }
-    }
+    final result = await _tts.synthesize(
+      text,
+      language: config.language,
+      voiceStyle: config.voice,
+      config: _ttsConfig,
+    );
+    final rate = result.sampleRate;
+    final pause = pauseAfter(text).inMicroseconds / Duration.microsecondsPerSecond;
+    final audio = [
+      ...trimSilence(result.audioData, rate),
+      ...List.filled((pause * rate).round(), 0.0),
+    ];
     return TTSResult(
       audioData: Float64List.fromList(audio),
-      sampleRate: sampleRate!,
-      duration: duration,
+      sampleRate: rate,
+      duration: audio.length / rate,
     );
   }
-
-  Future<TTSResult> _synthesizeClause(String text) => _tts.synthesize(
-    text,
-    language: config.language,
-    voiceStyle: config.voice,
-    config: _ttsConfig,
-  );
 
   @override
   void warm(String text) {
