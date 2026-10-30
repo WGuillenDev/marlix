@@ -72,6 +72,7 @@ When the crisis filter detects risk, `POST /v1/chat` answers **`200`** with `"ty
 | `POST` | [`/v1/onboarding`](#post-v1onboarding) | Token | US-02 |
 | `PATCH` | [`/v1/settings`](#patch-v1settings) | Token | US-14 |
 | `POST` | [`/v1/chat`](#post-v1chat) | Token | US-03, US-04, US-10, US-11, US-12 |
+| `POST` | [`/v1/transcribe`](#post-v1transcribe) | Token | US-03 |
 | `GET` | [`/v1/history`](#get-v1history) | Token | US-06 |
 | `GET` | [`/v1/usage`](#get-v1usage) | Token | US-10 |
 | `GET` | [`/v1/memories`](#get-v1memories) | Token | US-08 |
@@ -316,6 +317,28 @@ Both messages of a turn are saved before the reply is returned, and `userMessage
 | Part | Until | Meanwhile |
 |---|---|---|
 | Streaming | S6-10 | Only the JSON reply. |
+
+---
+
+### `POST /v1/transcribe`
+
+Turns what the person said in the voice mode into text (S6-9). The app records each turn on the phone, with echo cancellation, and sends it here; the text then goes through `POST /v1/chat` like typed text, so the crisis filter applies equally. The model is Whisper in Groq (`GROQ_TRANSCRIPTION_MODEL`), in Spanish, with a prompt that spells Costa Rican words such as "mae" and "tuanis". The stretches that Whisper itself doubts are speech (a fan, the street) are dropped, so `text` can come back empty ([decision](decisions.md#2026-10-28--talking-without-buttons-whisper-in-groq-and-a-detector-of-turns-s6-9)).
+
+**Request.** The body is the audio itself, not JSON: `Content-Type: audio/wav`, WAV 16 kHz, mono, 16-bit PCM, between 0.25 and 32 seconds (the app sends 30 s at most). A body that is not that format, is empty, is too short or is over the size of 32 s answers `400 VALIDATION_ERROR`.
+
+**Response `200`**
+
+~~~json
+{ "text": "mae, tuanis, cuéntame más" }
+~~~
+
+`text` is empty when nothing was said. The phrases Whisper invents on silence ("Gracias por ver el video") are dropped, so the app treats an empty `text` as a turn without words and sends nothing to the chat.
+
+**Errors.** `401 UNAUTHORIZED`; `429 DAILY_LIMIT_REACHED` once the day's interactions are used, because the chat would refuse the answer anyway; `429 RATE_LIMITED` above 20 requests per minute per user, apart from the chat's own limit; `503 LLM_UNAVAILABLE` when Groq fails, times out (`TRANSCRIPTION_TIMEOUT_MS`) or its shared quota runs out (with `Retry-After` when Groq says how long).
+
+A transcription does **not** count as an interaction: only the chat message that follows does. But it does use Groq's shared quota, 2,000 requests and 28,800 seconds of audio per day for the whole project, so it is limited apart from the chat.
+
+**Privacy.** The audio and the text are never saved or logged, here or by Groq (zero data retention). The audio only lives in memory while the request lasts.
 
 ---
 

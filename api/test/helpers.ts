@@ -13,6 +13,7 @@ import type { LlmCompletionRequest, LlmProvider } from '../src/services/llm/inde
 import { createFakeAccounts, createFakeMemories } from './memory-fakes.js';
 import { createMemoryMessageStore } from './memory-message-store.js';
 import { createFakeProfiles } from './memory-profiles.js';
+import type { Transcriber } from '../src/services/transcription/transcriber.js';
 import { createMemoryUsageStore } from './memory-usage-store.js';
 
 /** An LlmProvider that records every request and answers with `respond`. */
@@ -103,6 +104,7 @@ export async function startApp({
   accounts = createFakeAccounts().store,
   usage = createMemoryUsageStore().store,
   profiles = createFakeProfiles().store,
+  transcriber = { transcribe: async () => 'hola' },
 }: {
   llm: LlmProvider;
   crisisClassifier?: LlmProvider;
@@ -118,6 +120,7 @@ export async function startApp({
   accounts?: AppDependencies['accounts'];
   usage?: AppDependencies['usage'];
   profiles?: AppDependencies['profiles'];
+  transcriber?: Transcriber;
 }) {
   const app = createApp({
     llm,
@@ -134,6 +137,7 @@ export async function startApp({
     accounts,
     usage,
     profiles,
+    transcriber,
   });
   const authHeader = { authorization: `Bearer ${await signSession()}` };
   const server = app.listen(0);

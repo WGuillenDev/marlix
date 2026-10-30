@@ -13,6 +13,7 @@ import { createAccountRouter } from './routes/account.js';
 import { createHistoryRouter } from './routes/history.js';
 import { createMemoriesRouter } from './routes/memories.js';
 import { createProfileRouter } from './routes/profile.js';
+import { createTranscribeRouter } from './routes/transcribe.js';
 import { createUsageRouter } from './routes/usage.js';
 import { createChatService } from './services/chat-service.js';
 import {
@@ -28,6 +29,7 @@ import type { MemoryStore } from './services/memory/memory-store.js';
 import type { ProfileStore } from './services/profile/profile-store.js';
 import { selectForPrompt } from './services/memory/prompt-memories.js';
 import type { LlmProvider } from './services/llm/index.js';
+import type { Transcriber } from './services/transcription/transcriber.js';
 import { createUsageLimiter } from './services/usage/usage-limiter.js';
 import type { UsageStore } from './services/usage/usage-store.js';
 
@@ -53,6 +55,8 @@ export interface AppDependencies {
   usage: UsageStore;
   /** The profile and the onboarding state (S5-5). */
   profiles: ProfileStore;
+  /** Turns the voice mode's audio into text (S6-9). */
+  transcriber: Transcriber;
   /** Crisis text and help resources; read from api/config/crisis.json by default. */
   crisisConfig?: CrisisConfig;
   /** Where crisis activations are recorded (S2-5); the logs by default. */
@@ -74,6 +78,7 @@ export function createApp({
   accounts,
   usage,
   profiles,
+  transcriber,
   crisisConfig = loadCrisisConfig(),
   activationLog = createConsoleActivationLog(),
   plans = loadPlansConfig(),
@@ -115,6 +120,7 @@ export function createApp({
     createAccountRouter(accounts),
     createProfileRouter(profiles),
     createUsageRouter(usageLimiter),
+    createTranscribeRouter(transcriber, usageLimiter),
   );
 
   app.use(notFoundHandler);

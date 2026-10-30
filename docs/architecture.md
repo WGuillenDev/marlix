@@ -9,7 +9,7 @@ flowchart TB
     user(["👤 User"])
 
     subgraph phone["📱 Phone (Android)"]
-        stt["Speech recognizer<br/>speech_to_text"]
+        mic["Microphone<br/>echo cancellation<br/>voice and turn detector"]
         app["Flutter app<br/>chat · avatar · help screen"]
         tts["Avatar voice<br/>Supertonic 3<br/>fallback: flutter_tts"]
         notif["Local reminders<br/>flutter_local_notifications"]
@@ -36,7 +36,7 @@ flowchart TB
     groq["🧠 Groq · LLM"]
     monitor["⏱️ Uptime monitor"]
 
-    user -- "voice" --> stt --> app
+    user -- "voice" --> mic --> app
     user -- "text" --> app
     app -- "reply text" --> tts -- "speech" --> user
     notif -. "2, 5 and 10 days inactive" .-> user
@@ -59,7 +59,8 @@ Thick arrows are the path of a normal chat message. Dotted arrows are background
 | Component | Runs on | Responsibility |
 |---|---|---|
 | Flutter app | Phone | Chat and voice screens, animated avatar, help screen, onboarding and settings. Talks only to the backend and to Supabase Auth. |
-| Speech recognizer | Phone | Turns the user's voice into text (`speech_to_text`). Free and understands Costa Rican Spanish. |
+| Microphone | Phone | Records each turn with echo cancellation and cuts it where the person stops speaking (`record` plus Silero VAD, which scores the voice of every 32 ms frame, and `TurnDetector`), so the person can talk without buttons and interrupt marlix ([decision](decisions.md#2026-10-28--talking-without-buttons-whisper-in-groq-and-a-detector-of-turns-s6-9)). |
+| Speech recognition | Backend | `POST /v1/transcribe` turns the turn's audio into text with Whisper in Groq, which understands Costa Rican words. The audio is never saved. |
 | Avatar voice | Phone | Turns marlix's reply into speech with Supertonic 3; the native voice (`flutter_tts`) is the fallback. Free and private. The model (398 MB) is downloaded once from Hugging Face at a pinned revision; after that it works offline ([decision](decisions.md#2026-10-21--voice-supertonic-3-on-the-phone-voice-f4-s6-1)). |
 | Local reminders | Phone | Daily reminders scheduled on the phone (`flutter_local_notifications`). No server, no push. |
 | Backend | Render (free plan) | The only component that talks to the LLM and writes to the database. Checks the session, the daily limit and the crisis filter, builds the prompt with memory, calls Groq and reviews the reply before returning it. |
@@ -81,7 +82,7 @@ The app never holds a secret. That is why **the Flutter app never calls the LLM 
 
 ## Voice runs on the phone
 
-Voice mode reuses the same backend path as text chat. The phone turns speech into text, sends it to [`POST /v1/chat`](api-contract.md#post-v1chat) like any message, and speaks the reply with the on-device voice. There is no voice endpoint and no audio leaves the phone, so voice costs nothing and the crisis filter applies exactly as in text chat.
+Voice mode reuses the same backend path as text chat. The phone records each turn, sends the audio to [`POST /v1/transcribe`](api-contract.md#post-v1transcribe) (Whisper in Groq, never saved), sends the text it gets to [`POST /v1/chat`](api-contract.md#post-v1chat) like any message, and speaks the reply with the on-device voice. The crisis filter applies exactly as in text chat because the text goes through the same endpoint. Transcribing does not count as an interaction, but it does use Groq's shared audio quota, so it has its own rate limit.
 
 ## The crisis filter comes first
 

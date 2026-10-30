@@ -84,7 +84,11 @@ export class GroqProvider implements LlmProvider {
         request.signal ? { signal: request.signal } : undefined,
       );
     } catch (error) {
-      throw this.#translateError(error);
+      const llmError = translateGroqError(error);
+      if (llmError.retryAfterSeconds) {
+        this.#blockedUntil = this.#now() + llmError.retryAfterSeconds * 1000;
+      }
+      throw llmError;
     }
 
     const content = completion.choices[0]?.message.content?.trim();
@@ -107,39 +111,41 @@ export class GroqProvider implements LlmProvider {
         : {}),
     };
   }
+}
 
-  // Only the status and the provider's error code go into the message: the
-  // provider's own text could echo parts of the conversation.
-  #translateError(error: unknown): LlmError {
-    if (error instanceof APIConnectionTimeoutError) {
-      return new LlmError('timeout', 'Groq did not answer in time', { cause: error });
-    }
-    if (error instanceof APIUserAbortError) {
-      return new LlmError('unavailable', 'Groq call was cancelled', { cause: error });
-    }
-    if (error instanceof APIConnectionError) {
-      return new LlmError('unavailable', 'Could not reach Groq', { cause: error });
-    }
-    if (!(error instanceof APIError)) {
-      return new LlmError('unavailable', 'Unexpected error calling Groq', { cause: error });
-    }
-
-    const status = error.status ?? 0;
-    const detail = `Groq responded ${status}${error.code ? ` (${error.code})` : ''}`;
-
-    if (status === 429) {
-      const retryAfterSeconds = parseRetryAfterSeconds(error.headers);
-      this.#blockedUntil = this.#now() + retryAfterSeconds * 1000;
-      return new LlmError('rate_limited', detail, { retryAfterSeconds, cause: error });
-    }
-    if (status === 401 || status === 403) {
-      return new LlmError('authentication', detail, { cause: error });
-    }
-    if (status === 400 || status === 404 || status === 413 || status === 422) {
-      return new LlmError('invalid_request', detail, { cause: error });
-    }
-    return new LlmError('unavailable', detail, { cause: error });
+/**
+ * A Groq SDK error as an LlmError. Only the status and the provider's error
+ * code go into the message: the provider's own text could echo parts of the
+ * conversation. Used by the chat and by the transcription (S6-9).
+ */
+export function translateGroqError(error: unknown): LlmError {
+  if (error instanceof APIConnectionTimeoutError) {
+    return new LlmError('timeout', 'Groq did not answer in time', { cause: error });
   }
+  if (error instanceof APIUserAbortError) {
+    return new LlmError('unavailable', 'Groq call was cancelled', { cause: error });
+  }
+  if (error instanceof APIConnectionError) {
+    return new LlmError('unavailable', 'Could not reach Groq', { cause: error });
+  }
+  if (!(error instanceof APIError)) {
+    return new LlmError('unavailable', 'Unexpected error calling Groq', { cause: error });
+  }
+
+  const status = error.status ?? 0;
+  const detail = `Groq responded ${status}${error.code ? ` (${error.code})` : ''}`;
+
+  if (status === 429) {
+    const retryAfterSeconds = parseRetryAfterSeconds(error.headers);
+    return new LlmError('rate_limited', detail, { retryAfterSeconds, cause: error });
+  }
+  if (status === 401 || status === 403) {
+    return new LlmError('authentication', detail, { cause: error });
+  }
+  if (status === 400 || status === 404 || status === 413 || status === 422) {
+    return new LlmError('invalid_request', detail, { cause: error });
+  }
+  return new LlmError('unavailable', detail, { cause: error });
 }
 
 /**

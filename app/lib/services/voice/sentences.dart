@@ -19,6 +19,17 @@ List<String> splitSentences(String text) {
   return sentences;
 }
 
+/// The pieces a reply is spoken in: its sentences, with the first one cut at
+/// its commas (S6-9). The first sound waits for the first piece to be made, so
+/// a short one makes marlix start sooner; the rest is made while it speaks.
+List<String> splitForSpeech(String text) {
+  final sentences = splitSentences(text);
+  if (sentences.isEmpty) return sentences;
+  final clauses = splitClauses(sentences.first);
+  if (clauses.length < 2) return sentences;
+  return [for (final clause in clauses) clause.text, ...sentences.skip(1)];
+}
+
 void _flush(StringBuffer pending, List<String> sentences) {
   final sentence = pending.toString().trim();
   pending.clear();

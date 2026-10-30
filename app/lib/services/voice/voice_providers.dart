@@ -7,7 +7,12 @@ import '../help_resources.dart';
 import 'device_facts.dart';
 import 'native_voice_engine.dart';
 import 'supertonic_voice_engine.dart';
+import '../marlix_api.dart';
+import 'audio_capture.dart';
+import 'call_audio_player.dart';
+import 'server_speech_recognizer.dart';
 import 'speech_recognizer.dart';
+import 'voice_activity.dart';
 import 'voice_engine.dart';
 import 'voice_memory.dart';
 import 'voice_model_store.dart';
@@ -45,11 +50,24 @@ final voiceModelProvider = Provider<VoiceModel>((ref) {
 final supertonicEngineFactoryProvider =
     Provider<MeasurableVoiceEngine Function(VoiceConfig config)>(
       (ref) =>
-          (config) => SupertonicVoiceEngine(config: config),
+          (config) => SupertonicVoiceEngine(config: config, player: CallAudioPlayer()),
     );
 
-/// Overridden in tests: there is no recognizer without a phone.
-final speechRecognizerProvider = Provider<SpeechRecognizer>((ref) => SpeechToTextRecognizer());
+/// The microphone and the backend that transcribes what the person says (S6-9).
+/// Overridden in tests: there is no microphone without a phone.
+final speechRecognizerProvider = Provider<SpeechRecognizer>((ref) {
+  final activity = SileroVoiceActivity();
+  final recognizer = ServerSpeechRecognizer(
+    capture: RecordAudioCapture(),
+    activity: activity,
+    transcribe: ref.watch(marlixApiProvider).transcribe,
+  );
+  ref.onDispose(() async {
+    await recognizer.cancel();
+    await activity.dispose();
+  });
+  return recognizer;
+});
 
 final nativeEngineFactoryProvider = Provider<VoiceEngine Function(VoiceConfig config)>(
   (ref) =>

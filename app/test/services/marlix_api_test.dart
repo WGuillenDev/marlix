@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -149,6 +150,23 @@ void main() {
 
       expect(response, isA<CrisisReply>());
       expect((response as CrisisReply).resources.single.id, '911');
+    });
+
+    test('POST /v1/transcribe sends the WAV bytes with the token and returns the text', () async {
+      late http.Request sent;
+      final api = apiReturning((request) {
+        sent = request;
+        return jsonResponse({'text': 'Qué tuanis, mae'}, 200);
+      });
+
+      final text = await api.transcribe(Uint8List.fromList([1, 2, 3, 4]));
+
+      expect(text, 'Qué tuanis, mae');
+      expect(sent.method, 'POST');
+      expect(sent.url.path, '/v1/transcribe');
+      expect(sent.headers['Authorization'], 'Bearer $token');
+      expect(sent.headers['Content-Type'], startsWith('audio/wav'));
+      expect(sent.bodyBytes, [1, 2, 3, 4]);
     });
 
     test('GET /v1/usage sends the token', () async {

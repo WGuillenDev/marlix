@@ -143,6 +143,28 @@ void main() {
     });
   });
 
+  group('splitForSpeech', () {
+    test('the first sentence is spoken clause by clause so the first sound comes sooner', () {
+      expect(splitForSpeech('Claro, mae, te cuento. Fue un buen día, la verdad.'), [
+        'Claro,',
+        'mae,',
+        'te cuento.',
+        'Fue un buen día, la verdad.',
+      ]);
+    });
+
+    test('a first sentence without commas is spoken whole', () {
+      expect(splitForSpeech('Qué buena idea. Y después, ¿qué?'), [
+        'Qué buena idea.',
+        'Y después, ¿qué?',
+      ]);
+    });
+
+    test('nothing to say gives nothing', () {
+      expect(splitForSpeech('  '), isEmpty);
+    });
+  });
+
   group('NativeVoiceEngine helpers', () {
     test('picks Costa Rican Spanish first, then the nearest the phone has', () {
       expect(NativeVoiceEngine.pickLocale('es', ['es-ES', 'es-MX', 'es-CR']), 'es-CR');

@@ -183,7 +183,7 @@ void main() {
       await acceptConsent(tester);
 
       expect(find.textContaining('Lo uso solo cuando estás en modo voz'), findsOneWidget);
-      expect(find.textContaining('puede depender del servicio de tu teléfono'), findsOneWidget);
+      expect(find.textContaining('viaja a nuestro servidor para pasarlo a texto'), findsOneWidget);
       expect(microphone.asked, 0, reason: 'nothing is asked before the person chooses');
 
       await tester.tap(find.text('Permitir'));

@@ -9,7 +9,7 @@ import { supabaseSessionCheck } from './middleware/require-session.js';
 import { createSupabaseAccountStore } from './services/account/supabase-account-store.js';
 import { createSupabaseConversationStore } from './services/conversations/supabase-conversation-store.js';
 import { createSupabaseMessageStore } from './services/history/supabase-message-store.js';
-import { createLlmProvider } from './services/llm/index.js';
+import { createLlmProvider, GroqTranscriber } from './services/llm/index.js';
 import { createMemoryExtractor } from './services/memory/extractor.js';
 import { createMemoryJob } from './services/memory/memory-job.js';
 import { createSupabaseMemoryStore } from './services/memory/supabase-memory-store.js';
@@ -59,6 +59,12 @@ const app = createApp({
   accounts: createSupabaseAccountStore(database),
   usage: createSupabaseUsageStore(database),
   profiles: createSupabaseProfileStore(database),
+  transcriber: new GroqTranscriber({
+    apiKey: env.GROQ_API_KEY,
+    model: env.GROQ_TRANSCRIPTION_MODEL,
+    baseUrl: env.GROQ_BASE_URL,
+    timeoutMs: env.TRANSCRIPTION_TIMEOUT_MS,
+  }),
 });
 
 const server = app.listen(env.PORT, () => {
