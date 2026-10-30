@@ -376,10 +376,11 @@ class _ReadingBar extends ConsumerWidget {
           child: Row(
             children: [
               Expanded(
-                child: Text(
-                  paused ? 'En pausa' : 'marlix está hablando',
-                  style: AppText.caption.copyWith(fontWeight: FontWeight.w700),
-                ),
+                child: Text(switch (reading) {
+                  Reading.paused => 'En pausa',
+                  Reading.preparing => 'Preparando la voz…',
+                  _ => 'marlix está hablando',
+                }, style: AppText.caption.copyWith(fontWeight: FontWeight.w700)),
               ),
               IconButton(
                 onPressed: paused ? reader.resume : reader.pause,

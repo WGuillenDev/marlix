@@ -8,7 +8,8 @@ import '../voice/voice_controller.dart';
 import 'avatar_controller.dart';
 import 'chat_controller.dart';
 
-enum Reading { idle, speaking, paused }
+/// [preparing] is the wait between asking for the reading and its first sound.
+enum Reading { idle, preparing, speaking, paused }
 
 /// Reads each reply that arrives while [repliesAreSpokenProvider] is on, and holds
 /// what the chat screen needs to show the controls.
@@ -66,6 +67,7 @@ class ReplyReader extends Notifier<Reading> {
     switch (event) {
       case VoiceStarted():
         _soundStarted = true;
+        if (state == Reading.preparing) state = Reading.speaking;
         if (state == Reading.speaking) _avatar.speak();
       case VoiceLevel(:final level):
         if (state == Reading.speaking) ref.read(avatarVolumeProvider.notifier).set(level);
@@ -81,7 +83,7 @@ class ReplyReader extends Notifier<Reading> {
     await _reading?.cancel();
     _pausedByApp = false;
     _soundStarted = false;
-    state = Reading.speaking;
+    state = Reading.preparing;
     late final StreamSubscription<VoiceEvent> reading;
     void end() {
       if (_reading == reading && ref.mounted) {
@@ -96,7 +98,7 @@ class ReplyReader extends Notifier<Reading> {
   }
 
   Future<void> pause({bool byApp = false}) async {
-    if (state != Reading.speaking) return;
+    if (state != Reading.speaking && state != Reading.preparing) return;
     state = Reading.paused;
     _pausedByApp = byApp;
     _avatar.rest();
@@ -105,7 +107,7 @@ class ReplyReader extends Notifier<Reading> {
 
   Future<void> resume() async {
     if (state != Reading.paused) return;
-    state = Reading.speaking;
+    state = _soundStarted ? Reading.speaking : Reading.preparing;
     _pausedByApp = false;
     if (_soundStarted) _avatar.speak();
     await _safely(_voice.resume);

@@ -27,7 +27,9 @@ ConversationPhase conversationPhase({
   if (speech is SpeechListening && speech.heard.isNotEmpty) return ConversationPhase.listening;
   if (thinking || speech is SpeechTranscribing) return ConversationPhase.thinking;
   // Paused because a voice was heard over it: marlix is listening, not speaking.
-  if (reading == Reading.speaking) return ConversationPhase.speaking;
+  if (reading == Reading.speaking || reading == Reading.preparing) {
+    return ConversationPhase.speaking;
+  }
   return speech is SpeechListening ? ConversationPhase.listening : ConversationPhase.ready;
 }
 
