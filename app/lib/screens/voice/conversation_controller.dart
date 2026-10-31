@@ -86,6 +86,7 @@ class ConversationController extends Notifier<ConversationMode> {
     final speech = ref.read(speechControllerProvider);
     if (speech is SpeechDenied || speech is SpeechProblem) unawaited(_speech.cancel());
     state = ConversationMode.on;
+    ref.read(callRouteProvider).inCall = true;
     _next();
   }
 
@@ -96,6 +97,7 @@ class ConversationController extends Notifier<ConversationMode> {
   Future<void> pause() async {
     if (state == ConversationMode.off) return;
     state = ConversationMode.paused;
+    ref.read(callRouteProvider).inCall = false;
     _reopen?.cancel();
     _farewellWait?.cancel();
     await _speech.cancel();
@@ -108,6 +110,7 @@ class ConversationController extends Notifier<ConversationMode> {
     _farewellWait?.cancel();
     final wasOff = state == ConversationMode.off;
     state = ConversationMode.off;
+    ref.read(callRouteProvider).inCall = false;
     if (wasOff) return;
     await _speech.cancel();
     await ref.read(replyReaderProvider.notifier).stop();

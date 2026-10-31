@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:marlix/screens/help_screen.dart';
@@ -24,15 +25,44 @@ void main() {
     expect(find.byType(HelpScreen), findsNothing);
   });
 
-  testWidgets('shows 9-1-1 first, the other lines and the disclaimer', (tester) async {
-    await openChat(tester);
+  testWidgets('shows 9-1-1 first, the psychological support line and the disclaimer', (
+    tester,
+  ) async {
+    await openChat(tester, size: const Size(360, 1400));
     await openHelp(tester);
 
     expect(find.text('¿Estás en peligro o necesitas ayuda ya?'), findsOneWidget);
+    expect(
+      find.text(
+        'Servicio: Atención inmediata ante emergencias o situaciones de riesgo',
+        findRichText: true,
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Horario: 24 horas, 7 días de la semana', findRichText: true), findsOneWidget);
     expect(find.text('Llamar al 9-1-1'), findsOneWidget);
     expect(find.text('Otros recursos en Costa Rica'), findsOneWidget);
-    expect(find.text('Aquí Estoy, Colegio de Psicólogos'), findsOneWidget);
-    expect(find.text('Horario limitado · 800-273-7869'), findsOneWidget);
+    expect(find.text('Llamar a Línea Aquí Estoy'), findsOneWidget);
+    expect(
+      find.text(
+        'Servicio: Atención psicológica gratuita y confidencial del Colegio de Psicólogos de Costa Rica',
+        findRichText: true,
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Horario: Lunes a viernes de 2:00 p. m. a 10:00 p. m. y sábados de 9:00 a. m. a 4:00 p. m.',
+        findRichText: true,
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Teléfono: 800-273-7869', findRichText: true), findsOneWidget);
+    expect(
+      find.textContaining('gratuit', findRichText: true),
+      findsOneWidget,
+      reason: '9-1-1 is not called free',
+    );
     expect(
       find.text(
         'marlix es compañía para conversar. No reemplaza la atención de un profesional de la '
@@ -45,12 +75,12 @@ void main() {
 
   testWidgets('every button dials its number', (tester) async {
     final dialer = FakeDialer();
-    await openChat(tester, dialer: dialer);
+    await openChat(tester, dialer: dialer, size: const Size(360, 1400));
     await openHelp(tester);
 
     await tester.tap(find.text('Llamar al 9-1-1'));
     await tester.pump();
-    await tester.tap(find.byTooltip('Llamar a Aquí Estoy, Colegio de Psicólogos, 800-273-7869'));
+    await tester.tap(find.text('Llamar a Línea Aquí Estoy'));
     await tester.pump();
 
     expect(dialer.dialed, ['911', '8002737869']);
@@ -72,6 +102,13 @@ void main() {
     await openHelp(tester);
 
     expect(find.text('Llamar al 9-1-1'), findsOneWidget);
+    expect(
+      find.text(
+        'Servicio: Atención inmediata ante emergencias o situaciones de riesgo',
+        findRichText: true,
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Otros recursos en Costa Rica'), findsNothing);
   });
 
@@ -81,8 +118,8 @@ void main() {
       'resources': [
         ...crisisResources,
         {
-          'id': 'ccss',
-          'name': 'Emergencias CCSS',
+          'id': 'otra-linea',
+          'name': 'Otra línea',
           'phone': '22257511',
           'hours': 'Consultar',
           'primary': false,
@@ -92,13 +129,15 @@ void main() {
     await openChat(
       tester,
       backend: FakeBackend()..offline = true,
+      size: const Size(360, 1400),
       savedPreferences: {HelpResourcesController.cacheKey: saved},
     );
     await openHelp(tester);
 
     expect(find.text('Llamar al 9-1-1'), findsOneWidget);
-    expect(find.text('Emergencias CCSS'), findsOneWidget);
-    expect(find.text('Consultar · 2225-7511'), findsOneWidget);
+    expect(find.text('Llamar a Otra línea'), findsOneWidget);
+    expect(find.text('Horario: Consultar', findRichText: true), findsOneWidget);
+    expect(find.text('Teléfono: 2225-7511', findRichText: true), findsOneWidget);
   });
 
   testWidgets('opening the chat saves the list for later offline use', (tester) async {
@@ -107,6 +146,6 @@ void main() {
     backend.offline = true;
 
     await openHelp(tester);
-    expect(find.text('Aquí Estoy, Colegio de Psicólogos'), findsOneWidget);
+    expect(find.text('Llamar a Línea Aquí Estoy'), findsOneWidget);
   });
 }
