@@ -205,6 +205,26 @@ describe('streamed reply, limits and failures (S6-10)', () => {
     }
   });
 
+  it('shares the daily cap with the text mode', async () => {
+    const app = await startApp({
+      llm: createFakeLlm().llm,
+      usage: createMemoryUsageStore({ personal: 1 }).store,
+    });
+    try {
+      assert.equal((await app.postJson('/v1/chat', { message: 'hola' })).status, 200);
+      const response = await app.postJson(
+        '/v1/chat',
+        { message: 'hola', mode: 'voice' },
+        { accept: 'text/event-stream' },
+      );
+
+      assert.equal(response.status, 429);
+      assert.equal(((await response.json()) as any).error.code, 'DAILY_LIMIT_REACHED');
+    } finally {
+      await app.close();
+    }
+  });
+
   it('answers 503 as JSON when the model fails before the first sentence', async () => {
     const app = await startApp({ llm: failingLlm(new LlmError('unavailable', 'down')) });
     try {
