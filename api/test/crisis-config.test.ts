@@ -27,7 +27,7 @@ describe('crisis configuration', () => {
     assert.match(shipped.reply, /9-1-1/);
   });
 
-  it('describes every line with its service and hours, and never calls 9-1-1 free', () => {
+  it('describes every line with its service and hours, and 9-1-1 only by those', () => {
     for (const resource of shipped.resources) {
       assert.ok(resource.service.length > 0 && resource.hours.length > 0, resource.id);
     }
