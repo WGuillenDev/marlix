@@ -25,7 +25,7 @@
 </p>
 
 > [!IMPORTANT]
-> marlix is not therapy and does not replace professional mental health care. In Costa Rica, call **9-1-1**.
+> marlix is not therapy and does not replace professional mental health care. If you are in danger, call **9-1-1**.
 
 ## About
 
