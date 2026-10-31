@@ -61,7 +61,7 @@ void main() {
     expect(
       find.textContaining('gratuit', findRichText: true),
       findsOneWidget,
-      reason: '9-1-1 is not called free',
+      reason: 'only the Aquí Estoy card mentions its cost',
     );
     expect(
       find.text(
