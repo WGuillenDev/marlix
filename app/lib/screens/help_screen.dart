@@ -108,11 +108,7 @@ class _EmergencyCard extends StatelessWidget {
             const SizedBox(height: 20),
             EmergencyCallButton(line: line),
             const SizedBox(height: 12),
-            Text(
-              'Emergencias y crisis emocional',
-              textAlign: TextAlign.center,
-              style: AppText.caption.copyWith(color: AppColors.textSecondary),
-            ),
+            _LineCaption(service: line.service, hours: line.hours),
           ],
         ),
       ),
@@ -120,51 +116,73 @@ class _EmergencyCard extends StatelessWidget {
   }
 }
 
-class _ResourceCard extends ConsumerWidget {
+/// Laid out like the 9-1-1 card, so every line reads the same way; only the
+/// button is red, the card keeps a quiet border.
+class _ResourceCard extends StatelessWidget {
   const _ResourceCard({required this.line});
 
   final HelpResource line;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final number = formatPhone(line.phone);
+  Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: AppColors.white,
         border: Border.all(color: AppColors.line, width: 1.5),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 14, 12, 14),
-        child: Row(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(line.name, style: AppText.bodyStrong),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${line.hours} · $number',
-                    style: AppText.caption.copyWith(color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            IconButton(
-              onPressed: () => callLine(context, ref, line),
-              tooltip: 'Llamar a ${line.name}, $number',
-              icon: const Icon(Icons.phone_rounded),
-              style: IconButton.styleFrom(
-                fixedSize: const Size(56, 56),
-                backgroundColor: AppColors.warningBackground,
-                foregroundColor: AppColors.crisis,
-              ),
-            ),
+            EmergencyCallButton(line: line, label: 'Llamar a ${line.name}'),
+            const SizedBox(height: 12),
+            _LineCaption(service: line.service, hours: line.hours, phone: formatPhone(line.phone)),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// The small grey lines under a line's name (wireframe 06), each with its
+/// label in bold: what the line offers, when it answers and, on the cards, its
+/// number.
+class _LineCaption extends StatelessWidget {
+  const _LineCaption({required this.service, required this.hours, this.phone});
+
+  final String? service;
+  final String hours;
+  final String? phone;
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = [
+      if (service != null) ('Servicio', service!),
+      ('Horario', hours),
+      if (phone != null) ('Teléfono', phone!),
+    ];
+    final style = AppText.caption.copyWith(color: AppColors.textSecondary);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final (index, row) in rows.indexed) ...[
+          if (index > 0) const SizedBox(height: 6),
+          Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: '${row.$1}: ',
+                  style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.charcoal),
+                ),
+                TextSpan(text: row.$2),
+              ],
+            ),
+            style: style,
+          ),
+        ],
+      ],
     );
   }
 }

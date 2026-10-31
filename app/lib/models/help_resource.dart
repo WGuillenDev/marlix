@@ -1,12 +1,13 @@
 import 'json_reader.dart';
 
-/// A help line from `api/config/crisis.json`. Names and hours are user-facing
-/// Spanish copy; [phone] holds digits only, ready to dial.
+/// A help line from `api/config/crisis.json`. Names, services and hours are
+/// user-facing Spanish copy; [phone] holds digits only, ready to dial.
 class HelpResource {
   const HelpResource({
     required this.id,
     required this.name,
     required this.phone,
+    this.service,
     required this.hours,
     required this.primary,
   });
@@ -15,6 +16,7 @@ class HelpResource {
     id: json.requireString('id'),
     name: json.requireString('name'),
     phone: json.requireString('phone'),
+    service: json.optionalString('service'),
     hours: json.requireString('hours'),
     primary: json.requireBool('primary'),
   );
@@ -22,6 +24,9 @@ class HelpResource {
   final String id;
   final String name;
   final String phone;
+
+  /// What the line offers. Null against a backend that does not send it yet.
+  final String? service;
   final String hours;
   final bool primary;
 
@@ -29,6 +34,7 @@ class HelpResource {
     'id': id,
     'name': name,
     'phone': phone,
+    if (service != null) 'service': service,
     'hours': hours,
     'primary': primary,
   };
@@ -67,8 +73,9 @@ class HelpResources {
 /// (api/config/crisis.json).
 const emergencyLine = HelpResource(
   id: '911',
-  name: '9-1-1, Despacho de Apoyo Psicológico',
+  name: '9-1-1',
   phone: '911',
-  hours: '24/7, gratuito',
+  service: 'Atención inmediata ante emergencias o situaciones de riesgo',
+  hours: '24 horas, 7 días de la semana',
   primary: true,
 );

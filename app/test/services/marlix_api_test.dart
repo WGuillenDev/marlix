@@ -15,9 +15,10 @@ final baseUrl = Uri.parse('https://api.test');
 
 const resource = {
   'id': '911',
-  'name': '9-1-1, Despacho de Apoyo Psicológico',
+  'name': '9-1-1',
   'phone': '911',
-  'hours': '24/7, gratuito',
+  'service': 'Atención inmediata ante emergencias o situaciones de riesgo',
+  'hours': '24 horas, 7 días de la semana',
   'primary': true,
 };
 const usage = {'used': 13, 'limit': 100, 'remaining': 87, 'resetsAt': '2026-10-16T06:00:00Z'};

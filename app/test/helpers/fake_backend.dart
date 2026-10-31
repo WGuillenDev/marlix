@@ -48,16 +48,19 @@ http.Response jsonResponse(
 const crisisResources = [
   {
     'id': 'aqui-estoy',
-    'name': 'Aquí Estoy, Colegio de Psicólogos',
+    'name': 'Línea Aquí Estoy',
     'phone': '8002737869',
-    'hours': 'Horario limitado',
+    'service':
+        'Atención psicológica gratuita y confidencial del Colegio de Psicólogos de Costa Rica',
+    'hours': 'Lunes a viernes de 2:00 p. m. a 10:00 p. m. y sábados de 9:00 a. m. a 4:00 p. m.',
     'primary': false,
   },
   {
     'id': '911',
-    'name': '9-1-1, Despacho de Apoyo Psicológico',
+    'name': '9-1-1',
     'phone': '911',
-    'hours': '24/7, gratuito',
+    'service': 'Atención inmediata ante emergencias o situaciones de riesgo',
+    'hours': '24 horas, 7 días de la semana',
     'primary': true,
   },
 ];
