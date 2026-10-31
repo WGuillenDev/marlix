@@ -71,10 +71,10 @@ The reply text and the help resources are in [`api/config/crisis.json`](../api/c
 
 | Resource | Phone | Service | Hours |
 |---|---|---|---|
-| 9-1-1 (**main option**) | 911 | Atención inmediata ante emergencias o situaciones de riesgo | 24 horas, 7 días de la semana |
-| Línea Aquí Estoy | 800-273-7869 | Atención psicológica gratuita y confidencial del Colegio de Psicólogos de Costa Rica | Lunes a viernes de 2:00 p. m. a 10:00 p. m. y sábados de 9:00 a. m. a 4:00 p. m. |
+| 9-1-1 (**main option**) | 911 | Immediate attention for emergencies or situations of risk | 24 hours, 7 days a week |
+| Línea Aquí Estoy | 800-273-7869 | Free, confidential psychological care from the Colegio de Psicólogos de Costa Rica | Monday to Friday 2:00 p. m. to 10:00 p. m.; Saturday 9:00 a. m. to 4:00 p. m. |
 
-Only these two lines are shown: a short list is easier to use in a hard moment. The reasons are in [decisions.md](decisions.md).
+The app shows this copy in Spanish (`api/config/crisis.json`). Only these two lines are shown: a short list is easier to use in a hard moment. The reasons are in [decisions.md](decisions.md).
 
 The server validates the file when it starts and **refuses to start** if it would break the protocol:
 
