@@ -4,6 +4,23 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-10-30 — The help screen offers two lines, and the chat reads aloud through the speaker (S7-13)
+
+**Decision:** the help screen and the crisis reply list only **9-1-1** and the **Línea Aquí Estoy** (800-273-7869), each with its name, **service** and **hours** (a new `service` field in `api/config/crisis.json` and in `GET /v1/help-resources`). The two Emergencias CCSS lines are removed. The 9-1-1 text does not say it is free, and neither does the fixed crisis reply; Aquí Estoy's service says it is free, confidential care from the Colegio de Psicólogos de Costa Rica. The layout follows wireframe 06: the red card with the big 9-1-1 button first, then "Otros recursos en Costa Rica". The Aquí Estoy card is laid out like the 9-1-1 one (a big red "Llamar a Línea Aquí Estoy" button, then the details) with a quiet border, so only the button is red. Each line of text has a bold label (Servicio, Horario, Teléfono).
+
+**Why:** a short list is easier to use in a hard moment, and the CCSS lines had no clear service or hours ("Consultar"). The app reads `service` as optional, so a new app still works against a backend that does not send it yet and the built-in 9-1-1 works offline with the same text.
+
+**The same words everywhere:** the system prompt, US-05 and the crisis protocol describe both lines with the exact service and hours of the screen, in Spanish, and 9-1-1 is never called free (neither is it in the crisis reply). A test checks that the prompt carries the service and hours of every configured line, so the prompt and `crisis.json` cannot drift apart.
+
+**Reading aloud in the chat:** the voice was played with the call route (`voiceCommunication`, communication mode) in every case. That route exists so the phone's echo canceller can remove marlix's voice from the microphone, but in the chat no microphone is open, and on the Galaxy S24 Ultra the voice came out through the earpiece at the top of the phone, very quiet, while the voice mode (whose capture forces the speakerphone) was fine. Now `CallAudioPlayer` plays as a call only while the voice mode listens (`CallRoute`, set by `ConversationController`) and as plain media otherwise. Measured on the S24: the audio focus request went from `USAGE_VOICE_COMMUNICATION` to `USAGE_MEDIA`. The volume of the chat reading is the media volume.
+
+| Option | Verdict |
+| --- | --- |
+| Keep the call route and force the speakerphone in the chat | Discarded: it needs communication mode and a route that Android 12+ ignores on some phones (it was already ignored here), and it leaves the phone in call mode if the reading is cut. |
+| **Media route when no microphone is open, call route while the voice mode listens** | **Chosen.** Plain media always uses the main speaker, needs no mode changes and keeps the echo cancellation where it matters. |
+
+---
+
 ## 2026-10-29 — Natural pauses in the voice: each piece said whole, its edges cut (S6-14)
 
 **Decision:** Supertonic says each piece of a reply in one pass and the model sets the tone and the pauses of its commas. The silence the model leaves at both edges is cut (`trimSilence`: 10 ms windows under an RMS of 0.01, 30 ms kept on each side), and the pause of the final punctuation is added: **180 ms** after a comma, **280 ms** after a semicolon or a colon, **350 ms** after a full stop, a question or an exclamation (`pauseAfter` in `sentences.dart`). The first sentence is still cut at its commas so the first sound comes sooner (S6-9); those pieces get the comma pause.

@@ -110,27 +110,29 @@ When the last attempt to count a reply failed (S6-16), it still answers `200`, s
 
 ~~~json
 {
-  "updatedAt": "2026-09-30T00:00:00Z",
+  "updatedAt": "2026-10-30T00:00:00Z",
   "resources": [
     {
       "id": "911",
-      "name": "9-1-1, Despacho de Apoyo Psicológico",
+      "name": "9-1-1",
       "phone": "911",
-      "hours": "24/7, gratuito",
+      "service": "Atención inmediata ante emergencias o situaciones de riesgo",
+      "hours": "24 horas, 7 días de la semana",
       "primary": true
     },
     {
       "id": "aqui-estoy",
-      "name": "Aquí Estoy, Colegio de Psicólogos",
+      "name": "Línea Aquí Estoy",
       "phone": "8002737869",
-      "hours": "Horario limitado",
+      "service": "Atención psicológica gratuita y confidencial del Colegio de Psicólogos de Costa Rica",
+      "hours": "Lunes a viernes de 2:00 p. m. a 10:00 p. m. y sábados de 9:00 a. m. a 4:00 p. m.",
       "primary": false
     }
   ]
 }
 ~~~
 
-`phone` holds digits only, ready to dial. Exactly one resource has `primary: true` and the app shows it first. Names and hours are user-facing copy, so they are in Spanish.
+`phone` holds digits only, ready to dial. `service` says what the line offers and `hours` when it answers. Exactly one resource has `primary: true` and the app shows it first. Names, services and hours are user-facing copy, so they are in Spanish. The app treats `service` as optional, so a newer app still works against a backend that does not send it yet.
 
 ---
 
@@ -276,7 +278,7 @@ Sends a message to marlix and returns the reply. It runs the full flow of the [s
     "interrupted": false
   },
   "resources": [
-    { "id": "911", "name": "9-1-1, Despacho de Apoyo Psicológico", "phone": "911", "hours": "24/7, gratuito", "primary": true }
+    { "id": "911", "name": "9-1-1", "phone": "911", "service": "Atención inmediata ante emergencias o situaciones de riesgo", "hours": "24 horas, 7 días de la semana", "primary": true }
   ],
   "usage": { "used": 13, "limit": 100, "remaining": 87, "resetsAt": "2026-10-01T06:00:00Z" }
 }

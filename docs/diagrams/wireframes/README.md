@@ -46,7 +46,7 @@ US-07 (memory extraction) runs in the background and has no screen; its result i
 
 ## Visual style
 
-- **Colors:** tan, cream and charcoal from Marley's coat, plus one blue for voice mode. Red is only for 9-1-1, crisis and irreversible actions. Text pairs meet WCAG AA; plain tan is never used behind text.
+- **Colors:** tan, cream and charcoal from Marley's coat, plus one blue for voice mode. Red is only for the help lines, crisis and irreversible actions. Text pairs meet WCAG AA; plain tan is never used behind text.
 - **Type:** Baloo 2 for titles, Nunito for UI and chat. Both are free Google Fonts (OFL).
 - **Avatar:** a flat, round tricolor beagle in a sleeveless coat that reads "marlix", inspired by Marley. Each animatable part (ears, eyes, mouth, tail, arms, cheeks) is its own layer so it can be animated with `flutter_svg`. The five states are idle, listening, thinking, speaking and happy (US-13). Validated as the prototype on 2026-09-28; final artwork is S5-1.
 - **Moodboard:** four openly licensed references, linked with credit. No third-party images are stored in this repository.

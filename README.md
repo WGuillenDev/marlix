@@ -44,7 +44,7 @@ Safety comes before the model: every message passes a crisis filter before it re
 | 🔊 **Its own voice** | Generated on the phone, with natural pauses and the avatar's mouth following the sound. |
 | 🧠 **Distilled memory** | Lasting facts about the person that they can see, edit and delete. |
 | 🛟 **Crisis filter** | Two layers before the model; a crisis never reaches the LLM. |
-| ☎️ **Help screen** | 9-1-1 and other help lines one tap away, also offline. |
+| ☎️ **Help screen** | 9-1-1 and the Línea Aquí Estoy one tap away, with their service and hours, also offline. |
 | 🐶 **Animated avatar** | Five states that follow the conversation. |
 | 🔐 **Privacy by design** | Adults only, explicit consent, messages deleted after 90 days and full account deletion. |
 

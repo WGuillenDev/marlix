@@ -69,17 +69,18 @@ The text acknowledges the person and points to 9-1-1. It gives no advice or tech
 
 The reply text and the help resources are in [`api/config/crisis.json`](../api/config/crisis.json), not in code. The same resources are served to the app by the public [`GET /v1/help-resources`](api-contract.md#get-v1help-resources), so the help screen and the crisis reply always show the same numbers, and **changing a number never requires a new app build**: edit the file, open a pull request and Render deploys it.
 
-| Resource | Phone | Hours |
-|---|---|---|
-| 9-1-1, Despacho de Apoyo Psicológico (**main option**) | 911 | 24/7, free |
-| Aquí Estoy, Colegio de Psicólogos | 800-2737869 | Limited hours |
-| Emergencias CCSS | 2225-7511 | Check |
-| Emergencias CCSS (second line) | 2234-2730 | Check |
+| Resource | Phone | Service | Hours |
+|---|---|---|---|
+| 9-1-1 (**main option**) | 911 | Atención inmediata ante emergencias o situaciones de riesgo | 24 horas, 7 días de la semana |
+| Línea Aquí Estoy | 800-273-7869 | Atención psicológica gratuita y confidencial del Colegio de Psicólogos de Costa Rica | Lunes a viernes de 2:00 p. m. a 10:00 p. m. y sábados de 9:00 a. m. a 4:00 p. m. |
+
+Only these two lines are shown: a short list is easier to use in a hard moment. The reasons are in [decisions.md](decisions.md).
 
 The server validates the file when it starts and **refuses to start** if it would break the protocol:
 
 - The reply must mention 9-1-1.
 - There must be exactly one primary resource, it must be 9-1-1 and it must be listed first.
+- Every resource has a `service` and `hours` text.
 - Phones are digits only, ready to dial; ids are unique; `updatedAt` is an ISO 8601 date.
 
 When a number changes, also update `updatedAt`, so the app knows its cached copy is old.
