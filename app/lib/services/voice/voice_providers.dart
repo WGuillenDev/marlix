@@ -45,13 +45,19 @@ final voiceModelProvider = Provider<VoiceModel>((ref) {
   );
 });
 
+/// True while the voice mode listens: marlix's voice then plays as a call.
+final callRouteProvider = Provider<CallRoute>((ref) => CallRoute());
+
 /// The engines are created through these, so a test hands over fakes and the
 /// screens never name an engine.
 final supertonicEngineFactoryProvider =
-    Provider<MeasurableVoiceEngine Function(VoiceConfig config)>(
-      (ref) =>
-          (config) => SupertonicVoiceEngine(config: config, player: CallAudioPlayer()),
-    );
+    Provider<MeasurableVoiceEngine Function(VoiceConfig config)>((ref) {
+      final route = ref.watch(callRouteProvider);
+      return (config) => SupertonicVoiceEngine(
+        config: config,
+        player: CallAudioPlayer(route: route),
+      );
+    });
 
 /// The microphone and the backend that transcribes what the person says (S6-9).
 /// Overridden in tests: there is no microphone without a phone.
