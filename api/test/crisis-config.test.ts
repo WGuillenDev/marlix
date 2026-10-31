@@ -7,6 +7,7 @@ import {
   parseCrisisConfig,
   type CrisisConfig,
 } from '../src/config/crisis-config.js';
+import { STATIC_SYSTEM_PROMPT } from '../src/config/system-prompt.js';
 import { createFakeLlm, startApp } from './helpers.js';
 
 const shipped = loadCrisisConfig();
@@ -16,14 +17,31 @@ function withChanges(changes: Partial<CrisisConfig>): unknown {
 }
 
 describe('crisis configuration', () => {
-  it('ships a valid configuration with 9-1-1 first and every card resource', () => {
+  it('ships a valid configuration with 9-1-1 first and only the two lines', () => {
     assert.equal(shipped.resources[0]?.phone, '911');
     assert.equal(shipped.resources[0]?.primary, true);
     assert.deepEqual(
       shipped.resources.map((resource) => resource.phone),
-      ['911', '8002737869', '22257511', '22342730'],
+      ['911', '8002737869'],
     );
     assert.match(shipped.reply, /9-1-1/);
+  });
+
+  it('describes every line with its service and hours, and never calls 9-1-1 free', () => {
+    for (const resource of shipped.resources) {
+      assert.ok(resource.service.length > 0 && resource.hours.length > 0, resource.id);
+    }
+    assert.doesNotMatch(JSON.stringify(shipped.resources[0]), /gratis|gratuit/i);
+    assert.doesNotMatch(shipped.reply, /gratis|gratuit/i);
+  });
+
+  it('describes the lines in the system prompt with the same words as the screen', () => {
+    for (const resource of shipped.resources) {
+      assert.ok(STATIC_SYSTEM_PROMPT.includes(`servicio: ${resource.service}`), resource.id);
+      assert.ok(STATIC_SYSTEM_PROMPT.includes(`horario: ${resource.hours}`), resource.id);
+    }
+    const emergency = STATIC_SYSTEM_PROMPT.split('\n').find((line) => line.includes('9-1-1'));
+    assert.doesNotMatch(emergency?.split('Línea Aquí Estoy')[0] ?? '', /gratis|gratuit/i);
   });
 
   const invalid: [string, unknown][] = [
@@ -49,6 +67,12 @@ describe('crisis configuration', () => {
     [
       'repeated ids',
       withChanges({ resources: [shipped.resources[0]!, shipped.resources[0]!] }),
+    ],
+    [
+      'a resource without its service',
+      withChanges({
+        resources: shipped.resources.map(({ service: _service, ...rest }) => rest) as never,
+      }),
     ],
     ['an invalid date', withChanges({ updatedAt: 'ayer' })],
   ];
