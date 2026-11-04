@@ -36,6 +36,8 @@ jobs:
         run: |
           sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
           sudo apt-get install -y --no-install-recommends age postgresql-client-17
+          # The preinstalled 16 client comes first in PATH and pg_dump would pick it.
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
       - name: Dump and encrypt
         env:
           BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
