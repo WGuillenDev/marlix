@@ -166,6 +166,7 @@ Design, backend, safety, chat, memory, avatar and voice are done. The last sprin
 | --- | --- |
 | [Development guide](docs/development.md) | Setup, environment variables, commands and deployment. |
 | [Database backups](docs/backups.md) | The daily encrypted backup, how to download and restore it. |
+| [Monitoring](docs/monitoring.md) | The uptime monitor, the Groq quota alert and what each `/health` answer means. |
 | [Architecture](docs/architecture.md) | How every piece fits together and where the keys live. |
 | [API contract](docs/api-contract.md) | Every v1 endpoint with its request, response and errors. |
 | [Data model](docs/erd.md) | Entities, access rules and RLS. |
