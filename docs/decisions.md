@@ -920,3 +920,30 @@ The voice keeps the **5 steps** that the listeners voted for: 3 steps is faster 
 | Only the log line | Discarded. It already existed and nobody read it. |
 
 **Limits.** The flag lives in memory and is set by real traffic: after a deploy it says `ok` until the first reply is counted, and it cannot see a problem while nobody chats. That is why the query, not `/health`, is the check to run before merging. Applying a migration stays manual (an automatic migration tool is out of scope).
+
+---
+
+## 2026-11-03 — Database backups are an encrypted daily dump in GitHub artifacts (S7-5)
+
+**Decision:** a scheduled GitHub Actions job runs `pg_dump` against the production database every day, encrypts the stream with [age](https://github.com/FiloSottile/age) and keeps it as a workflow artifact for 90 days. The owner holds the private key outside the repository. The steps to set it up, download and restore are in [backups.md](backups.md).
+
+**Why:** the free Supabase plan has no backups and pauses a project after a week without activity, and the conversations are personal. A person who loses their memories loses the reason to use marlix.
+
+| Option for where the backups live | Verdict |
+|---|---|
+| GitHub Actions artifact, encrypted | **Chosen.** No new account, no cost, and the job and its secrets are already where the CI lives. The cost is that the repository is public, so anyone with a GitHub account can download the artifact: that is why only the encrypted file is written and the key never touches GitHub. Retention is at most 90 days. |
+| A bucket (Cloudflare R2, Backblaze B2) | Discarded for now. Longer retention, but a new account and access keys to keep safe for a family-sized app. It is the next step if 90 days are not enough. |
+| Google Drive | Discarded. Needs a service account or a stored login token. |
+| Supabase Pro daily backups | Not now; see the plan below. |
+
+| Option for the format | Verdict |
+|---|---|
+| Plain SQL, data only, from `public` plus `auth.users` and `auth.identities` | **Chosen.** One stream, readable once decrypted, restorable with `psql` in a single transaction. The structure comes from `schema.sql`, the reviewed source, so a restore also checks that the schema is right. |
+| `pg_dump -Fc` custom format | Discarded. `pg_dump` ignores `--schema` when `--table` is given, so one command cannot take `public` and two `auth` tables; and `pg_restore --disable-triggers` needs to own `auth.users`, which `postgres` does not on Supabase. |
+| The whole `auth` schema | Discarded. Sessions and tokens that expire anyway, tied to the GoTrue version of the project. |
+
+**Restoring.** `session_replication_role = replica` loads the tables in any order and keeps the sign-up trigger on `auth.users` from creating the `public.users` rows that the backup already has. `schema.sql` seeds the plan and the avatar, and the backup carries them too, so the restore clears those two first. Tested on the `supabase/postgres` image: identical row counts and checksums in every table. Not tested yet on a hosted Supabase project.
+
+**The paid plan.** Stay on the free plan while marlix is for the owner and their family: the daily dump covers the loss of data, and the cost is zero (the v1 goal). **Move to Pro before opening the app to more people**: it ends the pauses, adds Supabase's own backups and a support channel, and a person who is not family should not depend on a dump that one person restores by hand. The 100-replies-a-day cap and Groq's free tier are the other limits to revisit at that point.
+
+**Out of scope, as the card says:** point-in-time recovery.
