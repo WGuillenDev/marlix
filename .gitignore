@@ -35,3 +35,8 @@ CLAUDE.md
 .idea/
 .DS_Store
 Thumbs.db
+
+# Database backups (S7-5): never commit a dump or a private key
+backups/
+*.age
+marlix-backup-key*.txt
