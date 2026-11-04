@@ -28,7 +28,7 @@ import type { MemoryJob } from './services/memory/memory-job.js';
 import type { MemoryStore } from './services/memory/memory-store.js';
 import type { ProfileStore } from './services/profile/profile-store.js';
 import { selectForPrompt } from './services/memory/prompt-memories.js';
-import type { LlmProvider } from './services/llm/index.js';
+import type { LlmProvider, QuotaMonitor } from './services/llm/index.js';
 import type { Transcriber } from './services/transcription/transcriber.js';
 import { createUsageLimiter } from './services/usage/usage-limiter.js';
 import type { UsageStore } from './services/usage/usage-store.js';
@@ -57,6 +57,8 @@ export interface AppDependencies {
   profiles: ProfileStore;
   /** Turns the voice mode's audio into text (S6-9). */
   transcriber: Transcriber;
+  /** Tells /health when the Groq daily quota is nearly used (S7-6). */
+  quota?: Pick<QuotaMonitor, 'isLow'>;
   /** Crisis text and help resources; read from api/config/crisis.json by default. */
   crisisConfig?: CrisisConfig;
   /** Where crisis activations are recorded (S2-5); the logs by default. */
@@ -79,6 +81,7 @@ export function createApp({
   usage,
   profiles,
   transcriber,
+  quota,
   crisisConfig = loadCrisisConfig(),
   activationLog = createConsoleActivationLog(),
   plans = loadPlansConfig(),
@@ -94,7 +97,7 @@ export function createApp({
   const usageLimiter = createUsageLimiter(plans, usage);
 
   // Public: the uptime monitor calls it.
-  app.use(createHealthRouter(usageLimiter));
+  app.use(createHealthRouter(usageLimiter, quota));
   // Public: the help screen must work without a session or token.
   app.use('/v1', noStore, createHelpResourcesRouter(crisisConfig));
 
