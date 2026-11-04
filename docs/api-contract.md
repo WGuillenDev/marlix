@@ -86,7 +86,7 @@ When the crisis filter detects risk, `POST /v1/chat` answers **`200`** with `"ty
 
 ### `GET /health`
 
-**Public.** Tells whether the service is up. The uptime monitor calls it every 10 minutes (S7-6). It does not touch the database or Groq: it reports what the last real requests found.
+**Public.** Tells whether the service is up. The uptime monitor calls it every few minutes (S7-6). It does not touch the database or Groq: it reports what the last real requests found.
 
 **Response `200`**
 
@@ -99,6 +99,8 @@ When the last attempt to count a reply failed (S6-16), it still answers `200`, s
 ~~~json
 { "status": "degraded", "problems": ["usage_counter"] }
 ~~~
+
+When any Groq model has 20% or less of its daily requests left (S7-6), it also answers `200`, with `"problems": ["groq_quota"]`. The backend reads the quota from the headers of the answers it already gets, so it is only known after the first reply since a deploy, and it clears by itself when Groq resets the day. Both problems can appear together. What to do for each is in [monitoring.md](monitoring.md).
 
 ---
 

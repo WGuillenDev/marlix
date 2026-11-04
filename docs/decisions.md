@@ -947,3 +947,24 @@ The voice keeps the **5 steps** that the listeners voted for: 3 steps is faster 
 **The paid plan.** Stay on the free plan while marlix is for the owner and their family: the daily dump covers the loss of data, and the cost is zero (the v1 goal). **Move to Pro before opening the app to more people**: it ends the pauses, adds Supabase's own backups and a support channel, and a person who is not family should not depend on a dump that one person restores by hand. The 100-replies-a-day cap and Groq's free tier are the other limits to revisit at that point.
 
 **Out of scope, as the card says:** point-in-time recovery.
+
+---
+
+## 2026-11-03 — Monitoring: UptimeRobot on `/health`, and the Groq quota read from its headers (S7-6)
+
+**Decision:** an external UptimeRobot keyword monitor calls `GET /health` and emails an alert when `"status":"ok"` is not in the body. `/health` now also says `degraded` with `groq_quota` when any Groq model has 20% or less of its daily requests left. The setup, the checks and what each alert means are in [monitoring.md](monitoring.md).
+
+**Why:** Render's free service sleeps after about 15 minutes without traffic, and Groq's free plan answers 429 once the day's requests are gone, which a person sees as a broken app. Both have to reach the owner before they reach a family member.
+
+| Option for the monitor | Verdict |
+|---|---|
+| UptimeRobot, keyword check | **Chosen.** Free, checks the body (so it sees `degraded`, not only a dead server), emails, and its polling keeps Render awake. It needs an account and is set up in its panel. |
+| A scheduled GitHub Actions workflow | Discarded. GitHub delays and skips scheduled runs, so it cannot be trusted to keep Render awake or to alert fast. |
+
+| Option for the Groq quota alert | Verdict |
+|---|---|
+| Read `x-ratelimit-*-requests` from the answers the backend already gets | **Chosen.** Costs no extra request (the quota is the thing being protected), reuses the `/health` mechanism of S6-16 and needs no new service. Measured on 3 November 2026: `openai/gpt-oss-120b` allows 1,000 requests a day. |
+| Poll Groq's usage from a scheduled job | Discarded. There is no usage API for the free plan, and polling would spend the quota. |
+| Only a weekly manual look at the console | Kept as the periodic review, but it is not an alert. |
+
+**Limits.** The reading lives in memory: after a deploy or restart it is empty until the first reply, and it cannot see a quota nobody is using. Only the per-day *requests* header exists; the daily token limit and Whisper's audio limit are not reported, and show up as 429s in the logs. Each model is read separately, so the classifier, the reply and the memory extractor are all watched. `/health` answers `200` while degraded for the same reason as in S6-16: restarting does not give Groq's quota back. `/health` does not touch the database, so it does not keep the Supabase project from pausing; the card assumed it did.
