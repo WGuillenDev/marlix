@@ -106,13 +106,13 @@ When any Groq model has 20% or less of its daily requests left (S7-6), it also a
 
 ### `GET /v1/help-resources`
 
-**Public**, so the help screen works before sign-in. Returns the Costa Rican help resources from configuration ([`api/config/crisis.json`](../api/config/crisis.json)), not from code, so changing a number never requires a new app build. The crisis reply of `POST /v1/chat` returns the same list. The app caches the last response so the help screen also works offline (US-15); `updatedAt` changes whenever the list does.
+**Public**, so the help screen works before sign-in. Returns the Costa Rican help resources from configuration ([`api/config/crisis.json`](../api/config/crisis.json)), not from code, so changing a number never requires a new app build. The crisis reply of `POST /v1/chat` returns the same list. The app caches the last response so the help screen also works offline (US-15); `updatedAt` changes whenever the list does and records the date of the last quarterly verification ([protocol](crisis-protocol.md#verifying-the-help-resources)).
 
 **Response `200`**
 
 ~~~json
 {
-  "updatedAt": "2026-10-30T00:00:00Z",
+  "updatedAt": "2026-11-03T00:00:00Z",
   "resources": [
     {
       "id": "911",

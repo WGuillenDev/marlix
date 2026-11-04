@@ -1,0 +1,47 @@
+# Quarterly reminder to verify the crisis help resources (S7-7).
+#
+# It verifies nothing by itself: it opens an issue with the checklist, because
+# an outdated number in a crisis reply is worse than none. The procedure is in
+# docs/crisis-protocol.md ("Verifying the help resources").
+
+name: Verify help resources
+
+on:
+  schedule:
+    # 15:00 UTC on the 3rd of February, May, August and November.
+    - cron: "0 15 3 2,5,8,11 *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  remind:
+    name: Open the checklist issue
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Open the issue unless one is already open
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          open=$(gh issue list --state open --label help-resources --json number --jq 'length')
+          if [ "$open" -gt 0 ]; then
+            echo "A verification issue is already open."
+            exit 0
+          fi
+          gh label create help-resources --description "Periodic check of the crisis help lines" --color B60205 2>/dev/null || true
+          gh issue create \
+            --title "Verify the crisis help resources ($(date -u +%Y-%m-%d))" \
+            --label help-resources,security \
+            --body "$(cat <<'EOF'
+          The help numbers in `api/config/crisis.json` must be checked every 3 months. Procedure: `docs/crisis-protocol.md`, section "Verifying the help resources".
+
+          - [ ] 9-1-1 is still the national emergency number in Costa Rica
+          - [ ] Línea Aquí Estoy: number, hours and wording match https://aquiestoy.cr/
+          - [ ] Fix anything that changed in `api/config/crisis.json` and in the table of `docs/crisis-protocol.md`
+          - [ ] Set `updatedAt` in `api/config/crisis.json` to the verification date
+          - [ ] Close this issue
+          EOF
+          )"
