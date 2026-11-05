@@ -1,6 +1,6 @@
 # Sequence diagram — sending a message
 
-What happens from the moment the user sends a chat message until they see the reply ([`POST /v1/chat`](../api-contract.md#post-v1chat), S1-5). Voice mode uses the same path: the phone turns speech into text before sending and speaks the reply after receiving it.
+What happens from the moment the user sends a chat message until they see the reply ([`POST /v1/chat`](../api-contract.md#post-v1chat), S1-5). Voice mode uses the same path: the phone sends each turn's audio to [`POST /v1/transcribe`](../api-contract.md#post-v1transcribe) first, sends the text it gets here, receives the reply sentence by sentence and speaks it.
 
 See also the [architecture](../architecture.md), the [ERD](../erd.md) and the non-negotiable rules in [CONTRIBUTING.md](../../CONTRIBUTING.md#non-negotiable-rules).
 
@@ -51,8 +51,8 @@ sequenceDiagram
         A-->>U: Friendly limit message, help screen still available
     else No risk and under the cap
         Note over B,DB: 4. Build the prompt
-        B->>DB: Open session (or start a new one), distilled memories, last 15–20 messages
-        DB-->>B: Session, memories, recent messages
+        B->>DB: Open conversation (or start a new one), distilled memories, last 16 messages
+        DB-->>B: Conversation, memories, recent messages
         B->>B: System prompt + memory slot + recent messages + new message
 
         Note over B,L: 5. Call the LLM
@@ -85,7 +85,7 @@ sequenceDiagram
 | 1 | **Auth** | Only a signed-in user reaches the rest of the flow. | S4-3 |
 | 2 | **Daily limit** | The usage is read before anything else spends quota. The decision is applied after the crisis filter, so a person in crisis always gets help. | S2-6 |
 | 3 | **Crisis filter** | Runs before any call to the conversation model. Clear risk never leaves the backend; an ambiguous message only goes to an isolated classification. When in doubt, the protocol is triggered. | S2-1, S2-2, S2-3, S2-5 |
-| 4 | **Build the prompt** | The distilled memory is injected into the system prompt slot, with only the last 15 to 20 messages. | S0-10, S4-5, S4-7 |
+| 4 | **Build the prompt** | The distilled memory is injected into the system prompt slot, with only the last 16 messages of the open conversation (`CHAT_CONTEXT_MESSAGES`), never a crisis. | S0-10, S4-5, S4-7 |
 | 5 | **Call the LLM** | The only call to the conversation model. Errors and rate limits become a clear, retryable error. | S1-3, S1-4, S1-6 |
 | 6 | **Review the reply** | Each sentence is checked before it is shown or spoken. | S2-4 |
 | 7 | **Save** | The message and the reply are stored together and the interaction is counted, only after a successful reply. | S4-4 |

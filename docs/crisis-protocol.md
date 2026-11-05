@@ -85,7 +85,16 @@ The server validates the file when it starts and **refuses to start** if it woul
 
 When a number changes, also update `updatedAt`, so the app knows its cached copy is old.
 
-**Numbers can change.** Verify them before using the app with anyone, and periodically after that (S7-7).
+### Verifying the help resources
+
+**Numbers can change**, and an outdated one in a crisis reply is worse than none: it gives a false sense of safety. They are verified every 3 months. The [`verify-help-resources` workflow](../.github/workflows/verify-help-resources.yml) opens an issue with the checklist on the 3rd of February, May, August and November; it only reminds, the check is manual.
+
+1. Check each line against its official source: for Línea Aquí Estoy, <https://aquiestoy.cr/> (number, hours, whether it is free); for 9-1-1, the national emergency number.
+2. If something changed, edit `api/config/crisis.json` and the table above in a pull request. Render deploys it and the app picks it up from `GET /v1/help-resources`: no new build.
+3. Set `updatedAt` in `crisis.json` to the verification date, even when nothing changed. It is the record of the last verification.
+4. Close the reminder issue.
+
+Last verification: **2026-11-03**. The number, the hours and "free" match aquiestoy.cr; that site does not say "confidential", which the Spanish copy still claims.
 
 ### In the app
 

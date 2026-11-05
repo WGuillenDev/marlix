@@ -116,6 +116,7 @@ export async function startApp({
   usage = createMemoryUsageStore().store,
   profiles = createFakeProfiles().store,
   transcriber = { transcribe: async () => 'hola' },
+  quota,
 }: {
   llm: LlmProvider;
   crisisClassifier?: LlmProvider;
@@ -132,6 +133,7 @@ export async function startApp({
   usage?: AppDependencies['usage'];
   profiles?: AppDependencies['profiles'];
   transcriber?: Transcriber;
+  quota?: AppDependencies['quota'];
 }) {
   const app = createApp({
     llm,
@@ -149,6 +151,7 @@ export async function startApp({
     usage,
     profiles,
     transcriber,
+    ...(quota ? { quota } : {}),
   });
   const authHeader = { authorization: `Bearer ${await signSession()}` };
   const server = app.listen(0);

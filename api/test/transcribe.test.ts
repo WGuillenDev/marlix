@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, it } from 'node:test';
+import { gzipSync } from 'node:zlib';
 
 import { LlmError } from '../src/services/llm/errors.js';
 import { GroqTranscriber, TRANSCRIPTION_PROMPT } from '../src/services/llm/index.js';
@@ -128,6 +129,58 @@ describe('POST /v1/transcribe (S6-9)', () => {
     assert.equal((await send(wav(0.1))).status, 400);
     assert.equal((await send(wav(40))).status, 400);
   });
+
+  it('accepts the maximum 1,024,044-byte WAV body', async () => {
+    const audio = wav(32);
+    assert.equal(audio.length, 1_024_044);
+    const before = heard.length;
+
+    const response = await send(audio);
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { text: answer });
+    assert.equal(heard.length, before + 1);
+    assert.deepEqual(heard.at(-1), audio);
+  });
+
+  for (const mode of ['content-length', 'chunked', 'gzip'] as const) {
+    it(`rejects one byte above the audio limit with ${mode} before calling the provider`, async () => {
+      const audio = Buffer.concat([wav(32), Buffer.alloc(1)]);
+      assert.equal(audio.length, 1_024_045);
+      const before = heard.length;
+      const { result: response, output } = await captureConsole(async () => {
+        if (mode === 'chunked') {
+          const options: RequestInit & { duplex: 'half' } = {
+            method: 'POST',
+            headers: { 'content-type': 'audio/wav', ...app.authHeader },
+            body: new ReadableStream({
+              start(controller) {
+                controller.enqueue(new Uint8Array(audio.subarray(0, 512_000)));
+                controller.enqueue(new Uint8Array(audio.subarray(512_000)));
+                controller.close();
+              },
+            }),
+            duplex: 'half',
+          };
+          return app.request('/v1/transcribe', options);
+        }
+        if (mode === 'gzip') {
+          const compressed = gzipSync(audio);
+          assert.ok(compressed.length < 1_024_044);
+          return send(compressed, { 'content-encoding': 'gzip' });
+        }
+        return send(audio);
+      });
+
+      assert.equal(response.status, 400);
+      assert.deepEqual(await response.json(), {
+        error: { code: 'VALIDATION_ERROR', message: 'The request body is too large.' },
+      });
+      assert.equal(response.headers.get('cache-control'), 'no-store');
+      assert.equal(heard.length, before);
+      assert.equal(output, '');
+    });
+  }
 
   it('does not reach the provider when the audio is refused', async () => {
     const before = heard.length;
