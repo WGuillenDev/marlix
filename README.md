@@ -181,7 +181,7 @@ The CI runs the same checks on every pull request. Environment variables, integr
 
 ## Project status
 
-Design, backend, safety, chat, memory, avatar and voice are done, and so are the end-to-end tests, the daily backup, the monitoring and email confirmation. The release APK is signed and installs on a clean phone; it is distributed through GitHub Releases, and Google Play is next. See the [changelog](CHANGELOG.md).
+Design, backend, safety, chat, memory, avatar and voice are done, and so are the end-to-end tests, the daily backup, the monitoring and email confirmation. The first public release, [v0.1.0](https://github.com/WGuillenDev/marlix/releases/tag/v0.1.0), is a signed APK on GitHub Releases. Next come CodeQL code scanning and publishing on Google Play. See the [changelog](CHANGELOG.md).
 
 ## Documentation
 
