@@ -4,6 +4,32 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-11-04 — Audio upload size and public endpoint limits (S7-12)
+
+**Decision:** keep the existing audio parser limit and leave `GET /health` and `GET /v1/help-resources` without application-level per-IP rate limiting for the current MVP. This spike clarifies the contract and adds HTTP regression coverage; it does not change runtime behavior.
+
+### Audio size and rejection
+
+`api/src/routes/transcribe.ts` uses `express.raw`, not multer or multipart uploads. Its numeric limit is **1,024,044 bytes** (`44 + 32 × 16,000 × 2`): the app's 44-byte WAV header and 32 seconds of mono, 16-bit PCM at 16 kHz. The app records at most 30 seconds (960,044 bytes). The separate global JSON parser only reads JSON and does not impose its 16 KiB limit on WAV uploads. Session verification runs before the audio parser; the user burst and daily checks run after parsing and before transcription.
+
+The parser raises `entity.too.large`; the central error handler maps it to `400 VALIDATION_ERROR` with the fixed message `The request body is too large.` A parser's usual `413` is therefore not this API's response. The limit applies to streamed bytes when `Content-Length` is absent and to the expanded bytes of compressed bodies. See the [Express body-parser documentation](https://expressjs.com/en/resources/middleware/body-parser/).
+
+**Evidence:** HTTP tests in `api/test/transcribe.test.ts` upload a synthetic silent WAV of exactly 1,024,044 bytes and confirm it reaches the fake transcriber. A body of 1,024,045 bytes is rejected with the exact error body for ordinary, chunked and gzip uploads. Each rejection makes zero additional provider calls, keeps `Cache-Control: no-store` and writes nothing to the captured console. The existing 40-second rejection also remains covered. These tests exercise the actual Express app over local HTTP, with a signed test session and no real Groq call.
+
+### Render and resource limits
+
+The Blueprint uses Render's `free` web service plan. [Render's compute table](https://render.com/docs/compute-plans) lists 512 MB RAM and 0.1 CPU for it; the upload cap is about 1 MB per decoded body, not a bound on total process memory. Concurrent requests, parser buffers, decompression and provider multipart encoding can add to that memory. The [web service](https://render.com/docs/web-services) and [free instance](https://render.com/docs/free) documentation reviewed for this spike does not specify a numeric inbound body-size ceiling to rely on. The application therefore enforces its own cap regardless of any upstream limit. This review did not probe Render's maximum upload size or load-test production.
+
+### Why public routes remain without per-IP limits
+
+Both public handlers serialize small, bounded responses from memory. `/health` reads the last known usage/quota state without a database or Groq call; Render uses it for health checks and the uptime monitor uses it to keep the service awake. `/v1/help-resources` reads the crisis configuration loaded at startup and must work before sign-in. Neither spends provider quota or performs user-controlled database work.
+
+A shared IP can represent many people behind a mobile carrier, home or institutional network. A per-IP counter could refuse help to one person because of another's traffic, and throttling health checks can interfere with monitoring or cause restarts. [Render provides automatic DDoS protection](https://render.com/docs/ddos-protection); this is an infrastructure layer, not a promise to stop every application-level flood or bandwidth exhaustion. A counter inside this process would still receive the traffic, resets on restart and needs a verified proxy/client-IP configuration to avoid grouping all callers or trusting forged forwarding headers.
+
+**Revisit when:** monitoring shows sustained abuse, bandwidth pressure or degraded availability, or either public route gains expensive work. Prefer a separately scoped edge protection change based on observed traffic, preserving access to crisis help and health checks. This decision accepts the remaining application-level flood risk for the current MVP; it does not extend to authenticated chat or transcription, which retain their existing user limits.
+
+---
+
 ## 2026-10-30 — The help screen offers two lines, and the chat reads aloud through the speaker (S7-13)
 
 **Decision:** the help screen and the crisis reply list only **9-1-1** and the **Línea Aquí Estoy** (800-273-7869), each with its name, **service** and **hours** (a new `service` field in `api/config/crisis.json` and in `GET /v1/help-resources`). The two Emergencias CCSS lines are removed. The 9-1-1 is described only by its service and hours, in the screen, the fixed crisis reply and the prompt; Aquí Estoy's service names the Colegio de Psicólogos de Costa Rica, and only that line mentions Costa Rica. The layout follows wireframe 06: the red card with the big 9-1-1 button first, then "Otros recursos en Costa Rica". The Aquí Estoy card is laid out like the 9-1-1 one (a big red "Llamar a Línea Aquí Estoy" button, then the details) with a quiet border, so only the button is red. Each line of text has a bold label (Servicio, Horario, Teléfono).
