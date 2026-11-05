@@ -4,6 +4,21 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-11-05 — CodeQL scans the backend and the workflows (S8-1)
+
+**Decision:** `.github/workflows/codeql.yml` runs CodeQL for `javascript-typescript` (the backend in `api/`) and `actions` (the workflows) on every pull request, on every push to `main` and once a week (Monday). Actions are pinned by SHA, the workflow has read-only `contents` and only the analysis job gets `security-events: write`.
+
+**Why:**
+- The Sprint 7 security audit found no code scanning at all. CodeQL is free on public repositories and finds injection, unsafe-input and workflow-permission problems that tests do not.
+- The advanced workflow (a file in the repository) was chosen over the "default setup" from the settings panel because it is reviewed in pull requests, pinned by SHA and updated by Dependabot like the other workflows.
+- `build-mode: none` is enough for both languages: neither needs a compilation.
+
+**Dart stays out:** CodeQL does not support Dart. The Flutter app keeps `flutter analyze` and its tests in `ci.yml`.
+
+**Required check:** the CodeQL jobs are not added to the "Protect main" required checks yet. They are run on the first pull requests and added once they have proven stable and free of false positives, so a flaky scan cannot block a merge.
+
+---
+
 ## 2026-11-04 — The release APK is signed with its own key and ships through GitHub Releases (S7-15)
 
 **Decision:** the release build is signed with a key kept outside the repository. `app/android/app/build.gradle.kts` reads `app/android/key.properties` (ignored, template in `key.properties.example`); without that file the release falls back to the debug key so that `flutter run --release` still works on a fresh clone. Updates are distributed as APKs attached to GitHub Releases (tag `vX.Y.Z`), signed with the same key.
