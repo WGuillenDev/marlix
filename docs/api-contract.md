@@ -18,6 +18,8 @@ See also the [chat sequence diagram](diagrams/chat-sequence.md), the [architectu
 
 Endpoints marked **Public** do not need a token.
 
+`GET /health` and `GET /v1/help-resources` have no application-level per-IP rate limit: both read only in-memory state, and help must remain accessible before sign-in. This does not guarantee unlimited availability; see the [S7-12 assessment](decisions.md#2026-11-04--audio-upload-size-and-public-endpoint-limits-s7-12).
+
 ## Errors
 
 Every error uses the same body:
@@ -330,7 +332,9 @@ Both messages of a turn are saved before the reply is returned, and `userMessage
 
 Turns what the person said in the voice mode into text (S6-9). The app records each turn on the phone, with echo cancellation, and sends it here; the text then goes through `POST /v1/chat` like typed text, so the crisis filter applies equally. The model is Whisper in Groq (`GROQ_TRANSCRIPTION_MODEL`), in Spanish, with a prompt that spells Costa Rican words such as "mae" and "tuanis". The stretches that Whisper itself doubts are speech (a fan, the street) are dropped, so `text` can come back empty ([decision](decisions.md#2026-10-28--talking-without-buttons-whisper-in-groq-and-a-detector-of-turns-s6-9)).
 
-**Request.** The body is the audio itself, not JSON: `Content-Type: audio/wav`, WAV 16 kHz, mono, 16-bit PCM, between 0.25 and 32 seconds (the app sends 30 s at most). A body that is not that format, is empty, is too short or is over the size of 32 s answers `400 VALIDATION_ERROR`.
+**Request.** The body is the audio itself, not JSON or multipart: `Content-Type: audio/wav` (`audio/x-wav` is also accepted), WAV 16 kHz, mono, 16-bit PCM, between 0.25 and 32 seconds (the app sends 30 s at most). The maximum body is **1,024,044 bytes**: a 44-byte WAV header plus `32 × 16,000 × 2` bytes of PCM. A body that is not that format, is empty, is too short or exceeds that byte limit answers `400 VALIDATION_ERROR`.
+
+The raw parser enforces the limit after session verification and before the transcription provider is called. The limit also applies to chunked uploads without `Content-Length` and to the expanded body when HTTP compression is used; compressed size cannot bypass it. Oversized audio returns `{"error":{"code":"VALIDATION_ERROR","message":"The request body is too large."}}`, without saving or logging the audio. The global 16 KiB JSON limit is separate and does not apply to WAV bodies.
 
 **Response `200`**
 
