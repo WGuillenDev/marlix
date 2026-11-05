@@ -72,7 +72,6 @@ When the crisis filter detects risk, `POST /v1/chat` answers **`200`** with `"ty
 | `GET` | [`/v1/help-resources`](#get-v1help-resources) | Public | US-05 |
 | `GET` | [`/v1/me`](#get-v1me) | Token | US-01, US-02 |
 | `POST` | [`/v1/onboarding`](#post-v1onboarding) | Token | US-02 |
-| `PATCH` | [`/v1/settings`](#patch-v1settings) | Token | US-14 |
 | `POST` | [`/v1/chat`](#post-v1chat) | Token | US-03, US-04, US-10, US-11, US-12 |
 | `POST` | [`/v1/transcribe`](#post-v1transcribe) | Token | US-03 |
 | `GET` | [`/v1/history`](#get-v1history) | Token | US-06 |
@@ -81,8 +80,9 @@ When the crisis filter detects risk, `POST /v1/chat` answers **`200`** with `"ty
 | `PATCH` | [`/v1/memories/:id`](#patch-v1memoriesid) | Token | US-08 |
 | `DELETE` | [`/v1/memories/:id`](#delete-v1memoriesid) | Token | US-08 |
 | `DELETE` | [`/v1/memories`](#delete-v1memories) | Token | US-08 |
-| `GET` | [`/v1/avatars`](#get-v1avatars) | Token | US-13 |
 | `DELETE` | [`/v1/account`](#delete-v1account) | Token | US-09 |
+
+`PATCH /v1/settings` and `GET /v1/avatars` were designed in Sprint 0 but are not implemented; they are kept under [Planned endpoints](#planned-endpoints) so they are not mistaken for part of v1.
 
 ---
 
@@ -172,7 +172,11 @@ Returns the signed-in user's profile. The app calls it after sign-in to decide w
 
 `avatar.layersPath` is the folder with the avatar's SVG layers inside the app's assets (`avatars.layers_path`). The app passes it to the avatar widget (S5-7); it ignores a path that does not start with `assets/avatars/` and uses marlix's, and it tolerates the trailing slash.
 
+`settings.remindersEnabled` is the answer given in onboarding. After that, the reminders are turned on and off in the app's Settings and kept only on the phone, so this value is not updated when the person changes them there.
+
 `avatar.voiceConfig` says how the avatar speaks (S6-2). `engine` is `supertonic-3` (the neural voice that runs on the phone) or `native` (the phone's own voice); `voice` is the Supertonic voice, `language` its language, `steps` its denoising steps and `rate` its speed. `fallback` is for the phone's native voice, which the app uses when the phone cannot run Supertonic. The app ignores a `voiceConfig` it does not understand and falls back to its built-in defaults, so an older app keeps working and a newer one does not break against an older backend. The choice of engine on each phone is made by the app ([decision](decisions.md#2026-10-21--voice-supertonic-3-on-the-phone-voice-f4-s6-1)).
+
+**Errors:** `401 UNAUTHORIZED`; `404 NOT_FOUND` when the account has no profile (for example, it was just deleted).
 
 ---
 
@@ -197,28 +201,6 @@ Records the explicit data consent and marks onboarding as done (US-02). Called o
 
 ---
 
-### `PATCH /v1/settings`
-
-Changes the user's settings. Only the fields sent are changed.
-
-**Request**
-
-~~~json
-{ "remindersEnabled": false }
-~~~
-
-| Field | Type | Rules |
-|---|---|---|
-| `remindersEnabled` | boolean | Optional. Daily reminders on or off (US-14). The phone schedules or cancels them locally. |
-
-**Response `200`**
-
-~~~json
-{ "remindersEnabled": false }
-~~~
-
----
-
 ### `POST /v1/chat`
 
 Sends a message to marlix and returns the reply. It runs the full flow of the [sequence diagram](diagrams/chat-sequence.md): auth, daily limit, crisis filter, prompt with memory, model, reply review and save.
@@ -235,7 +217,7 @@ Sends a message to marlix and returns the reply. It runs the full flow of the [s
 
 | Field | Type | Rules |
 |---|---|---|
-| `message` | string | Required. 1 to 2,000 characters after trimming spaces. In voice mode it is the text from the phone's speech recognizer. |
+| `message` | string | Required. 1 to 2,000 characters after trimming spaces. In voice mode it is the text returned by [`POST /v1/transcribe`](#post-v1transcribe). |
 | `mode` | `"text"` \| `"voice"` | Optional, default `"text"`. In `"voice"` the model is asked for one to three short sentences, as people talk, and the reply is cleaned of emojis, markdown and symbols before it is reviewed, saved and returned, because the phone reads it aloud (US-11, S6-3). `"text"` changes nothing. |
 | `interruptedMessageId` | UUID \| null | Optional. The assistant message the user interrupted by talking (US-12). It stays in the history marked as interrupted. |
 
@@ -313,7 +295,7 @@ event: sentence
 data: {"index":1,"text":"Contame, ¿qué fue lo que salió mejor?"}
 
 event: done
-data: {"type":"reply","userMessage":{…},"reply":{…},"usage":{…}}
+data: {"type":"reply","tone":"positive","userMessage":{…},"reply":{…},"usage":{…}}
 ~~~
 
 Everything that can fail before the first event still answers with a normal JSON error and HTTP status, not with a stream: validation, auth, the daily limit and a model that fails before saying anything (`503`, with `Retry-After` when Groq asks for it). The stream only opens with its first event.
@@ -469,9 +451,37 @@ Deletes all of the user's memories. The app asks for confirmation before calling
 
 ---
 
-### `GET /v1/avatars`
+### `DELETE /v1/account`
 
-Lists the available avatars. In v1 there is one; the endpoint is ready for more in v2 without changes.
+Deletes the account and all its data in cascade: profile, conversations, messages, memories and usage (US-09). It runs on the backend because it needs the service key. The app asks for confirmation before calling it and signs out after the response.
+
+**Requires a recent sign-in.** Deleting everything cannot be undone, so a stolen or forgotten-open session must not be enough. The backend checks when the person last entered their credentials: the newest `timestamp` of the access token's `amr` claim. If it is more than **5 minutes** old, or the token has none, it answers `401 REAUTHENTICATION_REQUIRED` and deletes nothing. The app then asks for the password again (a new Supabase sign-in, which puts a fresh time in the token) and retries the call. The `iat` claim is not used: Supabase renews it with every token refresh, so a refresh token would be enough to look like a recent sign-in ([decision](decisions.md#2026-10-17--account-deletion-the-database-cascades-and-a-recent-sign-in-is-read-from-amr-not-iat-s4-9)).
+
+**Response `204`**, no body. After it, the user cannot sign in with that account. Calling it again with a token that is still valid also answers `204`. Such a token keeps passing the session check until it expires (up to an hour), but there is nothing left to read, and anything it tries to write is refused by the database because the user no longer exists.
+
+**Errors:** `401 UNAUTHORIZED` (missing or invalid token), `401 REAUTHENTICATION_REQUIRED` (the last sign-in is older than 5 minutes).
+
+## Planned endpoints
+
+Designed in Sprint 0 and **not implemented**: with a valid token, the backend answers `404 NOT_FOUND` to both. They are kept here as the agreed shape for when they are built ([decision](decisions.md#2026-11-04--the-contract-lists-only-implemented-endpoints-and-the-history-holds-no-secrets-s7-14)).
+
+### `PATCH /v1/settings` (planned)
+
+Would change the user's settings, only the fields sent. Not needed in v1: the reminders are scheduled, turned on and off and stored on the phone (S5-3), and the backend only records the answer given in onboarding. When it is built, it writes through the backend with the service key, because users have no `UPDATE` on `users` ([decision](decisions.md#2026-10-29--only-the-backend-writes-the-consent-and-the-onboarding-s6-11)).
+
+~~~json
+{ "remindersEnabled": false }
+~~~
+
+| Field | Type | Rules |
+|---|---|---|
+| `remindersEnabled` | boolean | Optional. Daily reminders on or off (US-14). |
+
+**Response `200`**: `{ "remindersEnabled": false }`.
+
+### `GET /v1/avatars` (planned)
+
+Would list the available avatars, for the avatar selection screen of v2. In v1 there is one, and the user's avatar already arrives in [`GET /v1/me`](#get-v1me) ([decision](decisions.md#2026-10-20--the-avatar-folder-travels-in-get-v1me-s5-7)).
 
 **Response `200`**
 
@@ -497,19 +507,7 @@ Lists the available avatars. In v1 there is one; the endpoint is ready for more 
 }
 ~~~
 
-The app reads `voiceConfig` for the on-device voice (same shape as in [`GET /v1/me`](#get-v1me)) and `layersPath` for the SVG layers.
-
----
-
-### `DELETE /v1/account`
-
-Deletes the account and all its data in cascade: profile, sessions, messages, memories and usage (US-09). It runs on the backend because it needs the service key. The app asks for confirmation before calling it and signs out after the response.
-
-**Requires a recent sign-in.** Deleting everything cannot be undone, so a stolen or forgotten-open session must not be enough. The backend checks when the person last entered their credentials: the newest `timestamp` of the access token's `amr` claim. If it is more than **5 minutes** old, or the token has none, it answers `401 REAUTHENTICATION_REQUIRED` and deletes nothing. The app then asks for the password again (a new Supabase sign-in, which puts a fresh time in the token) and retries the call. The `iat` claim is not used: Supabase renews it with every token refresh, so a refresh token would be enough to look like a recent sign-in ([decision](decisions.md)).
-
-**Response `204`**, no body. After it, the user cannot sign in with that account. Calling it again with a token that is still valid also answers `204`. Such a token keeps passing the session check until it expires (up to an hour), but there is nothing left to read, and anything it tries to write is refused by the database because the user no longer exists.
-
-**Errors:** `401 UNAUTHORIZED` (missing or invalid token), `401 REAUTHENTICATION_REQUIRED` (the last sign-in is older than 5 minutes).
+The app would read `voiceConfig` for the on-device voice (same shape as in [`GET /v1/me`](#get-v1me)) and `layersPath` for the SVG layers.
 
 ## Use cases covered
 
@@ -525,7 +523,7 @@ Every use case from the [use case diagram](use-cases.md) runs with these endpoin
 | UC-06 View conversation history | `GET /v1/history` |
 | UC-07 View remaining interactions | `GET /v1/usage`, also returned by every `POST /v1/chat` |
 | UC-08 Manage memories | `GET`, `PATCH` and `DELETE` on `/v1/memories` |
-| UC-09 Configure reminders | `PATCH /v1/settings`; the phone schedules them |
+| UC-09 Configure reminders | On the phone (Settings), no endpoint; onboarding records the first answer in `POST /v1/onboarding` |
 | UC-10 Delete account | `DELETE /v1/account` |
 | UC-11 Give data consent | `POST /v1/onboarding` with `dataConsent: true` |
 | UC-12 Interrupt the avatar | The phone stops the voice; the next `POST /v1/chat` sends `interruptedMessageId` |
@@ -538,4 +536,4 @@ Every use case from the [use case diagram](use-cases.md) runs with these endpoin
 
 ## Out of scope
 
-Implementing the endpoints (starts in Sprint 1). Sign-up, sign-in and password reset, which are handled by Supabase Auth.
+Sign-up, sign-in, email confirmation and password recovery, which are handled by Supabase Auth (S7-9).

@@ -101,8 +101,9 @@ flowchart TB
         db[("PostgreSQL<br/>RLS on every table")]
     end
 
-    groq["🧠 Groq · LLM"]
+    groq["🧠 Groq<br/>LLM · Whisper"]
     monitor["⏱️ Uptime monitor"]
+    actions["⚙️ GitHub Actions<br/>encrypted backup"]
 
     user -- "voice" --> mic --> app
     user -- "text" --> app
@@ -114,8 +115,10 @@ flowchart TB
 
     crisis -. "ambiguous: isolated<br/>classification, no history" .-> groq
     prompt == "conversation" ==> groq
+    render -. "turn audio · memory extraction" .-> groq
     render -- "service_role" --> db
-    monitor -. "GET /health every 10 min" .-> render
+    monitor -. "GET /health every 5 min" .-> render
+    actions -. "pg_dump every day" .-> db
 
     app -. "❌ never" .-x groq
 ```
@@ -154,11 +157,23 @@ cp .env.example .env   # fill in GROQ_API_KEY and the Supabase variables
 npm run dev
 ```
 
-Environment variables, tests, deployment and the local database are in the [development guide](docs/development.md).
+### Commands
+
+| Where | Command | What it does |
+| --- | --- | --- |
+| `api/` | `npm run dev` | Starts the backend and restarts it on every change. |
+| `api/` | `npm run typecheck` | Checks the types in strict mode. |
+| `api/` | `npm test` | Runs the backend tests. |
+| `api/` | `npm run build` and `npm start` | Compiles to `dist/` and runs the compiled server. |
+| `app/` | `flutter analyze` | Checks the code with the project's lint rules. |
+| `app/` | `flutter test` | Runs the app tests. |
+| `app/` | `flutter build apk --release --dart-define-from-file=config/production.json` | Builds the release APK against production. |
+
+The CI runs the same checks on every pull request. Environment variables, integration tests, deployment and the local database are in the [development guide](docs/development.md).
 
 ## Project status
 
-Design, backend, safety, chat, memory, avatar and voice are done. The last sprint covers end-to-end tests, the signed APK, backups and monitoring; the app is not distributed yet. See the [changelog](CHANGELOG.md).
+Design, backend, safety, chat, memory, avatar and voice are done, and so are the end-to-end tests, the daily backup, the monitoring and email confirmation. What is left of the last sprint is the signed APK; the app is not distributed yet. See the [changelog](CHANGELOG.md).
 
 ## Documentation
 
