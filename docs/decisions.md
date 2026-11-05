@@ -205,7 +205,7 @@ Every time the project picks between two technical options, the decision is reco
 
 The birth date is stored, not the age, so the policy can change later with one constant in the trigger and one in the app (`minimumAge`). The app sends it as user metadata (`birth_date`, `YYYY-MM-DD`) and the trigger copies it to `users.birth_date`, which the app cannot change afterwards (no column grant).
 
-**No email confirmation for now** (decided by the user on 2026-10-15). "Confirm email" is off in Supabase, so a new account is signed in at once.
+**No email confirmation initially** (decided by the user on 2026-10-15, superseded by S7-9 on 2026-11-04). "Confirm email" was off in Supabase, so a new account was signed in at once. S7-9 enabled the code-based replacement below after SMTP setup and real-email tests.
 
 | Option | Result |
 |---|---|
@@ -968,3 +968,15 @@ The voice keeps the **5 steps** that the listeners voted for: 3 steps is faster 
 | Only a weekly manual look at the console | Kept as the periodic review, but it is not an alert. |
 
 **Limits.** The reading lives in memory: after a deploy or restart it is empty until the first reply, and it cannot see a quota nobody is using. Only the per-day *requests* header exists; the daily token limit and Whisper's audio limit are not reported, and show up as 429s in the logs. Each model is read separately, so the classifier, the reply and the memory extractor are all watched. `/health` answers `200` while degraded for the same reason as in S6-16: restarting does not give Groq's quota back. `/health` does not touch the database, so it does not keep the Supabase project from pausing; the card assumed it did.
+
+## 2026-11-04 — Email confirmation and password recovery use codes inside the app (S7-9)
+
+**Decision:** Supabase Auth sends the code and verifies it; marlix never generates, compares or logs it. Sign-up without a session opens a six-digit confirmation form. `verifyOTP` with type `email` starts the normal session. Recovery uses `resetPasswordForEmail`, `verifyOTP` with type `recovery`, then `updateUser` with the new password. The email templates in `infra/auth/` contain `{{ .Token }}` and no links, so neither flow needs a browser or deep links. Re-sending waits 60 seconds in the UI; Supabase remains responsible for server-side rate limits and code expiry.
+
+**Session isolation:** recovery has its own short-lived `GoTrueClient`, with no storage and no automatic refresh. Its session never reaches `signedInUserProvider`, the chat or the encrypted normal session storage. A failed password update can be retried with the verified temporary session. Canceling or finishing recovery disposes it; the person signs in with the new password afterwards. Reusing the normal client was rejected because verifying a recovery code would otherwise open the chat before the password form.
+
+**Account privacy:** a successful sign-up or an already-registered response opens the same neutral code screen. Recovery and resend requests also hide unknown-account responses. An invalid or expired code gets the same message regardless of the email. Password sign-in continues to combine unknown email, unconfirmed email and wrong password into one error.
+
+**Production configuration and verification:** on 2026-11-04, the user configured custom SMTP, the confirmation and recovery templates, six-digit email OTPs, a 3600-second OTP expiration, an eight-character minimum password and `Confirm email` in Supabase. Real-mailbox tests with the updated app in the Pixel_8 emulator verified sign-up confirmation, recovery-code delivery and verification, password replacement and subsequent sign-in with the new password. Existing accounts created with confirmation disabled are already confirmed; this change does not rewrite them. The app also accepts an immediate sign-up session in environments with confirmation disabled. Older app versions cannot handle a confirmation challenge; new installations need this version. No backend endpoint or database schema changes.
+
+References: [email templates](https://supabase.com/docs/guides/auth/auth-email-templates), [Flutter OTP verification](https://supabase.com/docs/reference/dart/auth-verifyotp), [custom SMTP](https://supabase.com/docs/guides/auth/auth-smtp).

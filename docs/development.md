@@ -16,7 +16,7 @@ Requirements: [Flutter](https://docs.flutter.dev/get-started/install) stable (3.
    flutter run --dart-define-from-file=config/production.json
    ~~~
 
-The backend URL and the Supabase project are not in the code: they come from a file in `app/config/`, and the app refuses to start without valid ones. The app uses Supabase only to sign up and sign in, with the project's publishable key, which is public by design; the secret key never goes in the app.
+The backend URL and the Supabase project are not in the code: they come from a file in `app/config/`, and the app refuses to start without valid ones. The app uses Supabase Auth for accounts, email verification, password recovery and sessions, with the project's publishable key, which is public by design; the secret key never goes in the app.
 
 | File | Backend | In Git |
 |---|---|---|
@@ -31,7 +31,7 @@ The app opens on the sign-in screen. Create an account there (you must be 18 or 
 |---|---|
 | `flutter analyze` | Checks the code with the project's lint rules. |
 | `flutter test` | Runs the automated tests. The [CI](../.github/workflows/ci.yml) also runs them, with the format check and `flutter analyze`, on every pull request. |
-| `flutter test integration_test --dart-define-from-file=config/local.json` | Calls every backend endpoint from the app on the emulator. It signs up its own throwaway account (`it-…@marlix.test`) and deletes it with `DELETE /v1/account` at the end, even if a test fails, so it leaves no data in the database. It sends two chat messages; one uses the Groq quota. |
+| `flutter test integration_test --dart-define-from-file=config/local.json` | Calls every backend endpoint from the app on the emulator. The app and backend must point to an isolated Supabase test project with email autoconfirm enabled. The suite checks that setting before creating a throwaway account (`it-…@marlix.test`) and deletes it with `DELETE /v1/account` at the end, even if a test fails. It sends two chat messages; one uses the Groq quota. Never disable production confirmation for this suite. Email-code acceptance testing uses a controlled real mailbox separately. |
 | `flutter build apk --release --dart-define-from-file=config/production.json` | Builds the release APK against production. Test voice mode on a release build too: R8 shrinks it and the debug build does not. |
 | `dart format lib test integration_test` | Formats the code (100 columns). |
 
@@ -118,10 +118,14 @@ Sign-up uses email and password, with these settings in **Authentication → Sig
 
 | Setting | Value | Why |
 |---|---|---|
-| Confirm email | Off | The free email service sends about 2 emails an hour; confirmation comes with its own card (S7-9). |
+| Confirm email | On | New accounts confirm their email with a code entered in the app (S7-9). |
 | Minimum password length | 8 | The same minimum the app checks. |
+| Email OTP length | 6 | The confirmation and recovery forms accept six digits. |
+| Email OTP expiration | 3600 seconds | Supabase expires confirmation and recovery codes after one hour. |
 
 The minimum age is enforced in the database: the sign-up trigger in the schema refuses anyone under 18, whatever client calls Supabase Auth.
+
+S7-9 enables confirmation and recovery with codes typed in the app. Production uses custom SMTP, `Confirm email` on, six-digit email OTPs, and the confirmation and recovery templates in `infra/auth/`, which use `{{ .Token }}` without links. On 2026-11-04, real-mailbox tests in the Pixel_8 emulator verified sign-up confirmation, recovery, a new password and subsequent sign-in. Existing users remain confirmed. Older app versions cannot handle a sign-up without a session; new installations need the updated app. The app requests a fresh code after expiry and waits 60 seconds before resend; Supabase enforces the actual rate limits. Recovery sessions exist only in memory, outside the normal persisted session, and finish with password sign-in. See the [S7-9 decision](decisions.md#2026-11-04--email-confirmation-and-password-recovery-use-codes-inside-the-app-s7-9).
 
 ## Local database
 

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -23,14 +24,28 @@ void main() {
       'it-${DateTime.now().millisecondsSinceEpoch}-${random.nextInt(1 << 32)}@marlix.test';
   final password = List.generate(24, (_) => random.nextInt(36).toRadixString(36)).join();
   var accountDeleted = false;
+  var accountCreated = false;
   final config = AppConfig.fromEnvironment();
   final client = http.Client();
   late SupabaseAuthService auth;
   late MarlixApi api;
 
   setUpAll(() async {
+    final settings = await client.get(
+      config.supabaseUrl.resolve('/auth/v1/settings'),
+      headers: {'apikey': config.supabasePublishableKey},
+    );
+    if (settings.statusCode != 200 ||
+        (jsonDecode(settings.body) as Map<String, dynamic>)['mailer_autoconfirm'] != true) {
+      throw StateError(
+        'This disposable-account suite requires an isolated Supabase test project with '
+        'email autoconfirm enabled. Do not disable production email confirmation. '
+        'Test the real email-code flow separately with a controlled mailbox.',
+      );
+    }
     auth = await SupabaseAuthService.initialize(config);
     await auth.signUp(email: email, password: password, birthDate: DateTime(1990, 1, 1));
+    accountCreated = true;
     api = MarlixApi(
       client: client,
       baseUrl: config.apiBaseUrl,
@@ -38,12 +53,12 @@ void main() {
     );
   });
   tearDownAll(() async {
-    // Also when a test failed halfway: the account must not stay in production.
-    if (!accountDeleted) {
+    // Also when a test failed halfway: the account must not stay in the test project.
+    if (accountCreated && !accountDeleted) {
       await auth.signIn(email: email, password: password);
       await api.deleteAccount();
     }
-    await auth.signOut();
+    if (accountCreated) await auth.signOut();
     client.close();
   });
 
