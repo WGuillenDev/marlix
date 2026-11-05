@@ -2,33 +2,68 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src https://api.github.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Eliminar mi cuenta · marlix</title>
   <meta name="description" content="Cómo eliminar tu cuenta de marlix y todos tus datos.">
+  <meta name="theme-color" content="#FFF8EE">
+  <link rel="icon" href="avatar.svg" type="image/svg+xml">
   <link rel="stylesheet" href="style.css">
+  <script src="effects.js" defer></script>
 </head>
 <body>
-<main>
-  <nav><a href="index.html">marlix</a><a href="privacy.html">Política de privacidad</a></nav>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="index.html"><img src="avatar.svg" alt=""><span>marlix</span></a>
+    <nav>
+      <a href="updates.html">Versiones</a>
+      <a href="privacy.html">Privacidad</a>
+      <a href="delete-account.html" aria-current="page">Eliminar cuenta</a>
+    </nav>
+  </div>
+</header>
 
-  <h1>Eliminar mi cuenta de marlix</h1>
-  <p class="muted">Última actualización: 5 de noviembre de 2026</p>
+<div class="hero">
+  <div class="wrap">
+    <img class="avatar small" src="avatar.svg" alt="">
+    <h1>Eliminar mi cuenta</h1>
+    <p class="lead">Puedes borrar tu cuenta de marlix y todos tus datos cuando quieras.</p>
+    <span class="updated">Última actualización: 5 de noviembre de 2026</span>
+  </div>
+</div>
 
-  <h2>Desde la app (inmediato)</h2>
-  <ol>
-    <li>Abre marlix e inicia sesión.</li>
-    <li>Entra a <strong>Ajustes</strong>.</li>
-    <li>Pulsa <strong>Eliminar mi cuenta</strong> y confirma.</li>
-  </ol>
-  <p>Se borran al instante tus mensajes, tus recuerdos, tu registro de uso, tu perfil y tu cuenta de acceso. No se puede deshacer.</p>
+<main class="wrap">
+  <section class="card">
+    <h2>Desde la app</h2>
+    <ol class="steps">
+      <li>Abre marlix e inicia sesión.</li>
+      <li>Toca el engrane para entrar a <strong>Ajustes</strong>.</li>
+      <li>Toca <strong>Eliminar mi cuenta</strong> y luego <strong>Eliminar para siempre</strong>. Si iniciaste sesión hace más de unos minutos, la app te pide tu contraseña otra vez para confirmar que eres tú.</li>
+    </ol>
+    <p>Se borran al instante tu cuenta, tu perfil, tus conversaciones, tus mensajes, tus recuerdos y tu registro de uso. No se puede deshacer.</p>
+  </section>
 
-  <h2>Si ya no tienes la app</h2>
-  <p>Escribe a <a href="mailto:wilberthguillen.ing@gmail.com?subject=Eliminar%20mi%20cuenta%20de%20marlix">wilberthguillen.ing@gmail.com</a> con el asunto «Eliminar mi cuenta de marlix», desde el correo con el que te registraste. Borraré la cuenta y confirmaré por el mismo medio, normalmente en menos de 7 días.</p>
+  <section class="card">
+    <h2>Si ya no tienes la app</h2>
+    <p>Escribe a soporte desde el correo con el que te registraste, con el asunto «Eliminar mi cuenta de marlix». La cuenta se borra y recibes la confirmación por el mismo medio, normalmente en menos de 7 días.</p>
+    <a class="mail" href="mailto:wilberthguillen.ing@gmail.com?subject=Eliminar%20mi%20cuenta%20de%20marlix">wilberthguillen.ing@gmail.com</a>
+  </section>
 
-  <h2>Qué pasa con las copias de seguridad</h2>
-  <p>Hay una copia de seguridad cifrada diaria de la base de datos. Los datos de una cuenta borrada desaparecen de las copias cuando estas vencen, a más tardar 90 días después.</p>
+  <section class="card summary">
+    <h2>Copias de seguridad</h2>
+    <p>Cada día se hace una copia de seguridad cifrada de la base de datos. Los datos de una cuenta borrada desaparecen de las copias cuando estas vencen, a más tardar 90 días después.</p>
+  </section>
 
   <p>Más detalles sobre qué se guarda en la <a href="privacy.html">política de privacidad</a>.</p>
 </main>
+
+<footer>
+  <div class="wrap">
+    <p><a href="index.html">Inicio</a> · <a href="updates.html">Versiones</a> · <a href="privacy.html">Política de privacidad</a> · <a href="https://github.com/WGuillenDev/marlix" rel="noopener noreferrer">GitHub</a></p>
+    <p>Soporte: <a href="mailto:wilberthguillen.ing@gmail.com">wilberthguillen.ing@gmail.com</a></p>
+    <p>marlix es de código abierto, hecho en Costa Rica por WGuillenDev.</p>
+  </div>
+</footer>
 </body>
 </html>
