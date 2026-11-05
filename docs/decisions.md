@@ -4,6 +4,22 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-11-05 — The app icon and launch screen are generated from the avatar, without a plugin (S8-3)
+
+**Decision:** the Android launcher icon is an adaptive icon: the avatar from `docs/images/marlix.svg` as the foreground on the app's light tan (`#F6D9B8`), plus a monochrome silhouette for themed icons on Android 13+. Phones before Android 8 get a square and a round PNG. The launch screen is the app's cream (`#FFF8EE`) with the avatar, both in the old `launch_background` and in the Android 12+ splash screen (`values-v31`, `values-night-v31`). The version moves to `0.1.2+3`.
+
+**Why:** the app shipped Flutter's template icon and a white launch screen, so the phone showed the Flutter logo while the store listing shows the beagle. It had to be fixed before the first AAB reaches Google Play.
+
+| Option | Verdict |
+|---|---|
+| PNGs rendered from the SVG and committed | **Chosen.** No new dependency and the files are reviewed like any image. The avatar sits inside the 66 dp safe zone of the 108 dp adaptive canvas, so no launcher mask cuts its ears or feet. |
+| `flutter_launcher_icons` and `flutter_native_splash` | Discarded. Two dev dependencies and generated files for a one-time change; they also rewrite `styles.xml`. |
+| A vector drawable converted from the SVG | Discarded. The shirt lettering is a long path and the conversion is lossy; the PNGs look the same and are simpler to regenerate. |
+
+**Verification:** the release APK installed over `v0.1.0` on the emulator kept the session and the chat; the launcher shows the new icon and a cold start shows the cream splash with the avatar. The AAB is signed with the S7-15 key.
+
+---
+
 ## 2026-11-05 — Google Play: privacy pages on GitHub Pages, the S7-15 key as upload key (S8-2)
 
 **Decision:** the privacy policy and the account deletion page that Google Play requires are static HTML in `site/`, published with GitHub Pages by `.github/workflows/pages.yml` at `https://wguillendev.github.io/marlix/`. The AAB is signed with the S7-15 key, which becomes the Play **upload key** (Play App Signing keeps the real signing key). The store text and graphics live in [`play-store/listing.md`](play-store/listing.md). The version moves to `0.1.1+2`, so its `versionCode` is above the one in `v0.1.0`.
