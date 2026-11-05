@@ -162,6 +162,67 @@ void main() {
     expect(find.text('Ayuda'), findsOneWidget);
   });
 
+  group('password recovery', () {
+    Future<void> openRecovery(WidgetTester tester) async {
+      await openSignedOut(tester);
+      await tapVisible(tester, find.text('Olvidé mi contraseña'));
+      await tester.pumpAndSettle();
+      await fill(tester, 'Correo', 'ana@example.com');
+      await submit(tester, 'Enviar código');
+    }
+
+    testWidgets('verifies the code, changes the password and requires sign-in', (tester) async {
+      await openRecovery(tester);
+      await fill(tester, 'Código de 6 dígitos', '123456');
+      await submit(tester, 'Verificar código');
+      expect(find.byType(ChatScreen), findsNothing);
+      expect(auth.userId, isNull);
+      await fill(tester, 'Nueva contraseña', 'nueva-contraseña');
+      await fill(tester, 'Repetir contraseña', 'distinta');
+      await submit(tester, 'Guardar contraseña');
+      expect(find.text('Las contraseñas no coinciden.'), findsOneWidget);
+      await fill(tester, 'Repetir contraseña', 'nueva-contraseña');
+      await submit(tester, 'Guardar contraseña');
+      expect(find.text('Tu contraseña cambió. Volvé a entrar con la nueva.'), findsOneWidget);
+      await submit(tester, 'Volver a entrar');
+      await tester.pumpAndSettle();
+      await fill(tester, 'Correo', 'ana@example.com');
+      await fill(tester, 'Contraseña', 'nueva-contraseña');
+      await submit(tester, 'Entrar');
+      await settle(tester);
+      expect(find.byType(ChatScreen), findsOneWidget);
+    });
+
+    testWidgets('invalid code can be corrected and resend has a cooldown', (tester) async {
+      await openRecovery(tester);
+      await fill(tester, 'Código de 6 dígitos', '111111');
+      await submit(tester, 'Verificar código');
+      expect(find.text('El código no es válido o venció. Pedí uno nuevo.'), findsOneWidget);
+      expect(auth.recoveryEmail, isNull);
+      await tester.pump(const Duration(seconds: 61));
+      await tapVisible(tester, find.text('Reenviar código'));
+      await settle(tester);
+      expect(auth.resetRequests, hasLength(2));
+      await fill(tester, 'Código de 6 dígitos', '123456');
+      await submit(tester, 'Verificar código');
+      expect(find.text('Nueva contraseña'), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      expect(auth.recoveryEmail, isNull);
+      expect(auth.userId, isNull);
+    });
+
+    testWidgets('unknown email gets the same code screen', (tester) async {
+      await openSignedOut(tester);
+      await tapVisible(tester, find.text('Olvidé mi contraseña'));
+      await tester.pumpAndSettle();
+      await fill(tester, 'Correo', 'unknown@example.com');
+      await submit(tester, 'Enviar código');
+      expect(find.text('Código de 6 dígitos'), findsOneWidget);
+      expect(find.byType(ChatScreen), findsNothing);
+    });
+  });
+
   group('sign-up', () {
     Future<void> openSignUp(WidgetTester tester) async {
       await openSignedOut(tester);
@@ -181,6 +242,11 @@ void main() {
 
       expect(auth.signUps.single.email, 'beto@example.com');
       expect(auth.signUps.single.birthDate, DateTime(1985, 11, 2));
+      expect(find.text('Confirmar correo'), findsOneWidget);
+      expect(find.byType(ChatScreen), findsNothing);
+      await fill(tester, 'Código de 6 dígitos', '123456');
+      await submit(tester, 'Verificar código');
+      await settle(tester);
       expect(find.byType(ChatScreen), findsOneWidget);
     });
 
@@ -248,7 +314,7 @@ void main() {
       expect(auth.signUps, isEmpty);
     });
 
-    testWidgets('an email with an account suggests signing in', (tester) async {
+    testWidgets('an email with an account gets the same confirmation screen', (tester) async {
       await openSignUp(tester);
 
       await fill(tester, 'Correo', 'ana@example.com');
@@ -256,7 +322,8 @@ void main() {
       await fill(tester, 'Fecha de nacimiento', '20051990');
       await submit(tester, 'Crear cuenta');
 
-      expect(find.text('Ya hay una cuenta con este correo. Probá entrar.'), findsOneWidget);
+      expect(find.text('Confirmar correo'), findsOneWidget);
+      expect(find.byType(ChatScreen), findsNothing);
     });
   });
 

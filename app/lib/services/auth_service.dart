@@ -16,7 +16,7 @@ bool isOldEnough(DateTime birthDate, DateTime today) {
   return !birthday.isAfter(DateTime(today.year, today.month, today.day));
 }
 
-/// Why sign-up or sign-in failed; each one gets its own copy on screen.
+/// Authentication failures translated into user-facing messages.
 enum AuthFailure {
   /// Wrong email or password. Never says which, so it does not reveal
   /// whether the email has an account (US-01).
@@ -27,6 +27,7 @@ enum AuthFailure {
   tooManyAttempts,
   network,
   unexpected,
+  invalidCode,
 }
 
 class AuthFailureException implements Exception {
@@ -38,7 +39,7 @@ class AuthFailureException implements Exception {
   String toString() => 'AuthFailureException: ${failure.name}';
 }
 
-/// Sign-up, sign-in and the session (S4-3). Screens use this, never the
+/// Email/password authentication and the session. Screens use this, never the
 /// Supabase client, so tests can replace it.
 abstract interface class AuthService {
   /// The signed-in user's id, or null when there is no session.
@@ -65,12 +66,21 @@ abstract interface class AuthService {
   });
 
   Future<void> signOut();
+
+  Future<void> verifyEmail({required String email, required String code});
+  Future<void> resendConfirmation(String email);
+  Future<void> requestPasswordReset(String email);
+  Future<void> verifyRecovery({required String email, required String code});
+  Future<void> changeRecoveredPassword(String password);
+  void cancelRecovery();
 }
 
 class SupabaseAuthService implements AuthService {
-  SupabaseAuthService(this._auth);
+  SupabaseAuthService(this._auth, {required this.recoveryClient});
 
   final supabase.GoTrueClient _auth;
+  final supabase.GoTrueClient Function() recoveryClient;
+  supabase.GoTrueClient? _recovery;
 
   /// Starts Supabase and restores the saved session before the first frame,
   /// so a signed-in user goes straight to the chat.
@@ -84,7 +94,19 @@ class SupabaseAuthService implements AuthService {
         detectSessionInUri: false,
       ),
     );
-    return SupabaseAuthService(client.client.auth);
+    return SupabaseAuthService(
+      client.client.auth,
+      // Recovery sessions stay in memory and never reach the app's session storage.
+      recoveryClient: () => supabase.GoTrueClient(
+        url: '${config.supabaseUrl}/auth/v1',
+        headers: {
+          'apikey': config.supabasePublishableKey,
+          'Authorization': 'Bearer ${config.supabasePublishableKey}',
+        },
+        autoRefreshToken: false,
+        flowType: supabase.AuthFlowType.implicit,
+      ),
+    );
   }
 
   @override
@@ -110,16 +132,66 @@ class SupabaseAuthService implements AuthService {
     required String password,
     required DateTime birthDate,
   }) => _guard(() async {
-    final response = await _auth.signUp(
+    await _auth.signUp(
       email: email.trim(),
       password: password,
       // Read by the sign-up trigger, which stores it on the profile.
       data: {'birth_date': formatBirthDate(birthDate)},
     );
-    // "Confirm email" is off (S4-3), so a new account is signed in at once.
-    // Without a session the project settings changed: nothing to show the user.
-    if (response.session == null) throw const AuthFailureException(AuthFailure.unexpected);
   });
+
+  @override
+  Future<void> verifyEmail({required String email, required String code}) =>
+      _guard(() => _auth.verifyOTP(email: email.trim(), token: code, type: supabase.OtpType.email));
+
+  @override
+  Future<void> resendConfirmation(String email) =>
+      _privateRequest(() => _auth.resend(email: email.trim(), type: supabase.OtpType.signup));
+
+  @override
+  Future<void> requestPasswordReset(String email) =>
+      _privateRequest(() => _auth.resetPasswordForEmail(email.trim()));
+
+  @override
+  Future<void> verifyRecovery({required String email, required String code}) async {
+    cancelRecovery();
+    final recovery = _recovery = recoveryClient();
+    try {
+      await _guard(
+        () => recovery.verifyOTP(email: email.trim(), token: code, type: supabase.OtpType.recovery),
+      );
+    } catch (_) {
+      cancelRecovery();
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> changeRecoveredPassword(String password) async {
+    final recovery = _recovery;
+    if (recovery?.currentSession == null) {
+      throw const AuthFailureException(AuthFailure.invalidCode);
+    }
+    await _guard(() => recovery!.updateUser(supabase.UserAttributes(password: password)));
+    cancelRecovery();
+  }
+
+  @override
+  void cancelRecovery() {
+    _recovery?.dispose();
+    _recovery = null;
+  }
+
+  static Future<void> _privateRequest(Future<void> Function() action) async {
+    try {
+      await _guard(action);
+    } on AuthFailureException catch (error) {
+      if (error.failure != AuthFailure.emailTaken &&
+          error.failure != AuthFailure.invalidCredentials) {
+        rethrow;
+      }
+    }
+  }
 
   @override
   Future<void> signOut() => _auth.signOut();
@@ -145,6 +217,8 @@ class SupabaseAuthService implements AuthService {
       'user_already_exists' || 'email_exists' => AuthFailure.emailTaken,
       'email_address_invalid' || 'validation_failed' => AuthFailure.invalidEmail,
       'weak_password' => AuthFailure.weakPassword,
+      'otp_expired' || 'otp_disabled' => AuthFailure.invalidCode,
+      'user_not_found' => AuthFailure.invalidCredentials,
       'over_request_rate_limit' => AuthFailure.tooManyAttempts,
       _ when error.statusCode == '429' => AuthFailure.tooManyAttempts,
       _ => AuthFailure.unexpected,

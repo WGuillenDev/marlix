@@ -374,13 +374,47 @@ class FakeAuthService implements AuthService {
     required DateTime birthDate,
   }) async {
     await _check();
-    if (accounts.containsKey(email.trim())) {
-      throw const AuthFailureException(AuthFailure.emailTaken);
-    }
     signUps.add((email: email.trim(), birthDate: birthDate));
-    accounts[email.trim()] = password;
+    accounts.putIfAbsent(email.trim(), () => password);
+  }
+
+  String? recoveryEmail;
+  final resetRequests = <String>[];
+
+  @override
+  Future<void> verifyEmail({required String email, required String code}) async {
+    await _check();
+    if (code != '123456') throw const AuthFailureException(AuthFailure.invalidCode);
     _setUser('user-${email.trim()}');
   }
+
+  @override
+  Future<void> resendConfirmation(String email) => _check();
+
+  @override
+  Future<void> requestPasswordReset(String email) async {
+    await _check();
+    resetRequests.add(email.trim());
+  }
+
+  @override
+  Future<void> verifyRecovery({required String email, required String code}) async {
+    await _check();
+    if (code != '123456' || !accounts.containsKey(email.trim())) {
+      throw const AuthFailureException(AuthFailure.invalidCode);
+    }
+    recoveryEmail = email.trim();
+  }
+
+  @override
+  Future<void> changeRecoveredPassword(String password) async {
+    await _check();
+    accounts[recoveryEmail!] = password;
+    cancelRecovery();
+  }
+
+  @override
+  void cancelRecovery() => recoveryEmail = null;
 
   @override
   Future<void> signOut() async => _setUser(null);
