@@ -19,6 +19,10 @@ Every time the project picks between two technical options, the decision is reco
 | Public Notion pages | Discarded. The text would live outside the repository and without review. |
 | Routes `/privacy` and `/delete-account` in the API | Discarded. It adds endpoints and the free Render plan sleeps, so Play's reviewers could meet a slow or failed page. |
 
+**The site is hardened and shows the releases live.** `site/updates.html` reads `https://api.github.com/repos/WGuillenDev/marlix/releases` from the browser, so a new release appears without touching the site. Because GitHub Pages cannot set response headers, every page carries a `Content-Security-Policy` meta tag: `default-src 'none'`, scripts, styles, images and fonts only from the site itself, `connect-src` only `https://api.github.com`, no forms, no `<base>`, no plugins. There is no inline script or style and no third-party code. What the API returns is untrusted: it is written with `textContent` (never `innerHTML`), and a link is kept only if it points at this repository's releases. Requests send no referrer, external links use `rel="noopener noreferrer"`, and the answer is cached in `sessionStorage` for ten minutes to stay under GitHub's unauthenticated limit of 60 requests an hour per IP. If the call fails, the page says so and links to the releases on GitHub. The page also shows the SHA-256 of the signing certificate so a downloaded APK can be checked.
+
+**Limits.** `frame-ancestors`, `X-Frame-Options` and HSTS cannot be set from a meta tag; HTTPS is enforced by the repository's Pages setting, and the pages hold no session or form, so framing them exposes nothing. A custom domain behind a CDN would allow real headers if that ever matters.
+
 **What the policy says is checked against the code:** 90-day messages, memories with no sensitive data, audio not stored, Groq with Zero Data Retention, Supabase and Render as processors, no ads or analytics SDK in `pubspec.yaml`, and the 18+ rule. If any of those change, change `site/privacy.html` in the same pull request.
 
 ---

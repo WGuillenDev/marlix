@@ -8,7 +8,7 @@ Text and images for the marlix store listing (S8-2). The listing language is Spa
 |---|---|
 | App name (max 30) | `marlix: compañía con IA` |
 | Category | Lifestyle |
-| Contact email | wilberthguillen.ing@gmail.com |
+| Support email (Store settings → Store listing contact details) | wilberthguillen.ing@gmail.com |
 | Website | https://wguillendev.github.io/marlix/ |
 | Privacy policy | https://wguillendev.github.io/marlix/privacy.html |
 | Account deletion page | https://wguillendev.github.io/marlix/delete-account.html |
