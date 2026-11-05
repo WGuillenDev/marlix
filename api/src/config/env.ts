@@ -21,6 +21,10 @@ const envSchema = z.object({
   // gpt-oss models reason before answering; "low" saves tokens and time.
   // "none" omits the parameter, for models without reasoning.
   GROQ_REASONING_EFFORT: z.enum(['low', 'medium', 'high', 'none']).default('low'),
+  // Speech to text of the voice mode (S6-9). Whisper on Groq; its quota is
+  // audio seconds, apart from the chat's tokens.
+  GROQ_TRANSCRIPTION_MODEL: z.string().trim().min(1).default('whisper-large-v3-turbo'),
+  TRANSCRIPTION_TIMEOUT_MS: z.coerce.number().int().min(1000).max(60_000).default(15_000),
   // Second layer of the crisis filter (S2-2). A different model than the chat,
   // so it has its own quota. A timeout counts as a crisis, so it stays short.
   CRISIS_CLASSIFIER_MODEL: z.string().trim().min(1).default('openai/gpt-oss-20b'),

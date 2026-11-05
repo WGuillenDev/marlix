@@ -9,7 +9,7 @@ import { supabaseSessionCheck } from './middleware/require-session.js';
 import { createSupabaseAccountStore } from './services/account/supabase-account-store.js';
 import { createSupabaseConversationStore } from './services/conversations/supabase-conversation-store.js';
 import { createSupabaseMessageStore } from './services/history/supabase-message-store.js';
-import { createLlmProvider } from './services/llm/index.js';
+import { createLlmProvider, createQuotaMonitor, GroqTranscriber } from './services/llm/index.js';
 import { createMemoryExtractor } from './services/memory/extractor.js';
 import { createMemoryJob } from './services/memory/memory-job.js';
 import { createSupabaseMemoryStore } from './services/memory/supabase-memory-store.js';
@@ -24,6 +24,9 @@ const database = createClient(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
+// Every model shares the Groq account, so one monitor sees all of them.
+const quota = createQuotaMonitor();
+
 const memories = createSupabaseMemoryStore(database);
 const memoryJob = createMemoryJob({
   conversations: createSupabaseConversationStore(database),
@@ -32,6 +35,7 @@ const memoryJob = createMemoryJob({
     createLlmProvider(env, {
       model: env.MEMORY_EXTRACTOR_MODEL,
       timeoutMs: env.MEMORY_EXTRACTOR_TIMEOUT_MS,
+      quota,
     }),
   ),
   idleSeconds: env.CONVERSATION_IDLE_MINUTES * 60,
@@ -44,12 +48,14 @@ const retentionJob = createRetentionJob({
 });
 
 const app = createApp({
-  llm: createLlmProvider(env),
+  llm: createLlmProvider(env, { quota }),
   crisisClassifier: createLlmProvider(env, {
     model: env.CRISIS_CLASSIFIER_MODEL,
     timeoutMs: env.CRISIS_CLASSIFIER_TIMEOUT_MS,
     retry: false,
+    quota,
   }),
+  quota,
   session: supabaseSessionCheck(env.SUPABASE_URL),
   contextMessages: env.CHAT_CONTEXT_MESSAGES,
   messages,
@@ -59,6 +65,12 @@ const app = createApp({
   accounts: createSupabaseAccountStore(database),
   usage: createSupabaseUsageStore(database),
   profiles: createSupabaseProfileStore(database),
+  transcriber: new GroqTranscriber({
+    apiKey: env.GROQ_API_KEY,
+    model: env.GROQ_TRANSCRIPTION_MODEL,
+    baseUrl: env.GROQ_BASE_URL,
+    timeoutMs: env.TRANSCRIPTION_TIMEOUT_MS,
+  }),
 });
 
 const server = app.listen(env.PORT, () => {

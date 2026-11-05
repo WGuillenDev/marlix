@@ -48,16 +48,19 @@ http.Response jsonResponse(
 const crisisResources = [
   {
     'id': 'aqui-estoy',
-    'name': 'Aquí Estoy, Colegio de Psicólogos',
+    'name': 'Línea Aquí Estoy',
     'phone': '8002737869',
-    'hours': 'Horario limitado',
+    'service':
+        'Atención psicológica gratuita y confidencial del Colegio de Psicólogos de Costa Rica',
+    'hours': 'Lunes a viernes de 2:00 p. m. a 10:00 p. m. y sábados de 9:00 a. m. a 4:00 p. m.',
     'primary': false,
   },
   {
     'id': '911',
-    'name': '9-1-1, Despacho de Apoyo Psicológico',
+    'name': '9-1-1',
     'phone': '911',
-    'hours': '24/7, gratuito',
+    'service': 'Atención inmediata ante emergencias o situaciones de riesgo',
+    'hours': '24 horas, 7 días de la semana',
     'primary': true,
   },
 ];
@@ -257,6 +260,28 @@ class FakeBackend {
         }),
       );
 
+  /// The answer of a voice reply as a stream: its sentences and then the complete reply.
+  void answerStreamed(String userText, List<String> sentences, {int remaining = 86}) {
+    String event(String name, Object data) => 'event: $name\ndata: ${jsonEncode(data)}\n\n';
+    reply.complete(
+      http.Response(
+        [
+          for (var i = 0; i < sentences.length; i++)
+            event('sentence', {'index': i, 'text': sentences[i]}),
+          event('done', {
+            'type': 'reply',
+            'tone': 'neutral',
+            'userMessage': messageJson('user', userText),
+            'reply': messageJson('assistant', sentences.join(' ')),
+            'usage': usageJson(remaining: remaining),
+          }),
+        ].join(),
+        200,
+        headers: {'content-type': 'text/event-stream; charset=utf-8'},
+      ),
+    );
+  }
+
   void answerCrisis(String userText, String crisisText) => reply.complete(
     jsonResponse({
       'type': 'crisis',
@@ -349,13 +374,47 @@ class FakeAuthService implements AuthService {
     required DateTime birthDate,
   }) async {
     await _check();
-    if (accounts.containsKey(email.trim())) {
-      throw const AuthFailureException(AuthFailure.emailTaken);
-    }
     signUps.add((email: email.trim(), birthDate: birthDate));
-    accounts[email.trim()] = password;
+    accounts.putIfAbsent(email.trim(), () => password);
+  }
+
+  String? recoveryEmail;
+  final resetRequests = <String>[];
+
+  @override
+  Future<void> verifyEmail({required String email, required String code}) async {
+    await _check();
+    if (code != '123456') throw const AuthFailureException(AuthFailure.invalidCode);
     _setUser('user-${email.trim()}');
   }
+
+  @override
+  Future<void> resendConfirmation(String email) => _check();
+
+  @override
+  Future<void> requestPasswordReset(String email) async {
+    await _check();
+    resetRequests.add(email.trim());
+  }
+
+  @override
+  Future<void> verifyRecovery({required String email, required String code}) async {
+    await _check();
+    if (code != '123456' || !accounts.containsKey(email.trim())) {
+      throw const AuthFailureException(AuthFailure.invalidCode);
+    }
+    recoveryEmail = email.trim();
+  }
+
+  @override
+  Future<void> changeRecoveredPassword(String password) async {
+    await _check();
+    accounts[recoveryEmail!] = password;
+    cancelRecovery();
+  }
+
+  @override
+  void cancelRecovery() => recoveryEmail = null;
 
   @override
   Future<void> signOut() async => _setUser(null);

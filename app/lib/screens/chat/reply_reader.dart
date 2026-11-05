@@ -8,7 +8,8 @@ import '../voice/voice_controller.dart';
 import 'avatar_controller.dart';
 import 'chat_controller.dart';
 
-enum Reading { idle, speaking, paused }
+/// [preparing] is the wait between asking for the reading and its first sound.
+enum Reading { idle, preparing, speaking, paused }
 
 /// Reads each reply that arrives while [repliesAreSpokenProvider] is on, and holds
 /// what the chat screen needs to show the controls.
@@ -27,11 +28,24 @@ class ReplyReader extends Notifier<Reading> {
   /// move; a pause before that leaves nothing to resume on screen.
   var _soundStarted = false;
 
+  /// The reply of the turn that is being answered is already being read as it
+  /// arrives (S6-10), so it is not read again when it is complete.
+  var _readLive = false;
+
   @override
   Reading build() {
     ref.onDispose(() => unawaited(_reading?.cancel()));
+    ref.listen(liveReplyProvider, (_, sentences) {
+      if (sentences == null) return;
+      _readLive = true;
+      unawaited(_start((voice) => voice.speakSentences(sentences)));
+    });
     ref.listen(chatControllerProvider, (previous, next) {
       if (!(previous?.sending ?? false) || next.sending) return;
+      if (_readLive) {
+        _readLive = false;
+        return;
+      }
       final last = next.entries.lastOrNull;
       // A crisis reply stays on screen with its numbers and is not read.
       if (last is MarlixEntry && ref.read(repliesAreSpokenProvider)) {
@@ -53,6 +67,7 @@ class ReplyReader extends Notifier<Reading> {
     switch (event) {
       case VoiceStarted():
         _soundStarted = true;
+        if (state == Reading.preparing) state = Reading.speaking;
         if (state == Reading.speaking) _avatar.speak();
       case VoiceLevel(:final level):
         if (state == Reading.speaking) ref.read(avatarVolumeProvider.notifier).set(level);
@@ -62,11 +77,13 @@ class ReplyReader extends Notifier<Reading> {
   }
 
   /// Reads [text], cutting whatever was being read.
-  Future<void> read(String text) async {
+  Future<void> read(String text) => _start((voice) => voice.speak(text));
+
+  Future<void> _start(Stream<VoiceEvent> Function(VoiceController voice) speak) async {
     await _reading?.cancel();
     _pausedByApp = false;
     _soundStarted = false;
-    state = Reading.speaking;
+    state = Reading.preparing;
     late final StreamSubscription<VoiceEvent> reading;
     void end() {
       if (_reading == reading && ref.mounted) {
@@ -76,12 +93,12 @@ class ReplyReader extends Notifier<Reading> {
       }
     }
 
-    reading = _voice.speak(text).listen(_onEvent, onError: (Object _) => end(), onDone: end);
+    reading = speak(_voice).listen(_onEvent, onError: (Object _) => end(), onDone: end);
     _reading = reading;
   }
 
   Future<void> pause({bool byApp = false}) async {
-    if (state != Reading.speaking) return;
+    if (state != Reading.speaking && state != Reading.preparing) return;
     state = Reading.paused;
     _pausedByApp = byApp;
     _avatar.rest();
@@ -90,7 +107,7 @@ class ReplyReader extends Notifier<Reading> {
 
   Future<void> resume() async {
     if (state != Reading.paused) return;
-    state = Reading.speaking;
+    state = _soundStarted ? Reading.speaking : Reading.preparing;
     _pausedByApp = false;
     if (_soundStarted) _avatar.speak();
     await _safely(_voice.resume);

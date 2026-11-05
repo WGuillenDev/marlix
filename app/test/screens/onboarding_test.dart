@@ -102,6 +102,16 @@ void main() {
       expect(find.textContaining('Me inspiré en Marley'), findsOneWidget);
     });
 
+    testWidgets('the welcome says marlix and its voice are an AI, not a person', (tester) async {
+      await openChat(tester, backend: newUser());
+
+      expect(
+        find.textContaining('Soy una inteligencia artificial, no una persona'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Mi voz también la genera una máquina'), findsOneWidget);
+    });
+
     testWidgets('the notice and what is stored come before the consent', (tester) async {
       await openChat(tester, backend: newUser());
       await toConsent(tester);
@@ -183,7 +193,7 @@ void main() {
       await acceptConsent(tester);
 
       expect(find.textContaining('Lo uso solo cuando estás en modo voz'), findsOneWidget);
-      expect(find.textContaining('puede depender del servicio de tu teléfono'), findsOneWidget);
+      expect(find.textContaining('viaja a nuestro servidor para pasarlo a texto'), findsOneWidget);
       expect(microphone.asked, 0, reason: 'nothing is asked before the person chooses');
 
       await tester.tap(find.text('Permitir'));

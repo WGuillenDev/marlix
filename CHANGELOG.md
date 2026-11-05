@@ -4,7 +4,33 @@ Notable changes to marlix, one entry per sprint. The format follows [Keep a Chan
 
 ## [Unreleased]
 
-Sprint 6 — Voice: marlix listens and speaks.
+## Sprint 6 — Voice (2026-10-21 to 2026-10-29)
+
+marlix listens and speaks: a spoken reply with a voice that runs on the phone, a full-screen voice mode that detects when the person stops talking and lets them interrupt, and a clear notice that marlix and its voice are an AI.
+
+### Added
+
+- The voice layer with Supertonic 3 (voice F4) running on the phone and the native voice as a fallback ([#142](https://github.com/WGuillenDev/marlix/pull/142), decision in [#140](https://github.com/WGuillenDev/marlix/pull/140)).
+- Short, clean replies when the message comes from voice mode ([#144](https://github.com/WGuillenDev/marlix/pull/144)).
+- Read the replies aloud with pause, resume and stop, and move the avatar's mouth with the voice ([#146](https://github.com/WGuillenDev/marlix/pull/146), [#148](https://github.com/WGuillenDev/marlix/pull/148)).
+- A warning when few daily interactions are left ([#150](https://github.com/WGuillenDev/marlix/pull/150)).
+- The full-screen voice mode with the voice model download ([#152](https://github.com/WGuillenDev/marlix/pull/152)).
+- Talk to marlix without buttons and interrupt it: `POST /v1/transcribe` (Whisper on Groq) and a Silero voice-activity detector on the phone, with echo handling so marlix does not hear itself ([#161](https://github.com/WGuillenDev/marlix/pull/161)).
+- The voice reply streams sentence by sentence over SSE, so the first sound arrives before the whole answer is written ([#163](https://github.com/WGuillenDev/marlix/pull/163)).
+- A notice in the app that marlix and its voice are an AI ([#167](https://github.com/WGuillenDev/marlix/pull/167)).
+- `docs/verify-migrations.sql`, run by the CI against `schema.sql`, and a `degraded` state in `GET /health` when the usage counter fails ([#173](https://github.com/WGuillenDev/marlix/pull/173)).
+
+### Changed
+
+- The pauses between phrases sound natural: each piece is trimmed of silence and followed by a pause that depends on its punctuation ([#169](https://github.com/WGuillenDev/marlix/pull/169)).
+- The reading bar says it is preparing the voice until the first sound ([#171](https://github.com/WGuillenDev/marlix/pull/171)).
+- The phone's speech recognizer (`speech_to_text`) was replaced by Whisper, so the Costa Rican vocabulary is passed as a transcription prompt.
+
+### Security
+
+- Users can no longer update the consent and onboarding columns of their own profile ([#165](https://github.com/WGuillenDev/marlix/pull/165)).
+- Zero Data Retention is on in the Groq console, so the audio is not kept.
+- Sprint 6 audit: no secrets in the history, RLS and grants as designed, and two open dependency alerts (`body-parser`, `qs`) planned for Sprint 7.
 
 ## Sprint 5 — Avatars (2026-10-19 to 2026-10-20)
 

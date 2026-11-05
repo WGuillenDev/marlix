@@ -49,4 +49,4 @@ Dependabot sends security alerts and, every Monday, pull requests with new versi
 
 ## Not a crisis line
 
-This channel is only for security reports. If you or someone you know is in danger, in Costa Rica call **9-1-1**.
+This channel is only for security reports. If you or someone you know is in danger, call **9-1-1**.

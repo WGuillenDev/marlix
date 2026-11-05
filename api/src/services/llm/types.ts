@@ -39,4 +39,10 @@ export interface LlmProvider {
    * LlmError, so callers never handle provider-specific errors.
    */
   complete(request: LlmCompletionRequest): Promise<LlmCompletion>;
+  /**
+   * Yields the model's reply in pieces as it is generated (S6-10). Fails only
+   * with an LlmError, and may end without yielding anything. Stopping the
+   * iteration, or aborting `request.signal`, cancels the call.
+   */
+  stream(request: LlmCompletionRequest): AsyncIterable<string>;
 }

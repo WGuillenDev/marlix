@@ -268,6 +268,16 @@ class _Welcome extends ConsumerWidget {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),
+        const _Card(
+          color: AppColors.tanLight,
+          child: Text(
+            'Soy una inteligencia artificial, no una persona. '
+            'Mi voz también la genera una máquina.',
+            style: AppText.bodyStrong,
+            textAlign: TextAlign.center,
+          ),
+        ),
+        const SizedBox(height: 16),
         Text(
           'Te voy a contar cómo funciono antes de empezar.',
           style: AppText.body.copyWith(color: AppColors.textSecondary),
@@ -427,7 +437,7 @@ class _Permissions extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'El reconocimiento de voz puede depender del servicio de tu teléfono.',
+                'Lo que dices viaja a nuestro servidor para pasarlo a texto y no se guarda.',
                 style: AppText.caption.copyWith(color: AppColors.textSecondary),
               ),
               const SizedBox(height: 16),

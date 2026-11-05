@@ -103,8 +103,8 @@ User stories for the marlix MVP. Every feature in the v1 scope is backed by at l
 
 **Acceptance criteria**
 - [ ] It is reachable from the chat and from voice mode in one tap
-- [ ] It shows 9-1-1 (free, 24/7) as the main option, with a button that dials directly
-- [ ] It lists other Costa Rican resources, loaded from configuration, not hardcoded
+- [ ] It shows 9-1-1 (immediate attention for emergencies or situations of risk, 24 hours, 7 days a week) as the main option, with a button that dials directly
+- [ ] It lists other Costa Rican resources, loaded from configuration, not hardcoded: the Línea Aquí Estoy (free, confidential psychological care from the Colegio de Psicólogos de Costa Rica; Monday to Friday 2:00 p. m. to 10:00 p. m., Saturday 9:00 a. m. to 4:00 p. m.)
 - [ ] It clearly states that marlix does not replace professional care
 
 ---

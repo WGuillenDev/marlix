@@ -2,8 +2,9 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { LlmError } from '../src/services/llm/index.js';
+import { createMemoryExtractor } from '../src/services/memory/extractor.js';
 import { createMemoryJob, MAX_MEMORIES_PER_USER } from '../src/services/memory/memory-job.js';
-import { captureConsole } from './helpers.js';
+import { captureConsole, createFakeLlm } from './helpers.js';
 import {
   createFakeConversations,
   createFakeExtractor,
@@ -233,5 +234,37 @@ describe('ending idle conversations', () => {
 
     assert.equal(model.calls.length, 2);
     assert.ok(conversations.conversations.every((c) => c.ended && c.extracted));
+  });
+});
+
+describe('sensitive data (S7-2)', () => {
+  it('stores nothing sensitive even when the model returns it', async () => {
+    const conversations = createFakeConversations();
+    const stored = createFakeMemories();
+    const llm = createFakeLlm(() =>
+      JSON.stringify({
+        memories: [
+          { id: null, fact: 'Su cédula es 1-2345-6789', category: 'other' },
+          { id: null, fact: 'Tiene depresión', category: 'other' },
+          { id: null, fact: 'Tiene una gata llamada Luna', category: 'pets' },
+        ],
+      }),
+    );
+    const job = createMemoryJob({
+      conversations: conversations.store,
+      memories: stored.store,
+      extractor: createMemoryExtractor(llm.llm),
+      idleSeconds: 1800,
+      spacingMs: 0,
+    });
+    const conversation = conversations.add(ANA, said('Mi cédula es 1-2345-6789'));
+
+    await job.sweep();
+
+    assert.deepEqual(
+      stored.rows.map((row) => row.fact),
+      ['Tiene una gata llamada Luna'],
+    );
+    assert.equal(conversation.extracted, true);
   });
 });

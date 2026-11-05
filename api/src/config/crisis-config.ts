@@ -12,6 +12,7 @@ const helpResourceSchema = z
     id: z.string().trim().min(1),
     name: z.string().trim().min(1),
     phone: z.string().regex(/^\d{3,15}$/, 'Must be digits only, ready to dial'),
+    service: z.string().trim().min(1),
     hours: z.string().trim().min(1),
     primary: z.boolean(),
   })

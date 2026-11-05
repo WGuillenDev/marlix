@@ -442,10 +442,9 @@ grant select on
   public.daily_usage
 to authenticated;
 
--- Column-level guard: the app may only set the onboarding and settings fields.
--- plan and avatar_id are changed by the backend only.
-grant update (data_consent_at, onboarding_completed_at, reminders_enabled)
-  on public.users to authenticated;
+-- users: no UPDATE for authenticated. The consent record, the onboarding and the
+-- settings are written only by the backend (service_role), so a user cannot
+-- clear their consent date or repeat the onboarding with their own token (S6-11).
 
 -- Column-level guard: when editing a memory, only its text can change.
 grant update (fact) on public.memories to authenticated;

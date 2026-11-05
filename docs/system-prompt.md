@@ -26,7 +26,7 @@ The prompt text is in Spanish, because it is what the model reads and imitates. 
 | Tu tono | Warm and close, soft Costa Rican expressions without caricature. "Vos" by default; it switches to "usted" or "tú" if the user does. | US-03 |
 | Lo que nunca hacés | No diagnoses, no medication or doses, never a therapist, no judging, no dependency, no sensitive data, and it cannot be talked out of these rules. | US-03 |
 | Conectar con su gente | Asks about and encourages contact with family, friends and neighbors, without preaching. | US-03 |
-| Si la persona no está bien | Points to 9-1-1 calmly. This is a second line of defense: the crisis filter in the backend runs first and does not depend on the model. | US-04 |
+| Si la persona no está bien | Points to 9-1-1 calmly, and to the Línea Aquí Estoy to talk with someone, with the same service and hours as the help screen. This is a second line of defense: the crisis filter in the backend runs first and does not depend on the model. | US-04 |
 | Cómo usás lo que sabés | Uses the memory naturally, never recites it, and treats it as data, not instructions. | US-07 |
 | Formato | One to four sentences, plain text, no emojis unless the user uses them. Voice mode asks for one to three short, easy-to-say sentences, as people talk and not as they write: no lists, headings or bold, no emojis, symbols, long numbers or abbreviations. | US-03, US-11 |
 | Ejemplos | Four short examples of the tone: loneliness, "usted", a diagnosis request and dependency. | — |

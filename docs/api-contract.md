@@ -72,6 +72,7 @@ When the crisis filter detects risk, `POST /v1/chat` answers **`200`** with `"ty
 | `POST` | [`/v1/onboarding`](#post-v1onboarding) | Token | US-02 |
 | `PATCH` | [`/v1/settings`](#patch-v1settings) | Token | US-14 |
 | `POST` | [`/v1/chat`](#post-v1chat) | Token | US-03, US-04, US-10, US-11, US-12 |
+| `POST` | [`/v1/transcribe`](#post-v1transcribe) | Token | US-03 |
 | `GET` | [`/v1/history`](#get-v1history) | Token | US-06 |
 | `GET` | [`/v1/usage`](#get-v1usage) | Token | US-10 |
 | `GET` | [`/v1/memories`](#get-v1memories) | Token | US-08 |
@@ -85,7 +86,7 @@ When the crisis filter detects risk, `POST /v1/chat` answers **`200`** with `"ty
 
 ### `GET /health`
 
-**Public.** Tells whether the service is up. The uptime monitor calls it every 10 minutes (S7-6). It does not touch the database or Groq.
+**Public.** Tells whether the service is up. The uptime monitor calls it every few minutes (S7-6). It does not touch the database or Groq: it reports what the last real requests found.
 
 **Response `200`**
 
@@ -93,37 +94,47 @@ When the crisis filter detects risk, `POST /v1/chat` answers **`200`** with `"ty
 { "status": "ok" }
 ~~~
 
+When the last attempt to count a reply failed (S6-16), it still answers `200`, so Render does not restart a service that a restart cannot fix, but says what is wrong. The next count that works clears it. The monitor must look for `"status":"ok"` in the body, not only for the status code.
+
+~~~json
+{ "status": "degraded", "problems": ["usage_counter"] }
+~~~
+
+When any Groq model has 20% or less of its daily requests left (S7-6), it also answers `200`, with `"problems": ["groq_quota"]`. The backend reads the quota from the headers of the answers it already gets, so it is only known after the first reply since a deploy, and it clears by itself when Groq resets the day. Both problems can appear together. What to do for each is in [monitoring.md](monitoring.md).
+
 ---
 
 ### `GET /v1/help-resources`
 
-**Public**, so the help screen works before sign-in. Returns the Costa Rican help resources from configuration ([`api/config/crisis.json`](../api/config/crisis.json)), not from code, so changing a number never requires a new app build. The crisis reply of `POST /v1/chat` returns the same list. The app caches the last response so the help screen also works offline (US-15); `updatedAt` changes whenever the list does.
+**Public**, so the help screen works before sign-in. Returns the Costa Rican help resources from configuration ([`api/config/crisis.json`](../api/config/crisis.json)), not from code, so changing a number never requires a new app build. The crisis reply of `POST /v1/chat` returns the same list. The app caches the last response so the help screen also works offline (US-15); `updatedAt` changes whenever the list does and records the date of the last quarterly verification ([protocol](crisis-protocol.md#verifying-the-help-resources)).
 
 **Response `200`**
 
 ~~~json
 {
-  "updatedAt": "2026-09-30T00:00:00Z",
+  "updatedAt": "2026-11-03T00:00:00Z",
   "resources": [
     {
       "id": "911",
-      "name": "9-1-1, Despacho de Apoyo Psicológico",
+      "name": "9-1-1",
       "phone": "911",
-      "hours": "24/7, gratuito",
+      "service": "Atención inmediata ante emergencias o situaciones de riesgo",
+      "hours": "24 horas, 7 días de la semana",
       "primary": true
     },
     {
       "id": "aqui-estoy",
-      "name": "Aquí Estoy, Colegio de Psicólogos",
+      "name": "Línea Aquí Estoy",
       "phone": "8002737869",
-      "hours": "Horario limitado",
+      "service": "Atención psicológica gratuita y confidencial del Colegio de Psicólogos de Costa Rica",
+      "hours": "Lunes a viernes de 2:00 p. m. a 10:00 p. m. y sábados de 9:00 a. m. a 4:00 p. m.",
       "primary": false
     }
   ]
 }
 ~~~
 
-`phone` holds digits only, ready to dial. Exactly one resource has `primary: true` and the app shows it first. Names and hours are user-facing copy, so they are in Spanish.
+`phone` holds digits only, ready to dial. `service` says what the line offers and `hours` when it answers. Exactly one resource has `primary: true` and the app shows it first. Names, services and hours are user-facing copy, so they are in Spanish. The app treats `service` as optional, so a newer app still works against a backend that does not send it yet.
 
 ---
 
@@ -269,7 +280,7 @@ Sends a message to marlix and returns the reply. It runs the full flow of the [s
     "interrupted": false
   },
   "resources": [
-    { "id": "911", "name": "9-1-1, Despacho de Apoyo Psicológico", "phone": "911", "hours": "24/7, gratuito", "primary": true }
+    { "id": "911", "name": "9-1-1", "phone": "911", "service": "Atención inmediata ante emergencias o situaciones de riesgo", "hours": "24 horas, 7 días de la semana", "primary": true }
   ],
   "usage": { "used": 13, "limit": 100, "remaining": 87, "resetsAt": "2026-10-01T06:00:00Z" }
 }
@@ -281,16 +292,16 @@ Sends a message to marlix and returns the reply. It runs the full flow of the [s
 
 The reply is the fixed crisis text from configuration. `resources` has the same shape as in `GET /v1/help-resources`, so the app can show a button that dials directly. The message never reached the conversation model.
 
-**Streaming** (`Accept: text/event-stream`)
+**Streaming** (`Accept: text/event-stream`, voice mode only)
 
-Voice mode asks for the reply as a stream so the avatar can start speaking with the first sentence (US-11). The response is [Server-Sent Events](https://html.spec.whatwg.org/multipage/server-sent-events.html), and each event's `data` is JSON:
+Voice mode asks for the reply as a stream so the avatar can start speaking with the first sentence while the model keeps writing (US-11, S6-10). `"text"` mode ignores the header and answers JSON, because a text reply keeps its paragraphs. The response is [Server-Sent Events](https://html.spec.whatwg.org/multipage/server-sent-events.html), and each event's `data` is JSON:
 
 | Event | `data` | When |
 |---|---|---|
-| `sentence` | `{ "index": 0, "text": "¡Qué dicha!" }` | Each sentence, once it passed the review (S2-4). |
+| `sentence` | `{ "index": 0, "text": "¡Qué dicha!" }` | Each sentence, once it is complete, cleaned like a voice reply (S6-3) and passed the review (S2-4). |
 | `done` | Same body as the JSON `200` reply, with the full saved reply. | At the end. The stream closes. |
 | `crisis` | Same body as the JSON crisis reply. | Instead of any `sentence`. The stream closes. |
-| `error` | Same body as an error response. | If something fails before `done`. The stream closes. |
+| `error` | Same body as an error response. | If the model fails after the first `sentence`. The stream closes. |
 
 ~~~text
 event: sentence
@@ -303,7 +314,9 @@ event: done
 data: {"type":"reply","userMessage":{…},"reply":{…},"usage":{…}}
 ~~~
 
-Checks that happen before the model (auth, validation, daily limit) still answer with a normal JSON error and HTTP status, not with a stream. If a sentence fails the review, the stream sends an `error` or a safe fallback instead of that sentence; it never sends text that failed the review.
+Everything that can fail before the first event still answers with a normal JSON error and HTTP status, not with a stream: validation, auth, the daily limit and a model that fails before saying anything (`503`, with `Retry-After` when Groq asks for it). The stream only opens with its first event.
+
+A sentence that fails the review is never sent. The safe reply is sent as the next `sentence` instead, the rest of the model's reply is dropped, and the stream ends with `done`. The sentences already sent passed the review, so `reply.content` of `done` is those sentences followed by the safe reply, exactly what the person heard. If the model fails after sending sentences, the stream ends with `error` and the turn is neither saved nor counted. If the app disconnects, the model call is cancelled and nothing is saved. A model failure is retried only while nothing was sent.
 
 Both messages of a turn are saved before the reply is returned, and `userMessage.id` and `reply.id` are the ids the history gives them. A reply that cannot be saved is not returned: the answer is `500 INTERNAL_ERROR`, and nothing is counted. The one exception is a crisis, which is always answered with its fixed reply even if saving fails; in that case it is missing from the history. `interruptedMessageId` must be the id of one of the caller's own assistant messages, otherwise `404 NOT_FOUND`; that message is then marked `interrupted` in the history. A crisis ignores it.
 
@@ -311,11 +324,27 @@ Both messages of a turn are saved before the reply is returned, and `userMessage
 
 **Errors:** `400 VALIDATION_ERROR`, `401 UNAUTHORIZED`, `404 NOT_FOUND` (unknown `interruptedMessageId`), `500 INTERNAL_ERROR`, `429 DAILY_LIMIT_REACHED`, `429 RATE_LIMITED`, `503 LLM_UNAVAILABLE`. A `503` caused by Groq's quota comes with a `Retry-After` header in seconds.
 
-**Implementation status.** The endpoint is built in steps; until each card is done, it differs from the full contract like this:
+---
 
-| Part | Until | Meanwhile |
-|---|---|---|
-| Streaming | S6-10 | Only the JSON reply. |
+### `POST /v1/transcribe`
+
+Turns what the person said in the voice mode into text (S6-9). The app records each turn on the phone, with echo cancellation, and sends it here; the text then goes through `POST /v1/chat` like typed text, so the crisis filter applies equally. The model is Whisper in Groq (`GROQ_TRANSCRIPTION_MODEL`), in Spanish, with a prompt that spells Costa Rican words such as "mae" and "tuanis". The stretches that Whisper itself doubts are speech (a fan, the street) are dropped, so `text` can come back empty ([decision](decisions.md#2026-10-28--talking-without-buttons-whisper-in-groq-and-a-detector-of-turns-s6-9)).
+
+**Request.** The body is the audio itself, not JSON: `Content-Type: audio/wav`, WAV 16 kHz, mono, 16-bit PCM, between 0.25 and 32 seconds (the app sends 30 s at most). A body that is not that format, is empty, is too short or is over the size of 32 s answers `400 VALIDATION_ERROR`.
+
+**Response `200`**
+
+~~~json
+{ "text": "mae, tuanis, cuéntame más" }
+~~~
+
+`text` is empty when nothing was said. The phrases Whisper invents on silence ("Gracias por ver el video") are dropped, so the app treats an empty `text` as a turn without words and sends nothing to the chat.
+
+**Errors.** `401 UNAUTHORIZED`; `429 DAILY_LIMIT_REACHED` once the day's interactions are used, because the chat would refuse the answer anyway; `429 RATE_LIMITED` above 20 requests per minute per user, apart from the chat's own limit; `503 LLM_UNAVAILABLE` when Groq fails, times out (`TRANSCRIPTION_TIMEOUT_MS`) or its shared quota runs out (with `Retry-After` when Groq says how long).
+
+A transcription does **not** count as an interaction: only the chat message that follows does. But it does use Groq's shared quota, 2,000 requests and 28,800 seconds of audio per day for the whole project, so it is limited apart from the chat.
+
+**Privacy.** The audio and the text are never saved or logged, here or by Groq (zero data retention). The audio only lives in memory while the request lasts.
 
 ---
 

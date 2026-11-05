@@ -4,6 +4,47 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-10-30 — The help screen offers two lines, and the chat reads aloud through the speaker (S7-13)
+
+**Decision:** the help screen and the crisis reply list only **9-1-1** and the **Línea Aquí Estoy** (800-273-7869), each with its name, **service** and **hours** (a new `service` field in `api/config/crisis.json` and in `GET /v1/help-resources`). The two Emergencias CCSS lines are removed. The 9-1-1 is described only by its service and hours, in the screen, the fixed crisis reply and the prompt; Aquí Estoy's service names the Colegio de Psicólogos de Costa Rica, and only that line mentions Costa Rica. The layout follows wireframe 06: the red card with the big 9-1-1 button first, then "Otros recursos en Costa Rica". The Aquí Estoy card is laid out like the 9-1-1 one (a big red "Llamar a Línea Aquí Estoy" button, then the details) with a quiet border, so only the button is red. Each line of text has a bold label (Servicio, Horario, Teléfono).
+
+**Why:** a short list is easier to use in a hard moment, and the CCSS lines had no clear service or hours ("Consultar"). The app reads `service` as optional, so a new app still works against a backend that does not send it yet and the built-in 9-1-1 works offline with the same text.
+
+**The same words everywhere:** the system prompt, US-05 and the crisis protocol describe both lines with the same service and hours as the screen (Spanish in the app, the prompt and `crisis.json`; English in these docs), and the 9-1-1 is always described by that service and those hours, nothing else. A test checks that the prompt carries the service and hours of every configured line, so the prompt and `crisis.json` cannot drift apart.
+
+**Reading aloud in the chat:** the voice was played with the call route (`voiceCommunication`, communication mode) in every case. That route exists so the phone's echo canceller can remove marlix's voice from the microphone, but in the chat no microphone is open, and on the Galaxy S24 Ultra the voice came out through the earpiece at the top of the phone, very quiet, while the voice mode (whose capture forces the speakerphone) was fine. Now `CallAudioPlayer` plays as a call only while the voice mode listens (`CallRoute`, set by `ConversationController`) and as plain media otherwise. Measured on the S24: the audio focus request went from `USAGE_VOICE_COMMUNICATION` to `USAGE_MEDIA`. The volume of the chat reading is the media volume.
+
+| Option | Verdict |
+| --- | --- |
+| Keep the call route and force the speakerphone in the chat | Discarded: it needs communication mode and a route that Android 12+ ignores on some phones (it was already ignored here), and it leaves the phone in call mode if the reading is cut. |
+| **Media route when no microphone is open, call route while the voice mode listens** | **Chosen.** Plain media always uses the main speaker, needs no mode changes and keeps the echo cancellation where it matters. |
+
+---
+
+## 2026-10-29 — Natural pauses in the voice: each piece said whole, its edges cut (S6-14)
+
+**Decision:** Supertonic says each piece of a reply in one pass and the model sets the tone and the pauses of its commas. The silence the model leaves at both edges is cut (`trimSilence`: 10 ms windows under an RMS of 0.01, 30 ms kept on each side), and the pause of the final punctuation is added: **180 ms** after a comma, **280 ms** after a semicolon or a colon, **350 ms** after a full stop, a question or an exclamation (`pauseAfter` in `sentences.dart`). The first sentence is still cut at its commas so the first sound comes sooner (S6-9); those pieces get the comma pause.
+
+**Why:** measured on the S24, every piece Supertonic makes starts with 270 to 430 ms of silence and ends with 420 to 590 ms. Before, each sentence was cut at its commas and 200 ms were added between pieces, so a comma sounded as about one second of silence: "Claro, mae, te cuento, fue un buen día, la verdad, aunque estuve algo cansado, pero bien." took 11.2 s, and 5 to 5.6 s once the edges were cut. Between sentences the same edges left a gap of almost a second.
+
+| Option | Verdict |
+| --- | --- |
+| A. Cut at commas and add 200 / 300 ms (before) | Discarded: two silences added up and the voice sounded broken. |
+| B. Cut at commas, cut the edges, add 180 / 280 ms | Good in the listening test, but every piece is a separate utterance and loses the tone of the sentence. Kept only for the first sentence. |
+| C. As B with 90 / 180 ms | Not chosen in the listening test. |
+| **D. The piece said whole, edges cut, the pause of its final punctuation** | **Chosen.** It is how the voice assistants of the big companies and the call apps such as WhatsApp sound: the whole sentence comes out of the model with its own rhythm, the pauses follow the punctuation (a comma shorter than a full stop) and there is no dead gap at the edges. |
+
+**How it was chosen:** a blind listening test on the S24 with the same phrases in each version (one with many commas, a song and a short one), played by the app itself through the call route. The user chose B over A and C, and then asked for the version closest to the voice assistants of the big companies: D. Changing the voice or the model was out of scope.
+
+## 2026-10-29 — The app says marlix and its voice are an AI (S6-13)
+
+**Decision:** two notices, both short and without drama. The onboarding welcome (the first screen, before the consent) says "Soy una inteligencia artificial, no una persona. Mi voz también la genera una máquina." The voice mode shows "Voz generada por IA" under its title, always visible while the mode is open.
+
+- **Why:** the Supertonic 3 license (OpenRAIL-M) asks to say that generated content is produced by a machine. Until now only the system prompt made marlix say it when asked; no screen did (finding of S6-1).
+- **Welcome, not the consent step.** It is the first thing read, and the consent screen is already full of data rules. A card with the sentence stands out from the greeting without a second screen.
+- **Under the title, not in the hint line.** The hint under the buttons changes with every phase and can be replaced by an error; the title bar never changes, so the notice is always there.
+- **The wording avoids any claim of being a person**, in line with the rule that marlix never presents itself as therapy or as a human. The system prompt is not touched.
+
 ## 2026-10-17 — Usage in the database: an atomic function, and a cap read every minute (S4-13)
 
 **Decision:** the daily count is the `daily_usage` row of the person for the Costa Rica day, and the cap is `plan_limits.daily_interactions` of their plan. `plans.json` keeps only the per-minute limit. This replaces the in-memory counters of [S2-6](#2026-10-14--usage-limits-configuration-file-and-in-memory-counters-until-sprint-4-s2-6).
@@ -164,7 +205,7 @@ Every time the project picks between two technical options, the decision is reco
 
 The birth date is stored, not the age, so the policy can change later with one constant in the trigger and one in the app (`minimumAge`). The app sends it as user metadata (`birth_date`, `YYYY-MM-DD`) and the trigger copies it to `users.birth_date`, which the app cannot change afterwards (no column grant).
 
-**No email confirmation for now** (decided by the user on 2026-10-15). "Confirm email" is off in Supabase, so a new account is signed in at once.
+**No email confirmation initially** (decided by the user on 2026-10-15, superseded by S7-9 on 2026-11-04). "Confirm email" was off in Supabase, so a new account was signed in at once. S7-9 enabled the code-based replacement below after SMTP setup and real-email tests.
 
 | Option | Result |
 |---|---|
@@ -810,3 +851,132 @@ The voice keeps the **5 steps** that the listeners voted for: 3 steps is faster 
 | Length of a turn | 30 s at most (`listenFor`), so an open microphone ends. Detecting the end of speech and interruptions are S6-9. |
 
 **Not in this card.** End-of-speech detection and interruption (S6-9). Whisper in Groq (shares the quota and the audio leaves the phone) or in the phone (heavier) stay as alternatives behind `SpeechRecognizer`, a candidate for v2.
+
+## 2026-10-28 — Talking without buttons: Whisper in Groq and a detector of turns (S6-9)
+
+**Decision:** the person talks to marlix without buttons: the microphone opens by itself, the turn ends when they stop speaking, and talking over marlix cuts it. The audio of each turn is recorded on the phone with echo cancellation, a voice detector (`SileroVoiceActivity`) scores every 32 ms frame and a detector of turns (`TurnDetector`) decides where the turn starts and ends, and the WAV goes to the new `POST /v1/transcribe` ([contract](api-contract.md#post-v1transcribe)), which uses Whisper (`whisper-large-v3-turbo`) in Groq. The text then goes through `ChatController.send`, so the crisis filter of `POST /v1/chat` applies equally. `ServerSpeechRecognizer` implements the same `SpeechRecognizer` interface as S6-8, so screens did not change their imports.
+
+| Question | Decision |
+| --- | --- |
+| Why not keep the phone's recognizer (S6-8)? | On the S24 it did not cancel marlix's own voice (marlix cut itself), cut the person at pauses because it decides the end of speech on its own, and does not write "mae" or "tuanis". Whisper accepts a `prompt` that spells Costa Rican words, which also covers most of S6-17. |
+| Why Groq and not Whisper on the phone? | A model on the phone is heavy (download, RAM, battery) and S6-1 already spent that budget on the voice. Groq is already our provider and the key never leaves the backend. The price is that the audio leaves the phone; the onboarding text says so, and the audio is never saved or logged (zero data retention in Groq). |
+| How is the end of the turn found? | Silero VAD on the phone (`vad_plus`, MIT, a 2.3 MB model) gives the probability of voice of every 32 ms frame, and `TurnDetector` decides on it: it starts above 0.75 and 0.035 of loudness (RMS) for 300 ms, so a television or people in the street, which are voices but far away, do not open a turn; it goes on above 0.45; it keeps a pre-roll of 400 ms so the first syllable is not lost; a click is dropped; a turn that was voice less than half of the time (a fan that now and then looks like a voice) is dropped as `noSpeech` and never reaches the backend; and a turn lasts 30 s at most. An energy threshold was tried first and discarded: after the phone's noise suppression the voice reached it at 0.02 to 0.03 and the detector missed it unless the person shouted. |
+| Silence that closes a turn | 0.8 s. The sentences that sound unfinished are held back (next row), so a pause to think is not lost. |
+| Can the person pause to think? | A sentence that ends in "y", "pero", "eh", a comma or an ellipsis is held back, up to twice, waiting 4 s for the rest; both parts go to the chat as one message. A closed sentence ("." or "?") is answered at once. |
+| Interrupting | The microphone stays open while marlix speaks (`audioInterruption: none`; by default `record` pauses it when another sound takes the audio focus, so there was no way to interrupt). While marlix speaks the detector is `guarded`: more than 0.85 of probability, 0.06 of loudness and 390 ms. A voice that passes the guard **pauses** marlix at once and the words decide: what looks like marlix's last reply (`isEchoOf`), or a turn that came to nothing, lets it go on where it was; anything else cuts the reading and is answered. The phone's echo cancellation is not enough alone, so this does not depend on it. |
+| Marlix hearing itself | Its voice came back into the microphone as loud as a person (0.2 to 0.3 of loudness, probability 1.0): it cut itself, transcribed its own sentences and answered them. The phone cancels the echo of what goes through the call route only, so marlix's voice is played with `CallAudioPlayer` (`USAGE_VOICE_COMMUNICATION`, speaker on) and the microphone records in call mode. The volume of marlix is then the call volume. A global `AudioContext` did not reach the player inside `supertonic_flutter`, which is why the package's player is replaced. |
+| Noise that Whisper writes down | Whisper writes sentences on a fan or the street. The backend asks for `verbose_json` and drops the segments it doubts (`no_speech_prob` above 0.85, or above 0.6 with `avg_logprob` below -1, or `compression_ratio` above 2.4). |
+| How soon does marlix start? | The first sound waits for the first piece of the reply to be made, and a long first sentence took up to 9 s. The first sentence is spoken clause by clause (`splitForSpeech`), so the first piece is short; the rest is made while it speaks. The first sound now comes 1 to 2.6 s after the reply. |
+| When does it listen again? | After the reply ends plus `reopenDelay` (250 ms), so the tail of marlix's voice is not heard as the person. Three turns without words pause the conversation; five attempts when the service is busy. |
+| What does the central button do? | It pauses and resumes the conversation (it used to start and stop one turn). Going to the background pauses it too, so the microphone never stays open. |
+| Quota | Groq's free quota is shared by the whole project: 2,000 requests and 28,800 s of audio per day, in addition to the chat. `/v1/transcribe` is limited to 20 per minute per user and refuses when the daily interactions are used, because the chat would refuse the answer. When the quota runs out it answers `503`, which the app shows as a problem with the voice while writing keeps working. |
+
+**Reference.** The design follows how the voice assistants of the big companies and the call apps such as WhatsApp solve the same problems: a voice detector that scores the voice instead of measuring volume, a pre-roll and a silence to close each turn, noise that does not open a turn, the echo of the speaker cancelled through the call route, and an interruption that stops the assistant at once and then checks what was heard. The numbers (thresholds, silences, durations) were measured on the S24 with the app's own logs.
+
+**Removed.** `SpeechToTextRecognizer` (S6-8) and the `speech_to_text` package: nothing used them, and without them the app no longer asks Android for its recognition service.
+
+## 2026-10-29 — The reply reaches the voice sentence by sentence (S6-10)
+
+**Decision:** in voice mode `POST /v1/chat` can answer as a stream of Server-Sent Events (`Accept: text/event-stream`). The backend cuts the model's reply into sentences while it is written, cleans (S6-3) and reviews (S2-4) each one, and sends it; the app speaks each sentence as it arrives instead of waiting for the whole reply. The contract is in [`api-contract.md`](api-contract.md#post-v1chat).
+
+| Question | Decision |
+| --- | --- |
+| Who cuts the sentences? | The backend (`SentenceStream`), not the app. The review must run on a sentence before anyone hears it, so the cut has to happen where the review is. The card said the app cuts the text; the contract already had the backend sending `sentence` events, and that is what was built. The app only takes the first sentence and cuts it at its commas (S6-9) so the first sound comes sooner. |
+| When is a sentence complete? | When the whitespace after its full stop has arrived: "Hola." could still become "Hola.com". A lone "1." is kept with its list item. Decimals and addresses are not cut. |
+| What if a sentence fails the review? | It is never sent. The safe reply goes out as the next `sentence`, the rest of the model's reply is dropped, and the saved reply is the approved sentences followed by the safe reply: exactly what the person heard. In the text chat the whole reply is still replaced, because nothing was heard yet. Sentences already spoken cannot be taken back, so the alternative of replacing everything would put in the history something different from what was said. |
+| What if the model fails midway? | The stream ends with an `error` event and the turn is neither saved nor counted. Before the first sentence nothing is open yet, so the normal JSON error with its status (and `Retry-After`) is sent instead. `withRetry` retries a stream only while nothing was delivered, so a sentence is never said twice. |
+| Why the first event opens the stream | Validation, the daily limit and a model that fails before saying anything keep answering JSON with their HTTP status. The headers go out with the first event. |
+| Text mode | It ignores the header: a text reply keeps its paragraphs, and the card leaves streaming the text chat out of scope. |
+| The app | `MarlixApi.sendVoiceMessage` reads the events; `ChatController` publishes the sentences in `liveReplyProvider`; `ReplyReader` starts a reading with the first one and `VoiceService.speakSentences` says each as it arrives, waiting for the next if it gets ahead. The complete reply is not read again when it arrives, and the avatar keeps its mouth moving after it. While the voice speaks the conversation is not "thinking" any more, even if the reply is still being written. A backend that answers plain JSON works as before. |
+| Trap | `await for` over the events with a `return` inside waited for the cancellation of the subscription of a stream that had already ended, and the chat stayed on "thinking" for ever with the reply complete. The events are read with a plain subscription and its `cancel()` is not awaited. |
+
+**Measured** against Groq from the PC, voice mode, the same stream: the first sentence arrives 0.5 to 0.7 s before the reply is complete (1.36 s vs 2.06 s, 1.17 s vs 1.70 s, 1.89 s vs 2.38 s). The gain is modest because voice replies are short and most of the wait is the model's first token; it grows with longer replies. The time until the voice makes its first sound still depends on the phone (S6-1).
+
+## 2026-10-29 — Only the backend writes the consent and the onboarding (S6-11)
+
+**Decision:** `authenticated` has no `UPDATE` on any column of `users`. Migration `docs/migrations/2026-10-29-revoke-users-update.sql` revokes the column grant on `data_consent_at`, `onboarding_completed_at` and `reminders_enabled`, and `schema.sql`, `schema-test.sql` and `erd.md` follow.
+
+**Why:** the Sprint 5 audit found that, since S5-5, only `POST /v1/onboarding` writes those columns, with the service key. The grant was unused, and with the public key and their own token a user could clear their consent date or repeat the onboarding through the Supabase API. The record of the consent must be written only by the server.
+
+**Checked:** the backend writes with `SUPABASE_SECRET_KEY` (`server.ts`), which does not depend on the grant; the app never reads or writes `users` directly, and there is no `PATCH /v1/settings` route yet, so when US-14 adds it, it has to write through the backend like the rest. `schema-test.sql` now proves the three columns cannot be updated, and that an `update` of each fails with "permission denied".
+
+---
+
+## 2026-10-29 — Migrations are checked by a query, and a failed counter shows in /health (S6-16)
+
+**Decision:** [`docs/verify-migrations.sql`](verify-migrations.sql) lists, for every file in `docs/migrations/`, what it creates (columns, functions, execute grants, constraints, column privileges) and shows `ok` or `MISSING`. It also checks that every table in `public` has RLS. It is run in the SQL Editor after a migration, and by the CI against `schema.sql`, so the query itself cannot drift from the schema. The steps are in [CONTRIBUTING.md](../CONTRIBUTING.md#database-migrations). `GET /health` answers `"status": "degraded"` with `"problems": ["usage_counter"]` after a failed count, until one succeeds.
+
+**Why:** `record_interaction` (S4-13) was missing in production. Every count failed with `PGRST202`, the backend logged only the error code and kept answering, so the daily cap was not enforced and nobody noticed.
+
+| Option for the limit when it cannot count | Verdict |
+|---|---|
+| Keep failing open after the reply (as in S4-13) and make the failure visible | **Chosen.** The person already has the reply, and refusing the next ones would lock everyone out for a deploy mistake. The cost is the uncounted replies while the counter is down, which `/health` now reports. |
+| Fail closed: refuse to answer if the last count failed | Discarded. A database hiccup would stop the whole chat, and the cap protects the free Groq quota, not safety. Reading the count already fails closed (`500` before the model), so a database that is really down does stop messages. |
+
+| Option for showing it | Verdict |
+|---|---|
+| `200` with `"degraded"` in the body | **Chosen.** `render.yaml` sets `healthCheckPath: /health`: a `503` would make Render restart a healthy process for a problem a restart does not fix. The external monitor (S7-6) looks for `"status":"ok"` in the body. |
+| `503` when the counter fails | Discarded for the restart loop above. |
+| Only the log line | Discarded. It already existed and nobody read it. |
+
+**Limits.** The flag lives in memory and is set by real traffic: after a deploy it says `ok` until the first reply is counted, and it cannot see a problem while nobody chats. That is why the query, not `/health`, is the check to run before merging. Applying a migration stays manual (an automatic migration tool is out of scope).
+
+---
+
+## 2026-11-03 — Database backups are an encrypted daily dump in GitHub artifacts (S7-5)
+
+**Decision:** a scheduled GitHub Actions job runs `pg_dump` against the production database every day, encrypts the stream with [age](https://github.com/FiloSottile/age) and keeps it as a workflow artifact for 90 days. The owner holds the private key outside the repository. The steps to set it up, download and restore are in [backups.md](backups.md).
+
+**Why:** the free Supabase plan has no backups and pauses a project after a week without activity, and the conversations are personal. A person who loses their memories loses the reason to use marlix.
+
+| Option for where the backups live | Verdict |
+|---|---|
+| GitHub Actions artifact, encrypted | **Chosen.** No new account, no cost, and the job and its secrets are already where the CI lives. The cost is that the repository is public, so anyone with a GitHub account can download the artifact: that is why only the encrypted file is written and the key never touches GitHub. Retention is at most 90 days. |
+| A bucket (Cloudflare R2, Backblaze B2) | Discarded for now. Longer retention, but a new account and access keys to keep safe for a family-sized app. It is the next step if 90 days are not enough. |
+| Google Drive | Discarded. Needs a service account or a stored login token. |
+| Supabase Pro daily backups | Not now; see the plan below. |
+
+| Option for the format | Verdict |
+|---|---|
+| Plain SQL, data only, from `public` plus `auth.users` and `auth.identities` | **Chosen.** One stream, readable once decrypted, restorable with `psql` in a single transaction. The structure comes from `schema.sql`, the reviewed source, so a restore also checks that the schema is right. |
+| `pg_dump -Fc` custom format | Discarded. `pg_dump` ignores `--schema` when `--table` is given, so one command cannot take `public` and two `auth` tables; and `pg_restore --disable-triggers` needs to own `auth.users`, which `postgres` does not on Supabase. |
+| The whole `auth` schema | Discarded. Sessions and tokens that expire anyway, tied to the GoTrue version of the project. |
+
+**Restoring.** `session_replication_role = replica` loads the tables in any order and keeps the sign-up trigger on `auth.users` from creating the `public.users` rows that the backup already has. `schema.sql` seeds the plan and the avatar, and the backup carries them too, so the restore clears those two first. Tested on the `supabase/postgres` image: identical row counts and checksums in every table. Not tested yet on a hosted Supabase project.
+
+**The paid plan.** Stay on the free plan while marlix is for the owner and their family: the daily dump covers the loss of data, and the cost is zero (the v1 goal). **Move to Pro before opening the app to more people**: it ends the pauses, adds Supabase's own backups and a support channel, and a person who is not family should not depend on a dump that one person restores by hand. The 100-replies-a-day cap and Groq's free tier are the other limits to revisit at that point.
+
+**Out of scope, as the card says:** point-in-time recovery.
+
+---
+
+## 2026-11-03 — Monitoring: UptimeRobot on `/health`, and the Groq quota read from its headers (S7-6)
+
+**Decision:** an external UptimeRobot keyword monitor calls `GET /health` and emails an alert when `"status":"ok"` is not in the body. `/health` now also says `degraded` with `groq_quota` when any Groq model has 20% or less of its daily requests left. The setup, the checks and what each alert means are in [monitoring.md](monitoring.md).
+
+**Why:** Render's free service sleeps after about 15 minutes without traffic, and Groq's free plan answers 429 once the day's requests are gone, which a person sees as a broken app. Both have to reach the owner before they reach a family member.
+
+| Option for the monitor | Verdict |
+|---|---|
+| UptimeRobot, keyword check | **Chosen.** Free, checks the body (so it sees `degraded`, not only a dead server), emails, and its polling keeps Render awake. It needs an account and is set up in its panel. |
+| A scheduled GitHub Actions workflow | Discarded. GitHub delays and skips scheduled runs, so it cannot be trusted to keep Render awake or to alert fast. |
+
+| Option for the Groq quota alert | Verdict |
+|---|---|
+| Read `x-ratelimit-*-requests` from the answers the backend already gets | **Chosen.** Costs no extra request (the quota is the thing being protected), reuses the `/health` mechanism of S6-16 and needs no new service. Measured on 3 November 2026: `openai/gpt-oss-120b` allows 1,000 requests a day. |
+| Poll Groq's usage from a scheduled job | Discarded. There is no usage API for the free plan, and polling would spend the quota. |
+| Only a weekly manual look at the console | Kept as the periodic review, but it is not an alert. |
+
+**Limits.** The reading lives in memory: after a deploy or restart it is empty until the first reply, and it cannot see a quota nobody is using. Only the per-day *requests* header exists; the daily token limit and Whisper's audio limit are not reported, and show up as 429s in the logs. Each model is read separately, so the classifier, the reply and the memory extractor are all watched. `/health` answers `200` while degraded for the same reason as in S6-16: restarting does not give Groq's quota back. `/health` does not touch the database, so it does not keep the Supabase project from pausing; the card assumed it did.
+
+## 2026-11-04 — Email confirmation and password recovery use codes inside the app (S7-9)
+
+**Decision:** Supabase Auth sends the code and verifies it; marlix never generates, compares or logs it. Sign-up without a session opens a six-digit confirmation form. `verifyOTP` with type `email` starts the normal session. Recovery uses `resetPasswordForEmail`, `verifyOTP` with type `recovery`, then `updateUser` with the new password. The email templates in `infra/auth/` contain `{{ .Token }}` and no links, so neither flow needs a browser or deep links. Re-sending waits 60 seconds in the UI; Supabase remains responsible for server-side rate limits and code expiry.
+
+**Session isolation:** recovery has its own short-lived `GoTrueClient`, with no storage and no automatic refresh. Its session never reaches `signedInUserProvider`, the chat or the encrypted normal session storage. A failed password update can be retried with the verified temporary session. Canceling or finishing recovery disposes it; the person signs in with the new password afterwards. Reusing the normal client was rejected because verifying a recovery code would otherwise open the chat before the password form.
+
+**Account privacy:** a successful sign-up or an already-registered response opens the same neutral code screen. Recovery and resend requests also hide unknown-account responses. An invalid or expired code gets the same message regardless of the email. Password sign-in continues to combine unknown email, unconfirmed email and wrong password into one error.
+
+**Production configuration and verification:** on 2026-11-04, the user configured custom SMTP, the confirmation and recovery templates, six-digit email OTPs, a 3600-second OTP expiration, an eight-character minimum password and `Confirm email` in Supabase. Real-mailbox tests with the updated app in the Pixel_8 emulator verified sign-up confirmation, recovery-code delivery and verification, password replacement and subsequent sign-in with the new password. Existing accounts created with confirmation disabled are already confirmed; this change does not rewrite them. The app also accepts an immediate sign-up session in environments with confirmation disabled. Older app versions cannot handle a confirmation challenge; new installations need this version. No backend endpoint or database schema changes.
+
+References: [email templates](https://supabase.com/docs/guides/auth/auth-email-templates), [Flutter OTP verification](https://supabase.com/docs/reference/dart/auth-verifyotp), [custom SMTP](https://supabase.com/docs/guides/auth/auth-smtp).

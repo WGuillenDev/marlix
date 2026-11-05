@@ -69,22 +69,32 @@ The text acknowledges the person and points to 9-1-1. It gives no advice or tech
 
 The reply text and the help resources are in [`api/config/crisis.json`](../api/config/crisis.json), not in code. The same resources are served to the app by the public [`GET /v1/help-resources`](api-contract.md#get-v1help-resources), so the help screen and the crisis reply always show the same numbers, and **changing a number never requires a new app build**: edit the file, open a pull request and Render deploys it.
 
-| Resource | Phone | Hours |
-|---|---|---|
-| 9-1-1, Despacho de Apoyo Psicológico (**main option**) | 911 | 24/7, free |
-| Aquí Estoy, Colegio de Psicólogos | 800-2737869 | Limited hours |
-| Emergencias CCSS | 2225-7511 | Check |
-| Emergencias CCSS (second line) | 2234-2730 | Check |
+| Resource | Phone | Service | Hours |
+|---|---|---|---|
+| 9-1-1 (**main option**) | 911 | Immediate attention for emergencies or situations of risk | 24 hours, 7 days a week |
+| Línea Aquí Estoy | 800-273-7869 | Free, confidential psychological care from the Colegio de Psicólogos de Costa Rica | Monday to Friday 2:00 p. m. to 10:00 p. m.; Saturday 9:00 a. m. to 4:00 p. m. |
+
+The app shows this copy in Spanish (`api/config/crisis.json`). Only these two lines are shown: a short list is easier to use in a hard moment. The reasons are in [decisions.md](decisions.md).
 
 The server validates the file when it starts and **refuses to start** if it would break the protocol:
 
 - The reply must mention 9-1-1.
 - There must be exactly one primary resource, it must be 9-1-1 and it must be listed first.
+- Every resource has a `service` and `hours` text.
 - Phones are digits only, ready to dial; ids are unique; `updatedAt` is an ISO 8601 date.
 
 When a number changes, also update `updatedAt`, so the app knows its cached copy is old.
 
-**Numbers can change.** Verify them before using the app with anyone, and periodically after that (S7-7).
+### Verifying the help resources
+
+**Numbers can change**, and an outdated one in a crisis reply is worse than none: it gives a false sense of safety. They are verified every 3 months. The [`verify-help-resources` workflow](../.github/workflows/verify-help-resources.yml) opens an issue with the checklist on the 3rd of February, May, August and November; it only reminds, the check is manual.
+
+1. Check each line against its official source: for Línea Aquí Estoy, <https://aquiestoy.cr/> (number, hours, whether it is free); for 9-1-1, the national emergency number.
+2. If something changed, edit `api/config/crisis.json` and the table above in a pull request. Render deploys it and the app picks it up from `GET /v1/help-resources`: no new build.
+3. Set `updatedAt` in `crisis.json` to the verification date, even when nothing changed. It is the record of the last verification.
+4. Close the reminder issue.
+
+Last verification: **2026-11-03**. The number, the hours and "free" match aquiestoy.cr; that site does not say "confidential", which the Spanish copy still claims.
 
 ### In the app
 

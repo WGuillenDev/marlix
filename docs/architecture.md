@@ -9,14 +9,14 @@ flowchart TB
     user(["👤 User"])
 
     subgraph phone["📱 Phone (Android)"]
-        stt["Speech recognizer<br/>speech_to_text"]
+        mic["Microphone<br/>echo cancellation<br/>voice and turn detector"]
         app["Flutter app<br/>chat · avatar · help screen"]
         tts["Avatar voice<br/>Supertonic 3<br/>fallback: flutter_tts"]
         notif["Local reminders<br/>flutter_local_notifications"]
     end
 
     subgraph render["☁️ Backend on Render · Node.js + TypeScript + Express"]
-        secrets[("🔑 Environment variables<br/>GROQ_API_KEY<br/>SUPABASE_SERVICE_ROLE_KEY")]
+        secrets[("🔑 Environment variables<br/>GROQ_API_KEY<br/>SUPABASE_SECRET_KEY")]
         auth["1 · Verify session"]
         limit["2 · Daily limit"]
         crisis{"3 · Crisis filter"}
@@ -36,10 +36,10 @@ flowchart TB
     groq["🧠 Groq · LLM"]
     monitor["⏱️ Uptime monitor"]
 
-    user -- "voice" --> stt --> app
+    user -- "voice" --> mic --> app
     user -- "text" --> app
     app -- "reply text" --> tts -- "speech" --> user
-    notif -. "2, 5 and 10 days inactive" .-> user
+    notif -. "daily, at the chosen time" .-> user
 
     app -- "sign up / sign in<br/>publishable key" --> sbauth
     app == "HTTPS + session token" ==> auth
@@ -59,7 +59,8 @@ Thick arrows are the path of a normal chat message. Dotted arrows are background
 | Component | Runs on | Responsibility |
 |---|---|---|
 | Flutter app | Phone | Chat and voice screens, animated avatar, help screen, onboarding and settings. Talks only to the backend and to Supabase Auth. |
-| Speech recognizer | Phone | Turns the user's voice into text (`speech_to_text`). Free and understands Costa Rican Spanish. |
+| Microphone | Phone | Records each turn with echo cancellation and cuts it where the person stops speaking (`record` plus Silero VAD, which scores the voice of every 32 ms frame, and `TurnDetector`), so the person can talk without buttons and interrupt marlix ([decision](decisions.md#2026-10-28--talking-without-buttons-whisper-in-groq-and-a-detector-of-turns-s6-9)). |
+| Speech recognition | Backend | `POST /v1/transcribe` turns the turn's audio into text with Whisper in Groq, which understands Costa Rican words. The audio is never saved. |
 | Avatar voice | Phone | Turns marlix's reply into speech with Supertonic 3; the native voice (`flutter_tts`) is the fallback. Free and private. The model (398 MB) is downloaded once from Hugging Face at a pinned revision; after that it works offline ([decision](decisions.md#2026-10-21--voice-supertonic-3-on-the-phone-voice-f4-s6-1)). |
 | Local reminders | Phone | Daily reminders scheduled on the phone (`flutter_local_notifications`). No server, no push. |
 | Backend | Render (free plan) | The only component that talks to the LLM and writes to the database. Checks the session, the daily limit and the crisis filter, builds the prompt with memory, calls Groq and reviews the reply before returning it. |
@@ -73,7 +74,7 @@ Thick arrows are the path of a normal chat message. Dotted arrows are background
 | Key | Where | Why |
 |---|---|---|
 | `GROQ_API_KEY` | Backend environment variables on Render (`.env` locally, never committed) | Anyone who extracts it from an app could use up or bill the account. |
-| `SUPABASE_SERVICE_ROLE_KEY` | Backend environment variables on Render | It bypasses RLS and gives access to all data. |
+| `SUPABASE_SECRET_KEY` | Backend environment variables on Render | It has `service_role` rights: it bypasses RLS and gives access to all data. |
 | Supabase publishable key | Flutter app (`app/config/`) | Public by design: it only allows sign-in and what RLS permits. |
 | The person's session | Phone, encrypted with a key from the Android Keystore (S4-3), outside backups (S4-11) | It keeps the person signed in; the backend checks it on every request against the project's public keys. |
 
@@ -81,7 +82,7 @@ The app never holds a secret. That is why **the Flutter app never calls the LLM 
 
 ## Voice runs on the phone
 
-Voice mode reuses the same backend path as text chat. The phone turns speech into text, sends it to [`POST /v1/chat`](api-contract.md#post-v1chat) like any message, and speaks the reply with the on-device voice. There is no voice endpoint and no audio leaves the phone, so voice costs nothing and the crisis filter applies exactly as in text chat.
+Voice mode reuses the same backend path as text chat. The phone records each turn, sends the audio to [`POST /v1/transcribe`](api-contract.md#post-v1transcribe) (Whisper in Groq, never saved), sends the text it gets to [`POST /v1/chat`](api-contract.md#post-v1chat) like any message, and speaks the reply with the on-device voice. The crisis filter applies exactly as in text chat because the text goes through the same endpoint. Transcribing does not count as an interaction, but it does use Groq's shared audio quota, so it has its own rate limit.
 
 ## The crisis filter comes first
 
@@ -97,9 +98,9 @@ It lives in code, not in the system prompt, because a model can be wrong or mani
 
 The personality prompt forbids clinical advice, diagnoses and the rest of marlix's limits, but a model can still break them. So every reply goes through a review in code (S2-4, `api/src/services/review/`) before it reaches the person:
 
-- The reply is split into sentences and **each sentence is reviewed on its own**. The voice mode will send the reply sentence by sentence (S6-10) and reuses the same check.
+- The reply is split into sentences and **each sentence is reviewed on its own**. The voice mode sends the reply sentence by sentence while the model writes it (S6-10) and reuses the same check on each one.
 - Rules, checked most serious first: harmful information (lethal doses, methods), clinical advice (medication, doses), diagnoses, claiming to be a professional, discouraging professional help and encouraging dependence. The phrases are in [`rules.ts`](../api/src/services/review/rules.ts) and are normalized like the crisis signals; a phrase right after "no" does not count, so "no soy tu terapeuta" passes.
-- If a sentence fails, **the whole reply is replaced** by a safe text that gives no advice and invites the person to keep talking. The log only says which rule fired, never the reply.
+- If a sentence fails, **the reply is replaced** by a safe text that gives no advice and invites the person to keep talking. In the text chat the whole reply is replaced; in the voice stream the sentences already approved stay and the safe text follows them. The log only says which rule fired, never the reply.
 - It is a few regular expressions per sentence: no second model call and no noticeable delay (well under 5 ms per reply).
 
 ## Ready to change providers

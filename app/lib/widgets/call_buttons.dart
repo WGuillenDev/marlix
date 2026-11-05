@@ -16,18 +16,20 @@ Future<void> callLine(BuildContext context, WidgetRef ref, HelpResource line) as
   );
 }
 
-/// The big red button for the primary line (wireframes 03c and 06).
+/// The big red button that dials a help line (wireframes 03c and 06). By
+/// default it names the number, as for 9-1-1.
 class EmergencyCallButton extends ConsumerWidget {
-  const EmergencyCallButton({super.key, required this.line});
+  const EmergencyCallButton({super.key, required this.line, this.label});
 
   final HelpResource line;
+  final String? label;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return FilledButton.icon(
       onPressed: () => callLine(context, ref, line),
       icon: const Icon(Icons.phone_rounded),
-      label: Text('Llamar al ${formatPhone(line.phone)}'),
+      label: Text(label ?? 'Llamar al ${formatPhone(line.phone)}'),
       style: FilledButton.styleFrom(
         backgroundColor: AppColors.crisis,
         foregroundColor: AppColors.white,

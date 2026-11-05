@@ -2,10 +2,13 @@
 // imports from here, never from a provider adapter or SDK.
 import type { Env } from '../../config/env.js';
 import { GroqProvider } from './groq-provider.js';
+import type { QuotaMonitor } from './quota-monitor.js';
 import { withRetry } from './retry.js';
 import type { LlmProvider } from './types.js';
 
 export { LlmError, type LlmErrorKind } from './errors.js';
+export { GroqTranscriber, TRANSCRIPTION_PROMPT } from './groq-transcriber.js';
+export { createQuotaMonitor, type QuotaMonitor } from './quota-monitor.js';
 export type {
   LlmCompletion,
   LlmCompletionRequest,
@@ -20,6 +23,8 @@ export interface LlmProviderOverrides {
   timeoutMs?: number;
   /** One retry for transient failures. On by default. */
   retry?: boolean;
+  /** Receives the daily request quota Groq reports after each answer (S7-6). */
+  quota?: QuotaMonitor;
 }
 
 /**
@@ -40,6 +45,7 @@ function createBaseProvider(env: Env, overrides: LlmProviderOverrides): LlmProvi
         model: overrides.model ?? env.GROQ_MODEL,
         baseUrl: env.GROQ_BASE_URL,
         timeoutMs: overrides.timeoutMs ?? env.LLM_TIMEOUT_MS,
+        ...(overrides.quota ? { quota: overrides.quota } : {}),
         ...(env.GROQ_REASONING_EFFORT !== 'none'
           ? { reasoningEffort: env.GROQ_REASONING_EFFORT }
           : {}),

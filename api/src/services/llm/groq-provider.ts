@@ -8,6 +8,7 @@ import OpenAI, {
 } from 'openai';
 
 import { LlmError } from './errors.js';
+import type { QuotaMonitor, QuotaReading } from './quota-monitor.js';
 import type { LlmCompletion, LlmCompletionRequest, LlmProvider } from './types.js';
 
 export const GROQ_DEFAULT_BASE_URL = 'https://api.groq.com/openai/v1';
@@ -27,6 +28,8 @@ export interface GroqProviderOptions {
   /** Sent to reasoning models such as gpt-oss; omit it for models without reasoning. */
   reasoningEffort?: GroqReasoningEffort;
   timeoutMs?: number;
+  /** Told how much of the daily request quota is left after each answer (S7-6). */
+  quota?: QuotaMonitor;
   /** For tests: replaces the HTTP client and the clock. */
   fetch?: typeof fetch;
   now?: () => number;
@@ -44,6 +47,7 @@ export class GroqProvider implements LlmProvider {
   readonly #client: OpenAI;
   readonly #reasoningEffort: GroqReasoningEffort | undefined;
   readonly #now: () => number;
+  readonly #quota: QuotaMonitor | undefined;
   // While the quota is exhausted, calls fail right away instead of hitting
   // Groq again before the wait time it asked for.
   #blockedUntil = 0;
@@ -52,6 +56,7 @@ export class GroqProvider implements LlmProvider {
     this.model = options.model;
     this.#reasoningEffort = options.reasoningEffort;
     this.#now = options.now ?? Date.now;
+    this.#quota = options.quota;
     this.#client = new OpenAI({
       apiKey: options.apiKey,
       baseURL: options.baseUrl ?? GROQ_DEFAULT_BASE_URL,
@@ -64,27 +69,17 @@ export class GroqProvider implements LlmProvider {
   }
 
   async complete(request: LlmCompletionRequest): Promise<LlmCompletion> {
-    const waitSeconds = Math.ceil((this.#blockedUntil - this.#now()) / 1000);
-    if (waitSeconds > 0) {
-      throw new LlmError('rate_limited', 'Groq quota exhausted; waiting before calling again', {
-        retryAfterSeconds: waitSeconds,
-      });
-    }
+    this.#assertNotBlocked();
 
     let completion: OpenAI.Chat.Completions.ChatCompletion;
     try {
-      completion = await this.#client.chat.completions.create(
-        {
-          model: this.model,
-          messages: request.messages.map(({ role, content }) => ({ role, content })),
-          ...(request.maxOutputTokens ? { max_completion_tokens: request.maxOutputTokens } : {}),
-          ...(request.temperature !== undefined ? { temperature: request.temperature } : {}),
-          ...(this.#reasoningEffort ? { reasoning_effort: this.#reasoningEffort } : {}),
-        },
-        request.signal ? { signal: request.signal } : undefined,
-      );
+      const { data, response } = await this.#client.chat.completions
+        .create(this.#params(request), request.signal ? { signal: request.signal } : undefined)
+        .withResponse();
+      completion = data;
+      this.#observeQuota(response.headers);
     } catch (error) {
-      throw this.#translateError(error);
+      throw this.#translate(error);
     }
 
     const content = completion.choices[0]?.message.content?.trim();
@@ -108,38 +103,106 @@ export class GroqProvider implements LlmProvider {
     };
   }
 
-  // Only the status and the provider's error code go into the message: the
-  // provider's own text could echo parts of the conversation.
-  #translateError(error: unknown): LlmError {
-    if (error instanceof APIConnectionTimeoutError) {
-      return new LlmError('timeout', 'Groq did not answer in time', { cause: error });
-    }
-    if (error instanceof APIUserAbortError) {
-      return new LlmError('unavailable', 'Groq call was cancelled', { cause: error });
-    }
-    if (error instanceof APIConnectionError) {
-      return new LlmError('unavailable', 'Could not reach Groq', { cause: error });
-    }
-    if (!(error instanceof APIError)) {
-      return new LlmError('unavailable', 'Unexpected error calling Groq', { cause: error });
-    }
+  async *stream(request: LlmCompletionRequest): AsyncGenerator<string> {
+    this.#assertNotBlocked();
 
-    const status = error.status ?? 0;
-    const detail = `Groq responded ${status}${error.code ? ` (${error.code})` : ''}`;
-
-    if (status === 429) {
-      const retryAfterSeconds = parseRetryAfterSeconds(error.headers);
-      this.#blockedUntil = this.#now() + retryAfterSeconds * 1000;
-      return new LlmError('rate_limited', detail, { retryAfterSeconds, cause: error });
+    try {
+      const { data: chunks, response } = await this.#client.chat.completions
+        .create(
+          { ...this.#params(request), stream: true },
+          request.signal ? { signal: request.signal } : undefined,
+        )
+        .withResponse();
+      this.#observeQuota(response.headers);
+      for await (const chunk of chunks) {
+        const piece = chunk.choices[0]?.delta.content;
+        if (piece) yield piece;
+      }
+    } catch (error) {
+      throw this.#translate(error);
     }
-    if (status === 401 || status === 403) {
-      return new LlmError('authentication', detail, { cause: error });
-    }
-    if (status === 400 || status === 404 || status === 413 || status === 422) {
-      return new LlmError('invalid_request', detail, { cause: error });
-    }
-    return new LlmError('unavailable', detail, { cause: error });
   }
+
+  #params(request: LlmCompletionRequest) {
+    return {
+      model: this.model,
+      messages: request.messages.map(({ role, content }) => ({ role, content })),
+      ...(request.maxOutputTokens ? { max_completion_tokens: request.maxOutputTokens } : {}),
+      ...(request.temperature !== undefined ? { temperature: request.temperature } : {}),
+      ...(this.#reasoningEffort ? { reasoning_effort: this.#reasoningEffort } : {}),
+    };
+  }
+
+  #assertNotBlocked(): void {
+    const waitSeconds = Math.ceil((this.#blockedUntil - this.#now()) / 1000);
+    if (waitSeconds > 0) {
+      throw new LlmError('rate_limited', 'Groq quota exhausted; waiting before calling again', {
+        retryAfterSeconds: waitSeconds,
+      });
+    }
+  }
+
+  #observeQuota(headers: Headers | undefined): void {
+    const reading = readQuota(headers);
+    if (reading) this.#quota?.record(this.model, reading);
+  }
+
+  #translate(error: unknown): LlmError {
+    if (error instanceof APIError) this.#observeQuota(error.headers);
+    const llmError = translateGroqError(error);
+    if (llmError.retryAfterSeconds) {
+      this.#blockedUntil = this.#now() + llmError.retryAfterSeconds * 1000;
+    }
+    return llmError;
+  }
+}
+
+/**
+ * A Groq SDK error as an LlmError. Only the status and the provider's error
+ * code go into the message: the provider's own text could echo parts of the
+ * conversation. Used by the chat and by the transcription (S6-9).
+ */
+export function translateGroqError(error: unknown): LlmError {
+  if (error instanceof APIConnectionTimeoutError) {
+    return new LlmError('timeout', 'Groq did not answer in time', { cause: error });
+  }
+  if (error instanceof APIUserAbortError) {
+    return new LlmError('unavailable', 'Groq call was cancelled', { cause: error });
+  }
+  if (error instanceof APIConnectionError) {
+    return new LlmError('unavailable', 'Could not reach Groq', { cause: error });
+  }
+  if (!(error instanceof APIError)) {
+    return new LlmError('unavailable', 'Unexpected error calling Groq', { cause: error });
+  }
+
+  const status = error.status ?? 0;
+  const detail = `Groq responded ${status}${error.code ? ` (${error.code})` : ''}`;
+
+  if (status === 429) {
+    const retryAfterSeconds = parseRetryAfterSeconds(error.headers);
+    return new LlmError('rate_limited', detail, { retryAfterSeconds, cause: error });
+  }
+  if (status === 401 || status === 403) {
+    return new LlmError('authentication', detail, { cause: error });
+  }
+  if (status === 400 || status === 404 || status === 413 || status === 422) {
+    return new LlmError('invalid_request', detail, { cause: error });
+  }
+  return new LlmError('unavailable', detail, { cause: error });
+}
+
+/**
+ * The daily request quota from Groq's headers, or undefined if they are
+ * missing. `x-ratelimit-*-requests` is the per-day window; the `-tokens` ones
+ * are per minute and say nothing about the day.
+ */
+export function readQuota(headers: Headers | undefined): QuotaReading | undefined {
+  const limit = Number(headers?.get('x-ratelimit-limit-requests'));
+  const remaining = Number(headers?.get('x-ratelimit-remaining-requests'));
+  const resetsInSeconds = parseDuration(headers?.get('x-ratelimit-reset-requests'));
+  if (!(limit > 0) || Number.isNaN(remaining) || resetsInSeconds === undefined) return undefined;
+  return { limit, remaining, resetsInSeconds };
 }
 
 /**

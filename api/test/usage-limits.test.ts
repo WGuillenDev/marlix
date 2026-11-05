@@ -142,6 +142,20 @@ describe('createUsageLimiter', () => {
     assert.equal(await limiter.recordInteraction(user), undefined);
   });
 
+  it('reports that it is not counting after a failed save, until one works', async () => {
+    const database = createMemoryUsageStore();
+    const limiter = createUsageLimiter(plans(), database.store);
+    assert.equal(limiter.isCounting(), true);
+
+    database.failing.writes = true;
+    await limiter.recordInteraction(user);
+    assert.equal(limiter.isCounting(), false);
+
+    database.failing.writes = false;
+    await limiter.recordInteraction(user);
+    assert.equal(limiter.isCounting(), true);
+  });
+
   it('fails if the database has no personal plan', async () => {
     const limiter = createUsageLimiter(plans(), createMemoryUsageStore({}).store);
     await assert.rejects(() => limiter.snapshot(user), UsageStoreError);
@@ -352,6 +366,28 @@ describe('usage in the database (S4-13)', () => {
       assert.equal(response.status, 200);
       assert.equal(body.type, 'crisis');
       assert.equal('usage' in body, false);
+    } finally {
+      await app.close();
+    }
+  });
+});
+
+describe('GET /health and the usage counter', () => {
+  it('says ok, then degraded while counting fails, then ok again', async () => {
+    const database = createMemoryUsageStore();
+    const app = await startApp({ llm: createFakeLlm().llm, usage: database.store });
+    try {
+      assert.deepEqual(await (await app.request('/health')).json(), { status: 'ok' });
+
+      database.failing.writes = true;
+      assert.equal((await app.postJson('/v1/chat', { message: 'hola' })).status, 200);
+      const degraded = await app.request('/health');
+      assert.equal(degraded.status, 200);
+      assert.deepEqual(await degraded.json(), { status: 'degraded', problems: ['usage_counter'] });
+
+      database.failing.writes = false;
+      await app.postJson('/v1/chat', { message: 'hola' });
+      assert.deepEqual(await (await app.request('/health')).json(), { status: 'ok' });
     } finally {
       await app.close();
     }

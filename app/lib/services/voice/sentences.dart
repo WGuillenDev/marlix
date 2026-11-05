@@ -19,6 +19,17 @@ List<String> splitSentences(String text) {
   return sentences;
 }
 
+/// The pieces a reply is spoken in: its sentences, with the first one cut at
+/// its commas (S6-9). The first sound waits for the first piece to be made, so
+/// a short one makes marlix start sooner; the rest is made while it speaks.
+List<String> splitForSpeech(String text) {
+  final sentences = splitSentences(text);
+  if (sentences.isEmpty) return sentences;
+  final clauses = splitClauses(sentences.first);
+  if (clauses.length < 2) return sentences;
+  return [...clauses, ...sentences.skip(1)];
+}
+
 void _flush(StringBuffer pending, List<String> sentences) {
   final sentence = pending.toString().trim();
   pending.clear();
@@ -31,30 +42,29 @@ void _flush(StringBuffer pending, List<String> sentences) {
   sentences.add(sentence);
 }
 
-/// A piece of a sentence that ends at a comma, and the silence to leave after it.
-typedef Clause = ({String text, Duration pause});
+/// Silence left after a piece, by the punctuation it ends with. The model's
+/// own silence at the edges is cut (`trimSilence`), so this is all that is
+/// heard: a comma short, a period longer, and no dead gap between sentences
+/// (S6-14, docs/decisions.md).
+const commaPause = Duration(milliseconds: 180);
+const semicolonPause = Duration(milliseconds: 280);
+const sentencePause = Duration(milliseconds: 350);
 
-/// Silence after a comma and after a semicolon or a colon. Supertonic reads
-/// through commas without stopping, which sounds rushed.
-const commaPause = Duration(milliseconds: 200);
-const semicolonPause = Duration(milliseconds: 300);
-
-/// Splits one sentence at its commas, semicolons and colons, each with the
-/// pause that follows it. The punctuation stays in the text, so the voice still
-/// raises its tone for a sentence that goes on. A comma inside a number
-/// ("3,5") has no space after it and does not split.
-List<Clause> splitClauses(String sentence) {
-  final clauses = <Clause>[];
-  final pieces = sentence.trim().split(RegExp(r'(?<=[,;:])\s+'));
-  for (final piece in pieces) {
-    final text = piece.trim();
-    if (!text.contains(RegExp(r'[\p{L}\p{N}]', unicode: true))) continue;
-    final pause = switch (text[text.length - 1]) {
-      ',' => commaPause,
-      ';' || ':' => semicolonPause,
-      _ => Duration.zero,
-    };
-    clauses.add((text: text, pause: pause));
-  }
-  return clauses;
+Duration pauseAfter(String piece) {
+  final end = RegExp(r'([,;:.!?…])[\s"»)\]]*$').firstMatch(piece)?.group(1);
+  return switch (end) {
+    ',' => commaPause,
+    ';' || ':' => semicolonPause,
+    '.' || '!' || '?' || '…' => sentencePause,
+    _ => Duration.zero,
+  };
 }
+
+/// Splits one sentence at its commas, semicolons and colons. The punctuation
+/// stays in the text, so the voice still raises its tone for a sentence that
+/// goes on. A comma inside a number ("3,5") has no space after it and does not
+/// split.
+List<String> splitClauses(String sentence) => [
+  for (final piece in sentence.trim().split(RegExp(r'(?<=[,;:])\s+')))
+    if (piece.trim().contains(RegExp(r'[\p{L}\p{N}]', unicode: true))) piece.trim(),
+];

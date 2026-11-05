@@ -45,6 +45,12 @@ export interface UsageLimiter {
    * is still delivered, so this returns undefined instead of the usage.
    */
   recordInteraction(user: UsageUser): Promise<UsageSnapshot | undefined>;
+  /**
+   * False while the last attempt to count a reply failed, until one succeeds.
+   * /health shows it (S6-16): a counter that fails does not stop the chat, so
+   * without this the daily cap would stop being enforced and nobody would see.
+   */
+  isCounting(): boolean;
 }
 
 export function createUsageLimiter(
@@ -53,6 +59,7 @@ export function createUsageLimiter(
   now: () => Date = () => new Date(),
 ): UsageLimiter {
   const recentAttempts = new Map<string, number[]>();
+  let lastCountFailed = false;
 
   function rateLimitFor(user: UsageUser): PlanLimits['rateLimit'] {
     // An unknown plan falls back to personal instead of having no limit.
@@ -110,10 +117,14 @@ export function createUsageLimiter(
           store.record(user.id, costaRicaDay(now())),
           dailyCap(user),
         ]);
+        lastCountFailed = false;
         return snapshotOf(user, used, limit);
       } catch {
+        lastCountFailed = true;
         return undefined;
       }
     },
+
+    isCounting: () => !lastCountFailed,
   };
 }
