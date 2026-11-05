@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Política de privacidad · marlix</title>
+  <meta name="description" content="Qué datos guarda marlix, para qué, con quién se comparten y cómo borrarlos.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <nav><a href="index.html">marlix</a><a href="delete-account.html">Eliminar mi cuenta</a></nav>
+
+  <h1>Política de privacidad</h1>
+  <p class="muted">Última actualización: 5 de noviembre de 2026</p>
+
+  <p>marlix es una app de compañía conversacional con un avatar de inteligencia artificial, de código abierto, hecha por una sola persona (WGuillenDev) en Costa Rica. Esta página explica qué datos guarda, para qué los usa, con quién los comparte y cómo puedes borrarlos. Es solo para personas de 18 años o más.</p>
+
+  <h2>Qué datos guarda</h2>
+  <table>
+    <thead><tr><th>Dato</th><th>Para qué</th><th>Cuánto se guarda</th></tr></thead>
+    <tbody>
+      <tr><td>Correo y contraseña</td><td>Crear tu cuenta e iniciar sesión. La contraseña se guarda cifrada (hash) y yo no puedo leerla.</td><td>Hasta que borres la cuenta</td></tr>
+      <tr><td>Fecha de nacimiento</td><td>Comprobar que eres mayor de edad.</td><td>Hasta que borres la cuenta</td></tr>
+      <tr><td>Tu consentimiento y las opciones que eliges (avatar, recordatorios)</td><td>Dejar constancia de que aceptaste y recordar tus preferencias.</td><td>Hasta que borres la cuenta</td></tr>
+      <tr><td>Tus mensajes y las respuestas de marlix</td><td>Mostrarte el chat y darle contexto a la conversación.</td><td>90 días; después se borran solos</td></tr>
+      <tr><td>Recuerdos: datos breves y duraderos que marlix extrae de lo que le cuentas (por ejemplo, "tiene una perrita llamada Coco")</td><td>Que marlix te conozca con el tiempo.</td><td>Hasta que los borres tú o borres la cuenta</td></tr>
+      <tr><td>Cuántos mensajes envías por día</td><td>Aplicar el límite diario de uso.</td><td>Hasta que borres la cuenta</td></tr>
+    </tbody>
+  </table>
+
+  <p>Puedes ver, editar y borrar tus recuerdos en <em>Ajustes → Lo que marlix sabe de mí</em>. Los recuerdos no incluyen cédula, tarjetas, contraseñas, diagnósticos médicos, teléfonos, correos ni direcciones exactas. Los mensajes en que marlix detecta una situación de crisis nunca se usan para generar recuerdos.</p>
+
+  <h2>Voz y micrófono</h2>
+  <p>El modo de voz usa el micrófono solo mientras lo activas. Cada turno se envía al servidor para convertirlo en texto y <strong>el audio no se guarda</strong>; solo se conserva el texto como cualquier otro mensaje. La voz de marlix se genera en tu teléfono. La primera vez, la app descarga una vez el modelo de voz (unos 400 MB) desde Hugging Face, sin enviar datos tuyos.</p>
+
+  <h2>Recordatorios</h2>
+  <p>Los saludos diarios son notificaciones locales programadas en tu teléfono. No usan servidor ni notificaciones push, y puedes desactivarlos en Ajustes o en el sistema.</p>
+
+  <h2>Con quién se comparten los datos</h2>
+  <p>No vendo tus datos ni los uso para publicidad, y la app no incluye anuncios ni herramientas de analítica. Para funcionar usa estos servicios, que reciben solo lo necesario:</p>
+  <ul>
+    <li><strong>Supabase</strong>: autenticación y base de datos donde se guardan tus datos, con acceso restringido por usuario.</li>
+    <li><strong>Render</strong>: aloja el servidor que atiende la app.</li>
+    <li><strong>Groq</strong>: genera las respuestas, extrae los recuerdos y transcribe la voz. Recibe tu conversación reciente y tus recuerdos; la cuenta tiene activada la retención cero de datos (Zero Data Retention).</li>
+    <li><strong>Proveedor de correo</strong> configurado en Supabase: envía los códigos de confirmación y de recuperación de contraseña.</li>
+  </ul>
+  <p>La app nunca se comunica directamente con Groq: todo pasa por el servidor de marlix.</p>
+
+  <h2>Seguridad</h2>
+  <p>La comunicación va cifrada (HTTPS), cada tabla de la base de datos solo deja a cada persona leer lo suyo, y las llaves del servidor no están en la app. Se hace una copia de seguridad cifrada diaria de la base de datos que se conserva hasta 90 días; una cuenta borrada desaparece de las copias cuando estas vencen.</p>
+
+  <h2>Ayuda en una crisis</h2>
+  <p>marlix no es un servicio médico ni de emergencia. Si detecta señales de riesgo, muestra líneas de ayuda en Costa Rica (el 9-1-1 y la Línea Aquí Estoy).</p>
+
+  <h2>Tus derechos y cómo borrar tus datos</h2>
+  <p>Puedes acceder a tus datos, corregirlos y borrarlos. Para eliminar la cuenta y todo lo que contiene, sigue las instrucciones en <a href="delete-account.html">Eliminar mi cuenta</a>.</p>
+
+  <h2>Cambios en esta política</h2>
+  <p>Si cambia, actualizaré la fecha de arriba. El historial de cambios es público en el <a href="https://github.com/WGuillenDev/marlix/commits/main/site/privacy.html">repositorio</a>.</p>
+
+  <h2>Contacto</h2>
+  <p>Escribe a <a href="mailto:wilberthguillen.ing@gmail.com">wilberthguillen.ing@gmail.com</a>.</p>
+</main>
+</body>
+</html>
