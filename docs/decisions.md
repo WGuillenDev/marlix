@@ -4,6 +4,26 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-11-04 — The release APK is signed with its own key and ships through GitHub Releases (S7-15)
+
+**Decision:** the release build is signed with a key kept outside the repository. `app/android/app/build.gradle.kts` reads `app/android/key.properties` (ignored, template in `key.properties.example`); without that file the release falls back to the debug key so that `flutter run --release` still works on a fresh clone. Updates are distributed as APKs attached to GitHub Releases (tag `vX.Y.Z`), signed with the same key.
+
+**Why:**
+- Android installs an update only over an app signed with the same key, and keeps its data only then. If the key is lost, nobody can update the app again: the people who installed it would have to uninstall it and lose their session and the downloaded voice model. That is why the key lives in two places outside the repository and why the card treats it as the one irreplaceable file.
+- The debug key is public in every Android machine, so a debug-signed APK could be replaced by anyone. The fallback exists only for development; the README and this entry say it must never be handed out.
+- The release was verified on a clean emulator (the app uninstalled first): `apksigner verify` shows one signer with the new certificate, the APK contains `marlix-api.onrender.com` and no localhost URL or development token, and sign-in plus the chat history load against the deployed backend.
+
+**Updates:** every release raises the number after `+` in `app/pubspec.yaml` (Android refuses an APK whose `versionCode` is not higher) and publishes the APK in a GitHub Release. There is no updater inside the app: it would need the permission to install packages, which is a lot to ask of a companion app. People reinstall over the previous version and keep their data.
+
+**Discarded:**
+- *Signing with the debug key and calling it a day.* Fast, but not distributable (see above).
+- *An in-app updater.* Extra permission and a new attack surface for a project with one maintainer.
+- *Failing the build when `key.properties` is missing.* It would break `flutter run --release` for every contributor.
+
+**Google Play** is out of this card. When it is done, the same key becomes the upload key and Google keeps the final signing key (Play App Signing), which also makes a lost upload key recoverable.
+
+---
+
 ## 2026-11-04 — The contract lists only implemented endpoints, and the history holds no secrets (S7-14)
 
 **Decision:** `docs/api-contract.md` documents only the routes the backend serves. `PATCH /v1/settings` and `GET /v1/avatars`, designed in Sprint 0 and never built, move to a **Planned endpoints** section instead of the v1 table.

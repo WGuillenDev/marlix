@@ -15,6 +15,7 @@ marlix gets ready to be handed over: tested end to end, backed up and watched ev
 - `groq_quota` in `GET /health` when a Groq model has 20% or less of its daily requests, and the uptime monitor guide in `docs/monitoring.md` ([#195](https://github.com/WGuillenDev/marlix/pull/195)).
 - A quarterly issue that reminds to verify the crisis help lines ([#198](https://github.com/WGuillenDev/marlix/pull/198)).
 - Email confirmation and password recovery with six-digit codes typed in the app ([#201](https://github.com/WGuillenDev/marlix/pull/201)).
+- A release APK signed with its own key, installation steps in the README and updates through GitHub Releases (S7-15).
 
 #### Changed
 
