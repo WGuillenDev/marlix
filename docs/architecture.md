@@ -33,8 +33,9 @@ flowchart TB
         db[("PostgreSQL<br/>RLS on every table")]
     end
 
-    groq["🧠 Groq · LLM"]
+    groq["🧠 Groq<br/>LLM · Whisper"]
     monitor["⏱️ Uptime monitor"]
+    actions["⚙️ GitHub Actions<br/>encrypted backup"]
 
     user -- "voice" --> mic --> app
     user -- "text" --> app
@@ -46,8 +47,10 @@ flowchart TB
 
     crisis -. "ambiguous: isolated<br/>classification, no history" .-> groq
     prompt == "conversation" ==> groq
+    render -. "turn audio · memory extraction" .-> groq
     render -- "service_role" --> db
-    monitor -. "GET /health every 10 min" .-> render
+    monitor -. "GET /health every 5 min" .-> render
+    actions -. "pg_dump every day" .-> db
 
     app -. "❌ never" .-x groq
 ```
@@ -65,9 +68,10 @@ Thick arrows are the path of a normal chat message. Dotted arrows are background
 | Local reminders | Phone | Daily reminders scheduled on the phone (`flutter_local_notifications`). No server, no push. |
 | Backend | Render (free plan) | The only component that talks to the LLM and writes to the database. Checks the session, the daily limit and the crisis filter, builds the prompt with memory, calls Groq and reviews the reply before returning it. |
 | Supabase Auth | Supabase | Sign-up, sign-in and sessions. |
-| PostgreSQL | Supabase | Profiles, sessions, messages, memories and usage, with RLS on every table. |
-| Groq | Groq cloud (free plan) | Generates chat replies and classifies ambiguous messages. |
-| Uptime monitor | External free service | Calls `GET /health` every 10 minutes so the free Render service does not sleep (S7-6). |
+| PostgreSQL | Supabase | Profiles, conversations, messages, memories and usage, with RLS on every table. |
+| Groq | Groq cloud (free plan) | Generates chat replies, classifies ambiguous messages, extracts memories when a conversation ends and transcribes voice turns with Whisper, with Zero Data Retention. |
+| Uptime monitor | UptimeRobot (free plan) | Calls `GET /health` every 5 minutes, looks for `"status":"ok"` in the body and keeps the free Render service awake ([monitoring](monitoring.md), S7-6). |
+| Backup | GitHub Actions | Dumps the database every day, encrypts it with age and keeps it as a private artifact ([backups](backups.md), S7-5). A quarterly workflow also opens an issue to verify the help lines (S7-7). |
 
 ## Where the keys live
 
@@ -113,11 +117,13 @@ Everything about the LLM lives in `api/src/services/llm/`. The rest of the backe
 
 | File | What it holds |
 |---|---|
-| `types.ts` | The `LlmProvider` interface: one method, `complete(request)`, that takes the conversation (system prompt first) and returns the reply text. |
+| `types.ts` | The `LlmProvider` interface: `complete(request)` takes the conversation (system prompt first) and returns the reply text, and `stream(request)` returns the same reply in pieces for the voice mode (S6-10). |
 | `errors.ts` | `LlmError` and its kinds: `rate_limited`, `timeout`, `unavailable`, `authentication`, `invalid_request` and `empty_response`. Adapters translate every provider failure into one of them, so the backend decides what to do without knowing which provider failed. |
 | `index.ts` | The public entry point and `createLlmProvider`, the factory that builds the provider chosen by `LLM_PROVIDER`. |
 | `retry.ts` | Wraps any provider so transient failures (timeout, network, 5xx) are tried once more. Quota and key errors are not retried. The timeout of each call is `LLM_TIMEOUT_MS` (S1-6). |
 | `groq-provider.ts` | The Groq adapter (S1-4), on the OpenAI SDK with Groq's base URL. After a `429` it does not call Groq again until the wait time Groq asked for has passed. |
+| `groq-transcriber.ts` | Whisper in Groq for `POST /v1/transcribe` (S6-9). |
+| `quota-monitor.ts` | Reads the daily request quota from Groq's response headers, for `/health` (S7-6). |
 
 The provider is chosen with the `LLM_PROVIDER` environment variable, and each provider reads its own key and model from variables named after it (`GROQ_API_KEY`, `GROQ_MODEL`). Changing the model is a change of variable, not of code.
 
