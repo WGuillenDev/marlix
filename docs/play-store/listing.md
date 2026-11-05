@@ -6,7 +6,7 @@ Text and images for the marlix store listing (S8-2). The listing language is Spa
 
 | Field | Value |
 |---|---|
-| App name (max 30) | `marlix: compañía con IA` |
+| App name (max 30) | `marlix` |
 | Category | Lifestyle |
 | Support email (Store settings → Store listing contact details) | wilberthguillen.ing@gmail.com |
 | Website | https://wguillendev.github.io/marlix/ |
