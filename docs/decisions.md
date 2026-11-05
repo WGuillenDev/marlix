@@ -4,6 +4,25 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-11-05 — Google Play: privacy pages on GitHub Pages, the S7-15 key as upload key (S8-2)
+
+**Decision:** the privacy policy and the account deletion page that Google Play requires are static HTML in `site/`, published with GitHub Pages by `.github/workflows/pages.yml` at `https://wguillendev.github.io/marlix/`. The AAB is signed with the S7-15 key, which becomes the Play **upload key** (Play App Signing keeps the real signing key). The store text and graphics live in [`play-store/listing.md`](play-store/listing.md). The version moves to `0.1.1+2`, so its `versionCode` is above the one in `v0.1.0`.
+
+**Why:**
+- Play needs two public URLs. Pages is free, needs no new service, and the policy is reviewed in pull requests and has a public history, which matters for a document about personal data.
+- The workflow deploys `site/` with the official Pages actions pinned by SHA, instead of publishing a branch folder, so `docs/` stays plain documentation and the site only changes when `site/` does.
+- With Play App Signing the key in `marlix-keys` can be replaced through Play support if it is ever lost, which improves on the situation recorded in S7-15. The GitHub APK keeps being signed with that same key, so people who installed from GitHub and from Play are on different signatures: they cannot update one with the other.
+
+| Option for the pages | Verdict |
+|---|---|
+| GitHub Pages from `site/` | **Chosen.** |
+| Public Notion pages | Discarded. The text would live outside the repository and without review. |
+| Routes `/privacy` and `/delete-account` in the API | Discarded. It adds endpoints and the free Render plan sleeps, so Play's reviewers could meet a slow or failed page. |
+
+**What the policy says is checked against the code:** 90-day messages, memories with no sensitive data, audio not stored, Groq with Zero Data Retention, Supabase and Render as processors, no ads or analytics SDK in `pubspec.yaml`, and the 18+ rule. If any of those change, change `site/privacy.html` in the same pull request.
+
+---
+
 ## 2026-11-05 — CodeQL scans the backend and the workflows (S8-1)
 
 **Decision:** `.github/workflows/codeql.yml` runs CodeQL for `javascript-typescript` (the backend in `api/`) and `actions` (the workflows) on every pull request, on every push to `main` and once a week (Monday). Actions are pinned by SHA, the workflow has read-only `contents` and only the analysis job gets `security-events: write`.
