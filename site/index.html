@@ -2,23 +2,74 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src https://api.github.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>marlix</title>
+  <title>marlix · compañía para conversar</title>
   <meta name="description" content="marlix es una app de compañía conversacional con un avatar de IA, de código abierto.">
+  <meta name="theme-color" content="#FFF8EE">
+  <link rel="icon" href="avatar.svg" type="image/svg+xml">
   <link rel="stylesheet" href="style.css">
+  <script src="effects.js" defer></script>
+  <script src="updates.js" defer></script>
 </head>
 <body>
-<main>
-  <h1>marlix</h1>
-  <p class="muted">Compañía conversacional con un avatar de IA. Código abierto.</p>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="index.html"><img src="avatar.svg" alt=""><span>marlix</span></a>
+    <nav>
+      <a href="updates.html">Versiones</a>
+      <a href="privacy.html">Privacidad</a>
+      <a href="delete-account.html">Eliminar cuenta</a>
+    </nav>
+  </div>
+</header>
 
-  <p>marlix es una app para conversar con un avatar de inteligencia artificial que recuerda lo que le cuentas. No sustituye a un profesional de la salud ni a los servicios de emergencia.</p>
+<div class="hero">
+  <div class="wrap">
+    <img class="avatar" src="avatar.svg" alt="marlix, un beagle animado con una camiseta que dice marlix">
+    <h1>Hola, soy marlix</h1>
+    <p class="lead">Un compañero con inteligencia artificial para conversar sin prisa. Te escucho, recuerdo lo importante para ti y también puedes hablarme en voz alta.</p>
+    <p class="latest" data-latest><span>Consultando la última versión…</span></p>
+    <div class="buttons">
+      <a class="btn primary" href="updates.html">Descargar y versiones</a>
+      <a class="btn ghost" href="privacy.html">Política de privacidad</a>
+      <a class="btn ghost" href="https://github.com/WGuillenDev/marlix">Código en GitHub</a>
+    </div>
+  </div>
+</div>
 
-  <ul>
-    <li><a href="privacy.html">Política de privacidad</a></li>
-    <li><a href="delete-account.html">Cómo eliminar tu cuenta y tus datos</a></li>
-    <li><a href="https://github.com/WGuillenDev/marlix">Código fuente en GitHub</a></li>
-  </ul>
+<main class="wrap">
+  <div class="grid">
+    <div class="card feature">
+      <div class="dot">1</div>
+      <h3>Conversa</h3>
+      <p>Escribe o habla. marlix responde cuando haces una pausa.</p>
+    </div>
+    <div class="card feature">
+      <div class="dot">2</div>
+      <h3>Te recuerda</h3>
+      <p>Guarda datos breves de lo que le cuentas. Tú los ves, editas o borras.</p>
+    </div>
+    <div class="card feature">
+      <div class="dot">3</div>
+      <h3>Ayuda a mano</h3>
+      <p>El 9-1-1 y la Línea Aquí Estoy de Costa Rica, incluso sin internet.</p>
+    </div>
+  </div>
+
+  <section class="card notice">
+    <h2>Importante</h2>
+    <p>marlix es compañía para conversar. No es un servicio médico, de salud mental ni de emergencias, y no reemplaza la atención de un profesional. Es solo para personas de 18 años o más. Si estás en peligro, llama al 9-1-1.</p>
+  </section>
 </main>
+
+<footer>
+  <div class="wrap">
+    <p><a href="updates.html">Versiones</a> · <a href="privacy.html">Política de privacidad</a> · <a href="delete-account.html">Eliminar mi cuenta</a> · <a href="https://github.com/WGuillenDev/marlix" rel="noopener noreferrer">GitHub</a></p>
+    <p>Soporte: <a href="mailto:wilberthguillen.ing@gmail.com">wilberthguillen.ing@gmail.com</a></p>
+    <p>marlix es de código abierto, hecho en Costa Rica por WGuillenDev.</p>
+  </div>
+</footer>
 </body>
 </html>

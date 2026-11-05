@@ -2,65 +2,128 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src https://api.github.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Política de privacidad · marlix</title>
   <meta name="description" content="Qué datos guarda marlix, para qué, con quién se comparten y cómo borrarlos.">
+  <meta name="theme-color" content="#FFF8EE">
+  <link rel="icon" href="avatar.svg" type="image/svg+xml">
   <link rel="stylesheet" href="style.css">
+  <script src="effects.js" defer></script>
 </head>
 <body>
-<main>
-  <nav><a href="index.html">marlix</a><a href="delete-account.html">Eliminar mi cuenta</a></nav>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="index.html"><img src="avatar.svg" alt=""><span>marlix</span></a>
+    <nav>
+      <a href="updates.html">Versiones</a>
+      <a href="privacy.html" aria-current="page">Privacidad</a>
+      <a href="delete-account.html">Eliminar cuenta</a>
+    </nav>
+  </div>
+</header>
 
-  <h1>Política de privacidad</h1>
-  <p class="muted">Última actualización: 5 de noviembre de 2026</p>
+<div class="hero">
+  <div class="wrap">
+    <img class="avatar small" src="avatar.svg" alt="">
+    <h1>Política de privacidad</h1>
+    <p class="lead">Qué datos guarda marlix, para qué los usa, con quién los comparte y cómo puedes borrarlos.</p>
+    <span class="updated">Última actualización: 5 de noviembre de 2026</span>
+  </div>
+</div>
 
-  <p>marlix es una app de compañía conversacional con un avatar de inteligencia artificial, de código abierto, hecha por una sola persona (WGuillenDev) en Costa Rica. Esta página explica qué datos guarda, para qué los usa, con quién los comparte y cómo puedes borrarlos. Es solo para personas de 18 años o más.</p>
+<main class="wrap">
+  <section class="card summary">
+    <h2>En resumen</h2>
+    <ul>
+      <li>Tus mensajes se borran solos a los 90 días.</li>
+      <li>Puedes ver, editar y borrar lo que marlix recuerda de ti.</li>
+      <li>El audio del modo de voz no se guarda.</li>
+      <li>No hay anuncios ni herramientas de analítica, y tus datos no se venden.</li>
+      <li>Puedes eliminar tu cuenta y todos tus datos cuando quieras.</li>
+    </ul>
+  </section>
 
-  <h2>Qué datos guarda</h2>
-  <table>
-    <thead><tr><th>Dato</th><th>Para qué</th><th>Cuánto se guarda</th></tr></thead>
-    <tbody>
-      <tr><td>Correo y contraseña</td><td>Crear tu cuenta e iniciar sesión. La contraseña se guarda cifrada (hash) y yo no puedo leerla.</td><td>Hasta que borres la cuenta</td></tr>
-      <tr><td>Fecha de nacimiento</td><td>Comprobar que eres mayor de edad.</td><td>Hasta que borres la cuenta</td></tr>
-      <tr><td>Tu consentimiento y las opciones que eliges (avatar, recordatorios)</td><td>Dejar constancia de que aceptaste y recordar tus preferencias.</td><td>Hasta que borres la cuenta</td></tr>
-      <tr><td>Tus mensajes y las respuestas de marlix</td><td>Mostrarte el chat y darle contexto a la conversación.</td><td>90 días; después se borran solos</td></tr>
-      <tr><td>Recuerdos: datos breves y duraderos que marlix extrae de lo que le cuentas (por ejemplo, "tiene una perrita llamada Coco")</td><td>Que marlix te conozca con el tiempo.</td><td>Hasta que los borres tú o borres la cuenta</td></tr>
-      <tr><td>Cuántos mensajes envías por día</td><td>Aplicar el límite diario de uso.</td><td>Hasta que borres la cuenta</td></tr>
-    </tbody>
-  </table>
+  <section class="card">
+    <h2>Quién está detrás</h2>
+    <p>marlix es una app de compañía conversacional con un avatar de inteligencia artificial, de código abierto, hecha por una sola persona (WGuillenDev) en Costa Rica. Es solo para personas de 18 años o más.</p>
+  </section>
 
-  <p>Puedes ver, editar y borrar tus recuerdos en <em>Ajustes → Lo que marlix sabe de mí</em>. Los recuerdos no incluyen cédula, tarjetas, contraseñas, diagnósticos médicos, teléfonos, correos ni direcciones exactas. Los mensajes en que marlix detecta una situación de crisis nunca se usan para generar recuerdos.</p>
+  <section class="card">
+    <h2>Qué datos guarda</h2>
+    <div class="table">
+      <table>
+        <thead><tr><th>Dato</th><th>Para qué</th><th>Cuánto se guarda</th></tr></thead>
+        <tbody>
+          <tr><td>Correo y contraseña</td><td data-label="Para qué">Crear tu cuenta e iniciar sesión. La contraseña se guarda cifrada (hash) y nadie puede leerla.</td><td data-label="Cuánto se guarda">Hasta que borres la cuenta</td></tr>
+          <tr><td>Fecha de nacimiento</td><td data-label="Para qué">Comprobar que eres mayor de edad.</td><td data-label="Cuánto se guarda">Hasta que borres la cuenta</td></tr>
+          <tr><td>Tu consentimiento y tus preferencias (avatar, recordatorios)</td><td data-label="Para qué">Dejar constancia de que aceptaste y recordar tus opciones.</td><td data-label="Cuánto se guarda">Hasta que borres la cuenta</td></tr>
+          <tr><td>Tus mensajes y las respuestas de marlix</td><td data-label="Para qué">Mostrarte el chat y darle contexto a la conversación.</td><td data-label="Cuánto se guarda">90 días; después se borran solos</td></tr>
+          <tr><td>Recuerdos</td><td data-label="Para qué">Datos breves y duraderos que marlix extrae de lo que le cuentas (por ejemplo, «tiene una perrita llamada Coco»), para conocerte con el tiempo.</td><td data-label="Cuánto se guarda">Hasta que los borres tú o borres la cuenta</td></tr>
+          <tr><td>Mensajes enviados por día</td><td data-label="Para qué">Aplicar el límite diario de uso.</td><td data-label="Cuánto se guarda">Hasta que borres la cuenta</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Puedes ver, editar y borrar tus recuerdos en <strong>Ajustes → Lo que marlix sabe de mí</strong>. Los recuerdos no incluyen cédula, tarjetas, contraseñas, diagnósticos médicos, teléfonos, correos ni direcciones exactas. Los mensajes en que marlix detecta una situación de crisis nunca se usan para generar recuerdos.</p>
+  </section>
 
-  <h2>Voz y micrófono</h2>
-  <p>El modo de voz usa el micrófono solo mientras lo activas. Cada turno se envía al servidor para convertirlo en texto y <strong>el audio no se guarda</strong>; solo se conserva el texto como cualquier otro mensaje. La voz de marlix se genera en tu teléfono. La primera vez, la app descarga una vez el modelo de voz (unos 400 MB) desde Hugging Face, sin enviar datos tuyos.</p>
+  <section class="card">
+    <h2>Voz y micrófono</h2>
+    <p>El modo de voz usa el micrófono solo mientras lo tienes abierto. Cada turno se envía al servidor para convertirlo en texto y <strong>el audio no se guarda</strong>; solo queda el texto, como cualquier otro mensaje.</p>
+    <p>La voz de marlix se genera en tu teléfono. Si eliges descargarla, la app baja una vez el modelo de voz (unos 400 MB) desde Hugging Face, sin enviar datos de tu cuenta.</p>
+  </section>
 
-  <h2>Recordatorios</h2>
-  <p>Los saludos diarios son notificaciones locales programadas en tu teléfono. No usan servidor ni notificaciones push, y puedes desactivarlos en Ajustes o en el sistema.</p>
+  <section class="card">
+    <h2>Recordatorios</h2>
+    <p>Los saludos diarios son notificaciones locales programadas en tu teléfono. No usan servidor ni notificaciones push, y puedes desactivarlos en Ajustes o en el sistema.</p>
+  </section>
 
-  <h2>Con quién se comparten los datos</h2>
-  <p>No vendo tus datos ni los uso para publicidad, y la app no incluye anuncios ni herramientas de analítica. Para funcionar usa estos servicios, que reciben solo lo necesario:</p>
-  <ul>
-    <li><strong>Supabase</strong>: autenticación y base de datos donde se guardan tus datos, con acceso restringido por usuario.</li>
-    <li><strong>Render</strong>: aloja el servidor que atiende la app.</li>
-    <li><strong>Groq</strong>: genera las respuestas, extrae los recuerdos y transcribe la voz. Recibe tu conversación reciente y tus recuerdos; la cuenta tiene activada la retención cero de datos (Zero Data Retention).</li>
-    <li><strong>Proveedor de correo</strong> configurado en Supabase: envía los códigos de confirmación y de recuperación de contraseña.</li>
-  </ul>
-  <p>La app nunca se comunica directamente con Groq: todo pasa por el servidor de marlix.</p>
+  <section class="card">
+    <h2>Con quién se comparten</h2>
+    <p>No vendo tus datos ni los uso para publicidad. Para funcionar, marlix usa estos servicios, que reciben solo lo necesario:</p>
+    <ul>
+      <li><strong>Supabase</strong>: la cuenta y la base de datos donde se guardan tus datos.</li>
+      <li><strong>Render</strong>: aloja el servidor de marlix.</li>
+      <li><strong>Groq</strong>: genera las respuestas, extrae los recuerdos y transcribe la voz. Recibe tu conversación reciente y tus recuerdos, y la cuenta tiene activada la retención cero de datos (Zero Data Retention).</li>
+      <li><strong>El proveedor de correo</strong> configurado en Supabase: envía los códigos de confirmación y de recuperación de contraseña.</li>
+    </ul>
+    <p>La app nunca habla directamente con Groq: todo pasa por el servidor de marlix.</p>
+  </section>
 
-  <h2>Seguridad</h2>
-  <p>La comunicación va cifrada (HTTPS), cada tabla de la base de datos solo deja a cada persona leer lo suyo, y las llaves del servidor no están en la app. Se hace una copia de seguridad cifrada diaria de la base de datos que se conserva hasta 90 días; una cuenta borrada desaparece de las copias cuando estas vencen.</p>
+  <section class="card">
+    <h2>Seguridad</h2>
+    <p>La comunicación va cifrada (HTTPS), la base de datos solo deja a cada persona leer lo suyo y las llaves del servidor no están en la app. Cada día se hace una copia de seguridad cifrada de la base de datos que se conserva hasta 90 días; los datos de una cuenta borrada desaparecen de las copias cuando estas vencen.</p>
+  </section>
 
-  <h2>Ayuda en una crisis</h2>
-  <p>marlix no es un servicio médico ni de emergencia. Si detecta señales de riesgo, muestra líneas de ayuda en Costa Rica (el 9-1-1 y la Línea Aquí Estoy).</p>
+  <section class="card notice">
+    <h2>Ayuda en una crisis</h2>
+    <p>marlix no es un servicio médico ni de emergencias. Si detecta señales de riesgo en una conversación, muestra líneas de ayuda de Costa Rica: el 9-1-1 y la Línea Aquí Estoy.</p>
+  </section>
 
-  <h2>Tus derechos y cómo borrar tus datos</h2>
-  <p>Puedes acceder a tus datos, corregirlos y borrarlos. Para eliminar la cuenta y todo lo que contiene, sigue las instrucciones en <a href="delete-account.html">Eliminar mi cuenta</a>.</p>
+  <section class="card">
+    <h2>Tus derechos</h2>
+    <p>Puedes acceder a tus datos, corregirlos y borrarlos. Para eliminar la cuenta y todo lo que contiene, sigue los pasos de <a href="delete-account.html">Eliminar mi cuenta</a>.</p>
+  </section>
 
-  <h2>Cambios en esta política</h2>
-  <p>Si cambia, actualizaré la fecha de arriba. El historial de cambios es público en el <a href="https://github.com/WGuillenDev/marlix/commits/main/site/privacy.html">repositorio</a>.</p>
+  <section class="card">
+    <h2>Cambios en esta política</h2>
+    <p>Si esta política cambia, se actualiza la fecha de arriba. El historial de cambios es público en el <a href="https://github.com/WGuillenDev/marlix/commits/main/site/privacy.html" rel="noopener noreferrer">repositorio</a>.</p>
+  </section>
 
-  <h2>Contacto</h2>
-  <p>Escribe a <a href="mailto:wilberthguillen.ing@gmail.com">wilberthguillen.ing@gmail.com</a>.</p>
+  <section class="card">
+    <h2>Soporte</h2>
+    <p>Para dudas sobre tus datos o sobre la app, escribe a soporte:</p>
+    <a class="mail" href="mailto:wilberthguillen.ing@gmail.com">wilberthguillen.ing@gmail.com</a>
+  </section>
 </main>
+
+<footer>
+  <div class="wrap">
+    <p><a href="index.html">Inicio</a> · <a href="updates.html">Versiones</a> · <a href="delete-account.html">Eliminar mi cuenta</a> · <a href="https://github.com/WGuillenDev/marlix" rel="noopener noreferrer">GitHub</a></p>
+    <p>Soporte: <a href="mailto:wilberthguillen.ing@gmail.com">wilberthguillen.ing@gmail.com</a></p>
+    <p>marlix es de código abierto, hecho en Costa Rica por WGuillenDev.</p>
+  </div>
+</footer>
 </body>
 </html>
