@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src https://api.github.com; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Versiones · marlix</title>
+  <meta name="description" content="Las versiones de marlix: la última disponible, sus novedades y cómo descargarla.">
+  <meta name="theme-color" content="#FFF8EE">
+  <link rel="icon" href="avatar.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+  <script src="effects.js" defer></script>
+  <script src="updates.js" defer></script>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="index.html"><img src="avatar.svg" alt=""><span>marlix</span></a>
+    <nav>
+      <a href="updates.html" aria-current="page">Versiones</a>
+      <a href="privacy.html">Privacidad</a>
+      <a href="delete-account.html">Eliminar cuenta</a>
+    </nav>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="wrap">
+    <img class="avatar small" src="avatar.svg" alt="">
+    <h1>Versiones</h1>
+    <p class="lead">Aquí ves la última versión de marlix y las anteriores, consultadas en vivo desde GitHub.</p>
+    <p class="latest" data-latest><span>Consultando…</span></p>
+  </div>
+</div>
+
+<main class="wrap">
+  <section class="card summary">
+    <h2>Cómo actualizar</h2>
+    <ul>
+      <li>Descarga el APK de la versión más reciente e instálalo encima de la que ya tienes: se conservan tu sesión y tus datos.</li>
+      <li>Si Android avisa de «fuentes desconocidas», es porque el APK no viene de una tienda; permite la instalación solo para esa descarga.</li>
+      <li>Google Play: la publicación está en preparación. Cuando esté, las actualizaciones llegarán solas desde la tienda.</li>
+    </ul>
+  </section>
+
+  <div id="releases" aria-live="polite">
+    <p class="muted">Cargando versiones…</p>
+  </div>
+
+  <section class="card">
+    <h2>Comprueba que el APK es auténtico</h2>
+    <p>Todos los APK oficiales de marlix están firmados con la misma clave. Antes de instalar, compara esta huella (SHA-256) con la del certificado del archivo, con <code>apksigner verify --print-certs</code>:</p>
+    <p><code class="hash">3e:e1:51:e5:21:6b:23:a7:3e:8d:e4:03:31:d7:2d:73:27:10:c4:22:80:fc:de:2b:09:94:35:eb:ba:e8:62:26</code></p>
+    <p>Descarga siempre desde esta página o desde el <a href="https://github.com/WGuillenDev/marlix/releases" rel="noopener noreferrer">repositorio oficial</a>. Si el archivo viene de otro sitio, no lo instales.</p>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p><a href="index.html">Inicio</a> · <a href="privacy.html">Política de privacidad</a> · <a href="delete-account.html">Eliminar mi cuenta</a> · <a href="https://github.com/WGuillenDev/marlix" rel="noopener noreferrer">GitHub</a></p>
+    <p>Soporte: <a href="mailto:wilberthguillen.ing@gmail.com">wilberthguillen.ing@gmail.com</a></p>
+    <p>marlix es de código abierto, hecho en Costa Rica por WGuillenDev.</p>
+  </div>
+</footer>
+</body>
+</html>
