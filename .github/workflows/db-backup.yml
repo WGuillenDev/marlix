@@ -1,0 +1,52 @@
+# Daily encrypted backup of the production database (S7-5).
+#
+# The free Supabase plan has no backups. This job dumps the data, encrypts it
+# with the public age key in BACKUP_AGE_RECIPIENT and keeps it as a workflow
+# artifact for 90 days. The repository is public and so are its artifacts: only
+# the encrypted file is ever written, and only the owner holds the private key.
+# How to set it up, download a backup and restore it: docs/backups.md.
+
+name: Database backup
+
+on:
+  schedule:
+    # 09:17 UTC = 03:17 in Costa Rica, when nobody is chatting.
+    - cron: "17 9 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Backup
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install age and the PostgreSQL 17 client
+        # Supabase runs Postgres 17 and pg_dump refuses a newer server; the
+        # runner ships the 16 client, so it comes from the PostgreSQL repository.
+        run: |
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y --no-install-recommends age postgresql-client-17
+          # The preinstalled 16 client comes first in PATH and pg_dump would pick it.
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+      - name: Dump and encrypt
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          BACKUP_AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+          BACKUP_DIR: backups
+        run: bash infra/backup/backup.sh
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: backups/*.sql.age
+          retention-days: 90
+          if-no-files-found: error

@@ -39,6 +39,12 @@ SupabaseAuthService serviceAnswering(Future<http.Response> Function(http.Request
         autoRefreshToken: false,
         flowType: supabase.AuthFlowType.implicit,
       ),
+      recoveryClient: () => supabase.GoTrueClient(
+        url: 'https://abcdefghijklmnop.supabase.co/auth/v1',
+        httpClient: MockClient(handler),
+        autoRefreshToken: false,
+        flowType: supabase.AuthFlowType.implicit,
+      ),
     );
 
 Matcher failsWith(AuthFailure failure) =>
@@ -83,6 +89,94 @@ void main() {
   });
 
   group('SupabaseAuthService', () {
+    test('confirmation exchanges the email code for the normal session', () async {
+      final service = serviceAnswering((request) async {
+        expect(request.url.path, '/auth/v1/verify');
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(body['email'], 'ana@example.com');
+        expect(body['token'], '123456');
+        expect(body['type'], 'email');
+        return http.Response(jsonEncode(sessionJson()), 200);
+      });
+      await service.verifyEmail(email: ' ana@example.com ', code: '123456');
+      expect(service.accessToken, isNotNull);
+    });
+
+    test('recovery never publishes or persists the app session', () async {
+      final paths = <String>[];
+      final service = serviceAnswering((request) async {
+        paths.add(request.url.path);
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        if (request.url.path.endsWith('/verify')) {
+          expect(body['type'], 'recovery');
+          return http.Response(jsonEncode(sessionJson()), 200);
+        }
+        expect(request.url.path, '/auth/v1/user');
+        expect(request.headers['Authorization'], 'Bearer header.payload.signature');
+        expect(body['password'], 'new-password');
+        return http.Response(jsonEncode(sessionJson()['user']), 200);
+      });
+      final events = <String?>[];
+      final subscription = service.userIdChanges.listen(events.add);
+      await service.verifyRecovery(email: 'ana@example.com', code: '123456');
+      expect(service.userId, isNull);
+      expect(service.accessToken, isNull);
+      await service.changeRecoveredPassword('new-password');
+      expect(paths, ['/auth/v1/verify', '/auth/v1/user']);
+      expect(events.whereType<String>(), isEmpty);
+      await subscription.cancel();
+      await expectLater(
+        service.changeRecoveredPassword('again'),
+        failsWith(AuthFailure.invalidCode),
+      );
+    });
+
+    test('failed password update can be retried without reusing the OTP', () async {
+      var updates = 0;
+      final service = serviceAnswering((request) async {
+        if (request.url.path.endsWith('/verify')) {
+          return http.Response(jsonEncode(sessionJson()), 200);
+        }
+        if (updates++ == 0) return authError(422, 'weak_password');
+        return http.Response(jsonEncode(sessionJson()['user']), 200);
+      });
+      await service.verifyRecovery(email: 'ana@example.com', code: '123456');
+      await expectLater(
+        service.changeRecoveredPassword('weak'),
+        failsWith(AuthFailure.weakPassword),
+      );
+      await service.changeRecoveredPassword('stronger-password');
+      expect(service.userId, isNull);
+    });
+
+    test('canceling recovery removes permission to update the password', () async {
+      final service = serviceAnswering((_) async => http.Response(jsonEncode(sessionJson()), 200));
+      await service.verifyRecovery(email: 'ana@example.com', code: '123456');
+      service.cancelRecovery();
+      await expectLater(service.changeRecoveredPassword('new'), failsWith(AuthFailure.invalidCode));
+    });
+
+    test('expired codes are reported without exposing an account', () async {
+      final service = serviceAnswering((_) async => authError(403, 'otp_expired'));
+      await expectLater(
+        service.verifyEmail(email: 'ana@example.com', code: '000000'),
+        failsWith(AuthFailure.invalidCode),
+      );
+      await expectLater(
+        service.verifyRecovery(email: 'ana@example.com', code: '000000'),
+        failsWith(AuthFailure.invalidCode),
+      );
+      expect(service.accessToken, isNull);
+    });
+
+    for (final code in ['user_not_found', 'user_already_exists']) {
+      test('email requests hide $code', () async {
+        final service = serviceAnswering((_) async => authError(400, code));
+        await service.requestPasswordReset('unknown@example.com');
+        await service.resendConfirmation('unknown@example.com');
+      });
+    }
+
     test('signs up with the birth date as user metadata', () async {
       late Map<String, Object?> body;
       final service = serviceAnswering((request) async {
@@ -103,15 +197,17 @@ void main() {
       expect(service.accessToken, 'header.payload.signature');
     });
 
-    test('a sign-up without a session is not reported as success', () async {
+    test('a sign-up without a session waits for email confirmation', () async {
       final service = serviceAnswering(
         (_) async => http.Response(jsonEncode(sessionJson()['user']), 200),
       );
 
-      expect(
-        service.signUp(email: 'a@example.com', password: 'una-larga', birthDate: DateTime(1990)),
-        failsWith(AuthFailure.unexpected),
+      await service.signUp(
+        email: 'a@example.com',
+        password: 'una-larga',
+        birthDate: DateTime(1990),
       );
+      expect(service.userId, isNull);
     });
 
     for (final (status, code, failure) in [
