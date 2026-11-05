@@ -35,6 +35,20 @@ The app opens on the sign-in screen. Create an account there (you must be 18 or 
 | `flutter build apk --release --dart-define-from-file=config/production.json` | Builds the release APK against production. Test voice mode on a release build too: R8 shrinks it and the debug build does not. |
 | `dart format lib test integration_test` | Formats the code (100 columns). |
 
+### Signing the release
+
+Without `app/android/key.properties` the release build uses the debug key: fine for `flutter run --release`, never for an APK you hand to someone. To sign it with your own key:
+
+1. Create the key outside the repository and keep at least two copies of it. If it is lost, no update of the app can be installed over the old one.
+   ~~~powershell
+   keytool -genkeypair -v -keystore "$env:USERPROFILE\marlix-keys\marlix-release.jks" -alias marlix -keyalg RSA -keysize 2048 -validity 10000
+   ~~~
+2. Copy `app/android/key.properties.example` to `app/android/key.properties` and fill in the path and the passwords. Git ignores it and every `.jks`.
+3. Build with `flutter build apk --release --dart-define-from-file=config/production.json`.
+4. Check the signer: `apksigner verify --print-certs build/app/outputs/flutter-apk/app-release.apk` (in the Android SDK `build-tools`). It must show your certificate, not `Android Debug`.
+
+To publish an update, raise the number after `+` in `app/pubspec.yaml`, build, and attach the APK to a new GitHub Release.
+
 ## Backend
 
 Requirements: [Node.js](https://nodejs.org/) 24 or later.

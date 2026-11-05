@@ -138,6 +138,14 @@ Thick arrows are the path of a normal chat message, dotted arrows are background
 | **Voice on the phone** | [Supertonic 3](https://huggingface.co/Supertone/supertonic-3) for speech, Silero VAD for turn detection |
 | **Hosting and CI** | [Render](https://render.com/), GitHub Actions |
 
+## Install on Android
+
+1. On your phone (Android 7.0 or later), open the [latest release](https://github.com/WGuillenDev/marlix/releases/latest) and download the `.apk`.
+2. Open the file. Android asks you to allow installing apps from that source (your browser or file manager); allow it just for this install.
+3. Open marlix, create an account (you must be 18 or older) and confirm your email with the code you receive.
+
+To update, install the new `.apk` over the old one: your account and data stay. Every release is signed with the same key; its SHA-256 certificate fingerprint is `3ee151e5216b23a73e8de40331d72d732710c42280fcde2b099435ebbae86226`, which you can check with `apksigner verify --print-certs`. If it differs, do not install it.
+
 ## Getting started
 
 **Requirements:** [Flutter](https://docs.flutter.dev/get-started/install) 3.47+ with an Android emulator or phone, and [Node.js](https://nodejs.org/) 24+ for the backend.
@@ -173,7 +181,7 @@ The CI runs the same checks on every pull request. Environment variables, integr
 
 ## Project status
 
-Design, backend, safety, chat, memory, avatar and voice are done, and so are the end-to-end tests, the daily backup, the monitoring and email confirmation. What is left of the last sprint is the signed APK; the app is not distributed yet. See the [changelog](CHANGELOG.md).
+Design, backend, safety, chat, memory, avatar and voice are done, and so are the end-to-end tests, the daily backup, the monitoring and email confirmation. The release APK is signed and installs on a clean phone; it is distributed through GitHub Releases, and Google Play is next. See the [changelog](CHANGELOG.md).
 
 ## Documentation
 
