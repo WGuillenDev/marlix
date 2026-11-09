@@ -16,7 +16,7 @@ services:
     # The CI reads this line, so the version Dependabot bumps is the one tested.
     # Pinned by digest: a tag can be republished, a digest cannot (S3-7).
     # Dependabot updates the tag and the digest together.
-    image: supabase/postgres:17.11.0.013@sha256:09d2c318023aea775efcb483b0534004b3b94795df5de2f6295cdb0a9842570a
+    image: supabase/postgres:17.11.0.018@sha256:7c31363a3f7434ff14945f1b8a4880e6eca8b362e197e88b87c476c77aa3cf8c
     restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
