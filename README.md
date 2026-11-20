@@ -197,6 +197,8 @@ Design, backend, safety, chat, memory, avatar and voice are done, and so are the
 | [Distilled memory](docs/memory.md) | What marlix remembers, what it never saves and for how long. |
 | [Wireframes and visual style](docs/diagrams/wireframes/README.md) | Screens, palette, typography and the avatar. |
 | [Technical decisions](docs/decisions.md) | Each choice, the options discarded and why. |
+| [Project status](status.md) | Progress, the active task and the next step. |
+| [Workflow](docs/workflow.md) | How a task goes from start to merge. |
 
 ## Contributing
 
