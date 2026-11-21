@@ -11,10 +11,10 @@ The repository is public: no secrets or real user data in it, ever.
 
 ## Workflow
 
-1. Every change starts from an issue. The issue title begins with the card ID (e.g. `S1-5 POST /chat endpoint`).
+1. Start at [`status.md`](status.md) and follow the [current workflow](docs/workflow.md). Before C10, v0.2 tasks are defined by their V2-NN entries in the [approved design](docs/designs/marlix-v0-2.md#detailed-implementation-plan). Use existing GitHub issues to track their fixes.
 2. Create a branch from `main`: `<type>/<short-description>`, lowercase with hyphens.
 3. Make small, frequent commits.
-4. Open a pull request with `Closes #N` in the description.
+4. Open a pull request with the task ID and verification evidence. Include `Closes #N` when the change resolves a GitHub issue.
 5. Wait for the CI checks to pass and review your own PR against the Definition of Done before merging.
 6. Merge into `main` and delete the branch.
 
