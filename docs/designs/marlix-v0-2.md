@@ -59,7 +59,7 @@ There are four problems: one about the product, two about operating it, and one 
 1.  **v0.1 does not deliver the promise.** The avatar only reacts to the conversation, it cannot be customized, it does not respond to the phone, and there is no place where people practice talking to each other. A memory takes up to 30 minutes to appear, and the person cannot see when Marlix remembers something. The "greeting" is a notification at an hour chosen in Settings; opening the app does not greet.
 2.  **The launch may have a critical path that has not started.** For personal accounts created after November 2023, Google Play requires a closed test with 12 testers for 14 consecutive days before production. We do not know whether that rule applies to the owner's account, and the test has not started.
 3.  **Nothing in the backend limits the spend on a paid model today.** Groq's free plan may not cover 50 people (its daily capacity for chat is estimated, not measured, and is checked in V2-34). A paid plan does not stop with a 429 error when it reaches a rate limit. Groq offers an organization-wide monthly spend limit, but it has no per-use control and, when reached, blocks every key, including the crisis classifier's. Moving to a paid plan without a persistent spend control in the backend can break the USD 10 cap or switch off safety.
-4.  **The process depends on remembering context.** The current flow uses Notion as the backlog and a local `CLAUDE.md` with long state blocks. A person who works a little each day loses time rebuilding where they left off. This design proposes a single entry point (`status.md`) from the first task, and GitHub Issues for tasks once the author approves the move away from Notion (C10).
+4.  **The process depends on remembering context.** The previous workflow used a separate backlog and long state blocks in local `CLAUDE.md`. This design gives each session a single entry point (`status.md`). The author can later approve tracking the v0.2 backlog in GitHub Issues and Projects (C10).
 
 **The proposed solution**, in one sentence: ship a bounded v0.2 (three-tab redesign, a living 2D avatar with palette customization, phone voices with samples, «Recordá esto», a greeting by local time, and a paid chat model under a spend governor); add the Sala de Marlix validated in a private beta with a host (if it is not ready at release time, v0.2 ships with the Sala off); verify the Play account type and run the closed test if it applies; and keep DeepSeek, the photo-to-skin feature, the medical-urgency layer and 3D as experiments behind flags with exit criteria.
 
@@ -175,7 +175,7 @@ These are the brief's conditions and the new questions about the Sala. While one
 *   **C7. A health professional to review the medical-urgency layer.** Without that review, the layer does not ship. **Task:** V2-27. **Verified by:** owner.
 *   **C8. Confirmed host of the Sala.** It is condition A to start the beta. Who it is and which hours they are available still need confirming. Without a host, the beta waits and the launch does not stop. **Task:** V2-26. **Verified by:** owner.
 *   **C9. Custom domains on Render's free plan.** Not verified. If they cannot be used, the Render URL stays. **Task:** V2-06b. **Verified by:** assistant from Render's documentation, then owner in the dashboard.
-*   **C10. Transition away from Notion.** A decision that needs the author's approval. The proposal is in section 10.9. Nothing is created before the author approves. Until then the interim mode applies ([Interim mode](../workflow.md#interim-mode-before-c10)). **Blocks:** V2-04 and everything that assumes a board or issues. **Task:** V2-04. **Verified by:** owner.
+*   **C10. Adopt GitHub Issues and Projects for the v0.2 backlog.** The author approves the proposal in section 10.9 before the board and its backlog issues are created. Until then, use the [interim workflow](../workflow.md#interim-mode-before-c10) and keep tracking existing GitHub issues and pull requests there. **Blocks:** V2-04 and the rules that depend on the board. **Task:** V2-04. **Verified by:** owner.
 *   **C11. The UptimeRobot monitor on `/health`.** `docs/monitoring.md` and S7-6 (the monitoring card) describe it, and it is what keeps the free Render service awake, but whether the owner created it has never been confirmed. Render stays the default host only if it exists or is created. **Task:** V2-02. **Verified by:** owner.
 *   **C12. Smallest purchase for each paid experiment provider.** DeepSeek is prepaid by top-up, Meshy sells credit packs, and GPU rentals usually require a deposit, so the cash charged is the smallest purchase, not the expected usage. The minimum, with VAT, is read for each provider before its experiment, and that amount is the fixed charge of the month it is paid. If it is above USD 8.00, or above what the month allows, the experiment is postponed or redesigned. **Task:** V2-28, V2-29. **Verified by:** owner.
 *   **Q11. Real cost measurements.** The real `usage` and `cached_tokens` per turn are measured before fixing the final sub-caps. The figures in the brief are estimates. **Task:** V2-10. **Verified by:** assistant, from the ledger.
@@ -259,7 +259,7 @@ These are the brief's conditions and the new questions about the Sala. While one
 
 *   **Given**: the owner opens a new session without remembering the previous state.
 *   **When**: they read `status.md`.
-*   **Then**: in one minute they see the launch progress bar and the separate Sala beta line, the version goal and the current milestone, the active task with its link, the next tasks in order, the blockers with their cause, dependency and the action that unblocks them, the launch criteria still pending (shown apart from the progress bar), and the concrete next step. They do not need to read the history or Notion.
+*   **Then**: in one minute they see the launch progress bar and the separate Sala beta line, the version goal and the current milestone, the active task with its link, the next tasks in order, the blockers with their cause, dependency and the action that unblocks them, the launch criteria still pending (shown apart from the progress bar), and the concrete next step.
 
 ### CUJ 12: The owner closes a task from start to finish
 
@@ -705,7 +705,7 @@ Nothing here starts until this design is approved. The edges in "Depends on" (Wo
 
 This section extends decision D15 of the brief (one entry point for each session and a visible measure of progress). The goal is a process one person can sustain, where each day starts by reading one file and no context has to be rebuilt. The work follows a Kanban flow: a board shows the state of each task, an issue holds the detail of each task, and `status.md` gives a one-minute summary.
 
-**Two phases.** Until the author approves the transition (C10) there is no board and there are no issues. `status.md` exists from V2-01, gated only on the approval of this design, and runs in the **interim mode** ([`docs/workflow.md`](../workflow.md#interim-mode-before-c10)): the V2-NN list of this design is the v0.2 backlog, its state lives in `status.md`, and V2 tasks are not copied into Notion, which keeps only work outside v0.2 (author decision). This means the `CLAUDE.md` rule "Notion is the only source of truth" does not apply to v0.2 work before C10; V2-01 records that exception in `CLAUDE.md`. The board, the issues and the rules that need them (10.1, 10.3 and the board columns of 10.6) come into force at C10.
+**Two phases.** In [interim mode](../workflow.md#interim-mode-before-c10), `status.md` is the session entry point and records the state of the V2-NN backlog defined in this design. Existing GitHub issues and pull requests keep their own discussion and review. Marlix works from the repository and GitHub. The board, issues for the v0.2 backlog and the rules that need them (10.1, 10.3 and the board columns of 10.6) come into force at C10.
 
 **Where these rules live.** V2-01 moved the rules that run before C10 to [`docs/workflow.md`](../workflow.md), as "What moves where" (10.6) lists them, and each subsection keeps its heading with a link. What depends on C10 (10.3's board, 10.4 as written, 10.9) stays here and moves in V2-04, only if C10 is approved.
 
@@ -723,7 +723,7 @@ One rule decides it: each fact lives in one place, and the other places point to
 | The design | This document, published as `docs/designs/marlix-v0-2.md` | When the design changes |
 | Release history | `CHANGELOG.md` and GitHub Releases | At each release |
 | Local assistant rules | `CLAUDE.md` (local, ignored by git), without state blocks | When the process changes |
-| The old backlog | Notion, a read-only archive after the transition (10.9) | Never again |
+| Records of earlier work | `docs/decisions.md`, `CHANGELOG.md` and closed GitHub issues | When a lasting decision or release is recorded, or an issue closes |
 
 The board is the live truth for the state of a task. `status.md` summarizes the board and never contradicts it: when they differ, the board wins and `status.md` is fixed.
 
@@ -755,7 +755,7 @@ Changed, with the reason. "In force from" says whether the change applies once t
 | 6 | Nothing requires a flag. | A risky change, or a feature that must be on for some people only, ships behind a flag. | `main` deploys to production on its own. | Design approval |
 | 7 | The Definition of Done does not mention cost or the summary. | Added: if the change adds or alters a model call, it is recorded in the spend ledger and the budget table is updated. Added: `status.md` is updated. | The USD 10 cap and the entry point depend on them. | Design approval (the template text changes at C10) |
 | 8 | `CLAUDE.md` keeps long "session state" blocks. | `CLAUDE.md` keeps only rules and points to `status.md` for state. | The state blocks duplicate what `status.md` will hold and grow without limit. | Design approval, for v0.2 work (V2-01) |
-| 9 | Notion is the only source of truth for the backlog (`CLAUDE.md`). | Before C10: the V2-NN list and `status.md` for v0.2; Notion for everything else. After C10: GitHub Issues, the board and `status.md`. | One list per kind of work, with no copy kept by hand. | Design approval (interim), C10 (final) |
+| 9 | Notion was the source of truth for the backlog. | Before C10: `status.md` provides the entry point and the V2-NN list holds the v0.2 backlog. Existing GitHub issues keep their own discussion. After C10: GitHub Issues and Projects track the backlog, and `status.md` remains the entry point. | One place for each fact, with links to related work. | Design approval (interim), C10 (final) |
 | 10 | One card in progress at a time. | One main task is active at a time. A second task may stay paused in In Progress only while it is blocked (10.3). | A blocked task would otherwise stop all work. | Design approval |
 
 #### 10.3 The Kanban board
@@ -979,7 +979,11 @@ Nothing waiting.
 - [ ] 9 v0.1 APKs still work against the new backend
 - [ ] 10 Checks green; release build tested on the Galaxy S24, the low-end AVD and internal app sharing
 - [ ] 11 Groq paid plan with ZDR and the provider spend limit
-Met: 2 restore drill · 5 own-domain email
+
+Met:
+
+- [x] 2 Restore drill on a real project
+- [x] 5 Own-domain sender verified
 
 ## Decisions waiting on the owner
 - C8 Confirm the host of the Sala (the beta waits until there is one)
@@ -1007,31 +1011,29 @@ commit commands to the owner.
 
 At the end of each milestone: the security audit already used at sprint close (secrets in the history, ignored files, RLS and grants, endpoints, dependencies, repository protections), plus the new surfaces of v0.2 (the spend ledger, the Sala tables including `room_help_requests` and, when it exists, `room_bans`, the flags tables, and the crisis asset in the app). Each finding becomes an issue in the next milestone.
 
-#### 10.9 Moving the backlog from Notion to GitHub Issues and a Projects board (C10, pending the author's approval)
+#### 10.9 Adopting GitHub Issues and Projects (C10)
 
-**Nothing in this subsection is done before the author approves C10.** Until then, Notion stays the backlog for work outside v0.2, the V2-NN list and `status.md` hold v0.2 ([Interim mode](../workflow.md#interim-mode-before-c10)), and no board or issue is created. The only `CLAUDE.md` change before C10 is the v0.2 exception that V2-01 records. Approving means approving steps T1 to T8 below, in order.
+**The author approves C10 before starting steps T1 through T8.** Until then, `status.md` and the V2-NN list remain in use under the [interim workflow](../workflow.md#interim-mode-before-c10). Existing GitHub issues and pull requests remain available for their current work.
 
 | Step | What happens | Who |
 |---|---|---|
 | T0. Decision | The author approves this plan. | Owner |
-| T1. Freeze | Stop creating or editing cards in Notion. Export the backlog (Markdown and CSV) to a private folder **outside the repository**, because cards may hold personal details. | Owner |
-| T2. Inventory | List every card that is not Done. Mark each as *migrate*, *already covered by this design* or *discard*, with a one-line reason. Done cards stay in Notion; their history is already in `docs/decisions.md`, `CHANGELOG.md` and the closed issues. | Assistant prepares, owner decides |
-| T3. Map | For each card to migrate, write the issue text in English with the fields of 10.5: expected outcome, criteria, how to verify, dependencies, version, priority and labels. The map stays outside the repository until the issues exist. | Assistant |
+| T1. Baseline | Confirm the current V2-NN list, scope and completed tasks from `status.md` and the design. | Owner |
+| T2. Inventory | Map each V2-NN task to an existing GitHub issue or mark it for issue creation. Record the reason for excluding any out-of-scope item. | Assistant prepares, owner decides |
+| T3. Map | Prepare the issue text in English with the fields of 10.5: expected outcome, criteria, how to verify, dependencies, version, priority and labels. The map stays outside the repository until the issues exist. | Assistant |
 | T4. Create the board | Create the GitHub Project (private), with the columns Backlog, Ready, In Progress, In Review and Done. Check which built-in workflows exist. The owner grants the CLI the `project` scope with `gh auth refresh -s project`. Create the labels `P0`, `P1`, `P2`, `blocked`, `launch`, `sala` and `experiment`. | Owner grants access, assistant sets up |
-| T5. Create the issues | Create the issues in batches of at most ten, each batch approved by the owner. An issue may cite the old card ID (for example "migrated from S7-9") but never a Notion URL, because the repository is public. Items that meet the Definition of Ready go to Ready; the rest go to Backlog. Tasks already completed under the interim bar are created as issues already closed as completed, with their `V2-NN` ID in the body, so the total and the done count carry over. | Assistant, owner approves each batch |
-| T6. Verify completeness | (a) *Count:* open cards, minus discarded, equals issues created, and every discarded card has its reason; `gh issue list --milestone v0.2` returns the expected count. (b) *Metadata:* every issue has a priority and the milestone, and the owner checks each `P0` issue against its card. (c) *Bars:* the totals equal the interim totals plus the scope changes recorded since, and the done counts equal the interim counts. | Assistant, owner signs off |
+| T5. Set up the issues | Reuse matching issues and create the remaining issues in batches of at most ten, each batch approved by the owner. Add the `V2-NN` ID to each issue. Items that meet the Definition of Ready go to Ready; the rest go to Backlog. Record tasks completed under the interim bar as issues closed as completed, so the total and done count carry over. | Assistant, owner approves each batch |
+| T6. Verify completeness | (a) *Count:* each in-scope V2-NN task maps to one issue in the milestone `v0.2`. (b) *Metadata:* every issue has a priority and the milestone, and the owner checks each `P0` issue against its design entry. (c) *Bars:* the totals equal the interim totals plus the scope changes recorded since, and the done counts equal the interim counts. | Assistant, owner signs off |
 | T7. Pilot | Run one real task through the cycle in 10.4, including the board moves and the `status.md` edit. If any step is awkward, fix the process before continuing. | Both |
-| T8. Switch | Put a banner on the Notion backlog ("Archived: the backlog lives in GitHub Issues and the board") and make it read-only. Replace the Notion project home with a link to `status.md`. **Only now** replace the `CLAUDE.md` rule that names Notion as the source of truth (until now it had only the v0.2 exception), remove its session-state blocks, and update the issue template, the pull request template, `CONTRIBUTING.md` and `docs/workflow.md` in a pull request. | Assistant proposes, owner approves |
+| T8. Switch | Keep `status.md` as the session entry point and link it to the board. Update `CLAUDE.md` after the pilot, and update the issue template, pull request template, `CONTRIBUTING.md` and `docs/workflow.md` in a pull request. | Assistant proposes, owner approves |
 
-*   **Rollback:** Notion is not deleted for at least 30 days. If T6 or T7 fails, Notion stays the backlog until the gap is fixed.
-*   **Why the `CLAUDE.md` rule changes last:** that rule tells the assistant where to look. Changing it before the issues are complete and one task has run through the new cycle would leave the assistant with no reliable backlog.
-*   **Alternatives to this migration** (documented in "Alternatives Considered"): keep Notion as the backlog and use GitHub only for code traceability (today's flow); keep a Notion board and synchronize it with issues by hand; or run the Kanban flow with labels on issues and no Projects board.
+*   **Rollback:** If T6 or T7 fails, keep the interim workflow until the gap is fixed.
 
 --------------------------------------------------------------------------------
 
 ## Alternatives Considered
 
-These are the options weighed in the brainstorm and in this design, with the reason each was or was not chosen. The outcome labels mean: **Rejected by author** (the author decided it), **Replaced by the author's decision** (the brief proposed it and the author changed it later), **Rejected in the brief** (reasoned in the brainstorm, whose brief the author accepted as the base of this design), **Postponed** (not chosen now, with the condition that would reopen it), and **Pending C10** (waits for the author's approval of the Notion transition). Nothing here is attributed to anyone else.
+These are the options weighed in the brainstorm and in this design, with the reason each was or was not chosen. The outcome labels mean: **Rejected by author** (the author decided it), **Replaced by the author's decision** (the brief proposed it and the author changed it later), **Rejected in the brief** (reasoned in the brainstorm, whose brief the author accepted as the base of this design), **Postponed** (not chosen now, with the condition that would reopen it), and **Pending C10** (waits for the author's decision on GitHub Projects and issue tracking for v0.2). Nothing here is attributed to anyone else.
 
 ### Product and scope
 
@@ -1108,8 +1110,8 @@ These are the options weighed in the brainstorm and in this design, with the rea
 
 | Alternative | Pros | Cons | Outcome |
 |---|---|---|---|
-| Keep Notion as the backlog (today's flow) | Nothing to migrate. | Two ID systems and a source of truth outside the repository. | **Pending C10.** |
-| Keep a Notion board and sync it with issues by hand | Keeps the familiar view. | Two backlogs that drift apart. | **Pending C10.** |
+| Keep Notion as the backlog | Reuses the previous process. | Two ID systems and a backlog outside the repository. | **Rejected by author.** |
+| Keep a Notion board and sync it with issues by hand | Keeps the familiar view. | Two backlogs that drift apart. | **Rejected by author.** |
 | Mirror every V2 task as a Notion card until C10 | Notion stays the only source of truth. | Two lists kept in step by hand. | **Rejected by author:** before C10, v0.2 lives in the V2-NN list and `status.md`. |
 | Kanban with labels on issues and no Projects board | No new tool; all in the repository. | No board view, and every move is a label edit. | **Pending C10.** |
 | Take cards in strict ID order | Predictable. | It makes unblocked work wait while the critical path is blocked. | **Replaced:** priority and dependencies. |
@@ -1232,7 +1234,7 @@ Counts: 28 Launch tasks, 6 Sala tasks, 5 Experiment tasks and 1 Process task. Ex
 
 **What each gate means.**
 
-*   **C10** (the owner's approval of the Notion transition) blocks V2-04 only. Until then, the interim mode applies ([Interim mode](../workflow.md#interim-mode-before-c10)).
+*   **C10** (the owner's approval to adopt GitHub Issues and Projects for the v0.2 backlog) blocks V2-04 only. Until then, the [interim workflow](../workflow.md#interim-mode-before-c10) applies.
 *   **C6** blocks only:
     *   V2-10: items (a) the reconciliation source and (b) when holds of 4xx, 429 and aborted calls are released. Item (e) is recorded in V2-10. With Q11, (a) and (b) set the final sub-caps.
     *   V2-12b: item (d), whether a second organization has its own limit.
@@ -1269,7 +1271,7 @@ Every task uses the same fields, in this order: **Depends on** (task IDs), **Gat
     *   `status.md` (create): the interim mode of 10.6, with the content of acceptance criteria 7 to 16.
     *   `README.md` (modify): two rows added to the Documentation table, after the "Technical decisions" row, verbatim: `| [Project status](status.md) | Progress, the active task and the next step. |` and `| [Workflow](docs/workflow.md) | How a task goes from start to merge. |`.
     *   `.gitignore` and `app/.gitignore` (verify; modify only if a rule matches `status.md`).
-    *   `CLAUDE.md` (local, ignored by git, not in the pull request): replace the session-state blocks with the rules in force, and add this sentence: "For v0.2 work before C10, the backlog is the V2-NN list in `docs/designs/marlix-v0-2.md`, its progress and next step live in `status.md`, and the Notion rule applies only to work outside v0.2."
+    *   `CLAUDE.md` (local, ignored by git, not in the pull request): place the session entry point in the local rules. `status.md` holds progress and the next step, and the V2-NN list is the v0.2 backlog before C10.
 *   **Acceptance criteria:**
     1.  The design's header line reads `*   **Status:** Approved (YYYY-MM-DD)`, and the design is tracked by git.
     2.  `docs/workflow.md` contains every item listed for V2-01 in "What moves where" (10.6), and the design links to it.
@@ -1288,7 +1290,7 @@ Every task uses the same fields, in this order: **Depends on** (task IDs), **Gat
     15. "Next step" reads: "Owner: open Play Console, the Groq console, the Supabase SMTP settings, UptimeRobot and a card statement with a foreign-service charge, and record the answers of V2-02 criteria 1 to 8."
     16. "Later" contains only "Review the existing documentation against the layout of 10.1 (README short, designs in `docs/designs/`, guides in force, diagrams beside their topic)".
     17. Git tracks `status.md` and `docs/workflow.md`.
-    18. The owner confirms in chat that the local `CLAUDE.md` holds the sentence above and no session-state blocks.
+    18. The owner confirms in chat that the local `CLAUDE.md` points to `status.md` for each session and holds no session-state blocks.
 *   **Verification:** `git check-ignore status.md` prints nothing; `(Get-Content status.md).Count` is at most 70; `Select-String -Path status.md -Pattern '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+|sb_secret|sb_publishable|gsk_|eyJ'` prints nothing; the assistant reads `status.md` for names by hand; a fresh reader finds the next step in `status.md` in at most 60 seconds (CUJ 11); the links to `status.md` and `docs/workflow.md` resolve.
 
 **V2-02. Verify the external conditions (owner).**
@@ -1356,15 +1358,15 @@ Every task uses the same fields, in this order: **Depends on** (task IDs), **Gat
     *   `docs/workflow.md` (modify): receives what V2-01 left in the design ("What moves where", 10.6): 10.3's columns, labels and board mechanics, 10.4 as written, 10.6's template after C10 and the board and issue columns of the event table, and 10.9. The design keeps a link.
     *   `docs/decisions.md` (modify): record the transition and the flow.
     *   `status.md` (modify): compute the bars from the issues of the milestone `v0.2` (with the `sala` and `experiment` labels), put the board link in the header, and remove the "Completed and verified" line.
-    *   `CLAUDE.md` (local, ignored by git; edited last, step T8): replace the Notion rule.
+    *   `CLAUDE.md` (local, ignored by git; edited last, step T8): point the assistant to the adopted GitHub workflow through `status.md`.
     *   Outside the repository: the GitHub Project, labels and milestone, and the issues, following steps T1 to T8 of 10.9.
 *   **Acceptance criteria:**
     1.  The completeness checks of T6 pass.
     2.  One pilot task closes through the full cycle (T7).
-    3.  Notion shows the archive banner.
+    3.  Each in-scope V2-NN task has exactly one issue, reusing existing issues where they cover the same work.
     4.  The bars come from the issues of the milestone `v0.2`, and their totals equal the interim totals plus the scope changes recorded since.
     5.  The `CLAUDE.md` rule changes only after the pilot.
-*   **Verification:** `gh issue list --milestone v0.2 --state all --json number` returns the expected count; the owner checks every `P0` issue against its card; the board's column counts match the issues' states.
+*   **Verification:** `gh issue list --milestone v0.2 --state all --json number` returns the expected count; the owner checks every `P0` issue against its design entry; the board's column counts match the issues' states.
 
 **V2-05a. Staging environment.**
 
