@@ -4,6 +4,21 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-11-21 — v0.2 work runs on the `wil` branch with authorized autonomous runs
+
+**Decision:** `main` stays protected and receives changes only through squash-merged pull requests. `wil` is the only shared working branch between the assistant and the owner; every pull request of the workflow goes from `wil` to `main`, one at a time. The owner approves a weekly Sprint Goal and its items (Scrum), `status.md` tracks the states Backlog, Ready, In Progress, In Review and Done (Kanban) until C10, and the assistant executes with pstack. Within a run the owner authorizes, the assistant commits and pushes to `wil`, opens and updates the pull request and fixes CI failures caused by the change; it merges only when that run authorizes merging. Commits and pull requests carry no automatic AI attribution. Rules: [workflow](workflow.md#branches-main-and-wil).
+
+**Why:** the owner ran every commit, push and merge by hand, so work stopped whenever the owner was away. Work approved in advance can continue while the owner is away and end in pull requests ready for review, while the protections of `main` and the owner's approvals stay in place.
+
+| Option | Verdict |
+|---|---|
+| One permanent branch `wil`, realigned to `main` after each squash merge | **Chosen.** One place to look, one pull request at a time, and no branch clutter. Realigning rewrites `wil`, so it needs the owner's authorization. |
+| A new topic branch per task (the previous flow) | Discarded for maintainer work. It stays for outside contributors. |
+| The owner keeps running every commit and push | Discarded. It is the bottleneck this change removes. |
+| A bot that commits directly to `main` | Discarded. It would need a bypass in "Protect main". |
+
+---
+
 ## 2026-11-05 — The app icon and launch screen are generated from the avatar, without a plugin (S8-3)
 
 **Decision:** the Android launcher icon is an adaptive icon: the avatar from `docs/images/marlix.svg` as the foreground on the app's light tan (`#F6D9B8`), plus a monochrome silhouette for themed icons on Android 13+. Phones before Android 8 get a square and a round PNG. The launch screen is the app's cream (`#FFF8EE`) with the avatar, both in the old `launch_background` and in the Android 12+ splash screen (`values-v31`, `values-night-v31`). The version moves to `0.1.2+3`.
@@ -32,7 +47,7 @@ Every time the project picks between two technical options, the decision is reco
 | Option for the pages | Verdict |
 |---|---|
 | GitHub Pages from `site/` | **Chosen.** |
-| Public Notion pages | Discarded. The text would live outside the repository and without review. |
+| Public pages in an external notes tool | Discarded. The text would live outside the repository and without review. |
 | Routes `/privacy` and `/delete-account` in the API | Discarded. It adds endpoints and the free Render plan sleeps, so Play's reviewers could meet a slow or failed page. |
 
 **The site is hardened and shows the releases live.** `site/updates.html` reads `https://api.github.com/repos/WGuillenDev/marlix/releases` from the browser, so a new release appears without touching the site. Because GitHub Pages cannot set response headers, every page carries a `Content-Security-Policy` meta tag: `default-src 'none'`, scripts, styles, images and fonts only from the site itself, `connect-src` only `https://api.github.com`, no forms, no `<base>`, no plugins. There is no inline script or style and no third-party code. What the API returns is untrusted: it is written with `textContent` (never `innerHTML`), and a link is kept only if it points at this repository's releases. Requests send no referrer, external links use `rel="noopener noreferrer"`, and the answer is cached in `sessionStorage` for ten minutes to stay under GitHub's unauthenticated limit of 60 requests an hour per IP. If the call fails, the page says so and links to the releases on GitHub. The page also shows the SHA-256 of the signing certificate so a downloaded APK can be checked.
@@ -162,7 +177,7 @@ A shared IP can represent many people behind a mobile carrier, home or instituti
 
 **Account privacy:** a successful sign-up or an already-registered response opens the same neutral code screen. Recovery and resend requests also hide unknown-account responses. An invalid or expired code gets the same message regardless of the email. Password sign-in continues to combine unknown email, unconfirmed email and wrong password into one error.
 
-**Production configuration and verification:** on 2026-11-04, the user configured custom SMTP, the confirmation and recovery templates, six-digit email OTPs, a 3600-second OTP expiration, an eight-character minimum password and `Confirm email` in Supabase. Real-mailbox tests with the updated app in the Pixel_8 emulator verified sign-up confirmation, recovery-code delivery and verification, password replacement and subsequent sign-in with the new password. Existing accounts created with confirmation disabled are already confirmed; this change does not rewrite them. The app also accepts an immediate sign-up session in environments with confirmation disabled. Older app versions cannot handle a confirmation challenge; new installations need this version. No backend endpoint or database schema changes.
+**Production configuration and verification:** on 2026-11-04 the Supabase Auth settings (custom SMTP, the code templates, six-digit codes, code expiry, a minimum password length and `Confirm email`) were set and verified in production with real mailboxes: sign-up confirmation, recovery-code delivery and verification, password replacement and sign-in with the new password. Existing accounts created with confirmation disabled are already confirmed; this change does not rewrite them. The app also accepts an immediate sign-up session in environments with confirmation disabled. Older app versions cannot handle a confirmation challenge; new installations need this version. No backend endpoint or database schema changes.
 
 References: [email templates](https://supabase.com/docs/guides/auth/auth-email-templates), [Flutter OTP verification](https://supabase.com/docs/reference/dart/auth-verifyotp), [custom SMTP](https://supabase.com/docs/guides/auth/auth-smtp).
 
