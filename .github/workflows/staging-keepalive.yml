@@ -1,0 +1,30 @@
+# Keeps the free Supabase staging project from pausing (V2-05a).
+#
+# The free plan pauses a project after a week without database activity, and
+# GET /health does not read the database. This job runs a trivial query twice
+# a week. The connection string is the repository secret STAGING_DATABASE_URL.
+
+name: Staging keepalive
+
+on:
+  schedule:
+    - cron: "0 12 * * 1,4"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-keepalive
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    name: Ping staging database
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Select 1
+        env:
+          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: psql "$STAGING_DATABASE_URL" -c "select 1"

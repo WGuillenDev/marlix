@@ -31,9 +31,18 @@ The app opens on the sign-in screen. Create an account there (you must be 18 or 
 |---|---|
 | `flutter analyze` | Checks the code with the project's lint rules. |
 | `flutter test` | Runs the automated tests. The [CI](../.github/workflows/ci.yml) also runs them, with the format check and `flutter analyze`, on every pull request. |
-| `flutter test integration_test --dart-define-from-file=config/local.json` | Calls every backend endpoint from the app on the emulator. The app and backend must point to an isolated Supabase test project with email autoconfirm enabled. The suite checks that setting before creating a throwaway account (`it-…@marlix.test`) and deletes it with `DELETE /v1/account` at the end, even if a test fails. It sends two chat messages; one uses the Groq quota. Never disable production confirmation for this suite. Email-code acceptance testing uses a controlled real mailbox separately. |
+| `node tool/verify-integration.mjs local` or `node tool/verify-integration.mjs staging` | Runs the emulator integration suite against an isolated environment. See [Integration tests](#integration-tests). |
 | `flutter build apk --release --dart-define-from-file=config/production.json` | Builds the release APK against production. Test voice mode on a release build too: R8 shrinks it and the debug build does not. |
 | `dart format lib test integration_test` | Formats the code (100 columns). |
+
+### Integration tests
+
+With Node.js 24 available, run `flutter pub get` in `app/` and start the Android emulator. Configure the app and backend to use the same isolated Supabase project with email autoconfirm enabled. The suite creates and deletes its own test account and uses one Groq chat request. Verify the real email-code flow separately using a controlled mailbox.
+
+- **Local API:** Copy `config/local.example.json` to `config/integration.local.json`. Use the local API URL from the emulator and the isolated project's Supabase URL and publishable key. Run `node tool/verify-integration.mjs local` from `app/`.
+- **Staging API:** Copy `config/staging.example.json` to `config/staging.json` and use with the staging HTTPS API URL and that project's Supabase URL and publishable key. Run `node tool/verify-integration.mjs staging` from `app/`.
+
+Add `--check` to either command to validate the configuration before contacting a service or starting Flutter. The runner rejects the production API host, Supabase host and publishable key from `config/production.json`. The integration suite checks autoconfirm before creating its test account. Record the command and result in the pull request; keep environment files and test credentials local.
 
 ### Signing the release
 
@@ -123,6 +132,29 @@ Usage limits: 100 replies a day per person, resetting at midnight Costa Rica tim
 The free plan sleeps the service after about 15 minutes without traffic, so the first request after a pause can take up to a minute.
 
 To create the service the first time: in the Render dashboard, **New → Blueprint**, pick this repository and confirm. Render asks for `GROQ_API_KEY` (use a production key, not your local one), `SUPABASE_URL` and `SUPABASE_SECRET_KEY`.
+
+## Staging
+
+Staging is a second Render service, `marlix-api-staging` in [`render.yaml`](../render.yaml), backed by its own Supabase project. It shares no key with production. Use it for the email acceptance test, the restore drill, migration rehearsals and the Sala rehearsal.
+
+- **No automatic deploys.** `autoDeployTrigger` is `off`: deploy a branch or commit by hand (**marlix-api-staging → Manual Deploy → Deploy a specific commit**) before merging it. Production keeps deploying from `main`.
+- **It sleeps.** The free plan allows 750 instance hours a month per workspace, so only production stays awake. The first request after a pause can take up to a minute.
+- **Create it once.** (1) Create a second Supabase project. In its SQL Editor run [`schema.sql`](schema.sql), then [`verify-migrations.sql`](verify-migrations.sql): every row must say `ok`. Apply the Auth settings of the [production table](#supabase-project), plus `Confirm email` off while the integration suite runs. (2) In Render, create the service from the Blueprint and set `SUPABASE_URL`, `SUPABASE_SECRET_KEY` and `GROQ_API_KEY` to staging values. (3) Add the repository secret `STAGING_DATABASE_URL`, the project's connection string.
+- **Keepalive.** [`staging-keepalive.yml`](../.github/workflows/staging-keepalive.yml) runs `select 1` on Mondays and Thursdays so the free project does not pause. Run it once by hand from the Actions tab to check the secret.
+- **App.** `config/staging.json` (not committed) points the app at staging; see [Integration tests](#integration-tests).
+
+### Low-end AVD
+
+Every performance check uses this Android Virtual Device. Define it here and nowhere else.
+
+| Setting | Value |
+|---|---|
+| System image | API 31 (Android 12), Google APIs, x86_64 |
+| RAM | 2 GB |
+| CPU cores | 2 |
+| Graphics | Software (SwiftShader) |
+
+Create it with Android Studio's Device Manager, or with `avdmanager create avd -n marlix-lowend -k "system-images;android-31;google_apis;x86_64"` and then set `hw.ramSize=2048`, `hw.cpu.ncore=2` and `hw.gpu.mode=swiftshader_indirect` in its `config.ini`.
 
 ## Supabase project
 

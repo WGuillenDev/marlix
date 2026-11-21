@@ -5,16 +5,16 @@ Updated: 2026-11-20 · Board: none yet (C10 pending); tasks use their V2 ID · M
 Rules: [docs/workflow.md](docs/workflow.md) · Design: [docs/designs/marlix-v0-2.md](docs/designs/marlix-v0-2.md)
 
 ## Progress
-v0.2 launch progress [░░░░░░░░░░] 3% (1 of 28 launch tasks complete)
+v0.2 launch progress [█░░░░░░░░░] 7% (2 of 28 launch tasks complete)
 Sala beta: 0 of 6 tasks complete (does not block the launch)
 Scope: 28 launch tasks from docs/designs/marlix-v0-2.md (experiments and V2-04 not counted).
-Completed and verified: V2-01
+Completed and verified: V2-01, V2-02
 Launch criteria met: 0 of 11. Finished tasks are not the same as ready to publish.
 
 ## Active task
-[V2-02 Verify the external conditions](docs/designs/marlix-v0-2.md#organization-and-verification-m0) · P0 · M0 · owner
+[V2-05a Staging environment](docs/designs/marlix-v0-2.md#detailed-implementation-plan) · P0 · M0 · owner
 
-- C1: closed testing is required and in progress on `0.1.2+3`. Play App Signing is active. Developer identity verification is pending; v0.2 is the planned first public release.
+- C1: closed testing is required and in progress on `0.1.2+3`. Play App Signing is active. Developer identity verified: Play Console showed «Se verificó correctamente tu identidad» on 2026-11-05 (owner-confirmed 2026-11-20). v0.2 is the planned first public release.
 - C2: Costa Rica's general VAT rate on cross-border digital services is 13%. Keep `tax_multiplier = 1.13` provisional until the actual Groq charge is confirmed.
 - C5: V2-34 verifies the current Gmail SMTP setup for the closed test. V2-06a provides a verified domain sender for launch.
 - C6: owner accepted criterion 4 with available evidence. Groq Free shows usage per model in UTC; no export was visible and invoice history is unavailable on Free. Global and inference ZDR are enabled.
@@ -22,11 +22,10 @@ Launch criteria met: 0 of 11. Finished tasks are not the same as ready to publis
 - C11: production health monitoring is active. Criterion 7 met.
 
 ## Review
-- [PR #224](https://github.com/WGuillenDev/marlix/pull/224): update against `main` and verify CI before the owner's merge.
-- [PR #226](https://github.com/WGuillenDev/marlix/pull/226): replacement for [#223](https://github.com/WGuillenDev/marlix/pull/223) with account-deletion tests. Close #223 after #226 merges.
+Nothing waiting. V2-05a repository changes are local and uncommitted (`render.yaml`, `.github/workflows/staging-keepalive.yml`, `app/config/staging.example.json`, `docs/development.md`, `docs/monitoring.md`).
 
 ## Next up (Ready, in order)
-1. V2-05a Staging environment · P0
+1. V2-05b Restore drill against staging · P0 (needs V2-05a)
 2. V2-37 Crisis layer 1 on the phone · P0
 3. V2-14 Greeting by local time and reminder migration · P1
 4. V2-15 Navigation, theme, first use and accessibility · P1
@@ -54,12 +53,17 @@ Launch criteria met: 0 of 11. Finished tasks are not the same as ready to publis
 - [ ] 11 Groq paid with ZDR and spend limit
 
 ## Decisions waiting on the owner
-- Launch: C1 (identity), C2 (Groq tax treatment), C3, C6, Q13
+- Launch: C2 (Groq tax treatment), C3, C6, Q13
 - Sala beta: C8, Q15, Q16, Q18, Q19
 - Process: C10 (approve adopting GitHub Issues and Projects for the v0.2 backlog)
 
 ## Next step
-Owner: confirm developer identity verification in Play Console. Record the result for V2-02, then take V2-05a once V2-02 is closed.
+Owner: create the staging infrastructure for V2-05a (steps below), then say "staging listo". The assistant then runs `node tool/verify-integration.mjs staging` from `app/` and records the evidence.
+1. Supabase: new project (Free) for staging. In the SQL Editor run `docs/schema.sql`, then `docs/verify-migrations.sql` (every row `ok`). Turn `Confirm email` off there while the integration suite runs.
+2. Render: New → Blueprint from this repo after the PR merges (or a Web Service named `marlix-api-staging`, root `api`, auto-deploy off). Set `SUPABASE_URL`, `SUPABASE_SECRET_KEY` and `GROQ_API_KEY` to staging values; share no key with production.
+3. GitHub: repository secret `STAGING_DATABASE_URL`, then run the "Staging keepalive" workflow once by hand.
+4. Local: copy `app/config/staging.example.json` to `app/config/staging.json` with the staging URLs and publishable key.
+Evidence so far (2026-11-20): `GET https://marlix-api-staging.onrender.com/health` returns 404, so the service does not exist yet; `verify-integration.mjs staging --check` fails only because `config/staging.json` is missing.
 
 ## Later
 - V2-14: revisit [PR #221](https://github.com/WGuillenDev/marlix/pull/221) for notifications.

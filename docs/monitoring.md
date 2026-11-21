@@ -30,6 +30,10 @@ Set it up once, in [uptimerobot.com](https://uptimerobot.com) (free plan):
 
 To test it (the card's check): in the Render dashboard, **marlix-api → Suspend Service**, wait for the email, then **Resume Service**. The service takes a minute to wake up and the monitor reports it up again.
 
+## Staging
+
+Staging (`marlix-api-staging`, see [development.md](development.md#staging)) sleeps when idle and has no uptime monitor, on purpose: a monitor would keep it awake and use the workspace's 750 free instance hours. `GET /health` on it answers after a cold start of up to a minute. The Supabase staging project is kept from pausing by the [staging keepalive](../.github/workflows/staging-keepalive.yml) workflow (Mondays and Thursdays); if its run fails, check the `STAGING_DATABASE_URL` secret and whether Supabase paused the project.
+
 ## Groq quota
 
 Groq's free plan limits the requests per day for each model (1,000 a day for `openai/gpt-oss-120b`, checked on 3 November 2026). One chat message can use several: the crisis classifier, the reply, the review and, later, the memory extraction. The per-person cap of 100 replies a day does not protect the account's total.
