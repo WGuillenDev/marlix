@@ -34,3 +34,34 @@ services:
         value: low
       - key: LLM_TIMEOUT_MS
         value: "15000"
+
+  # Staging (V2-05a): same code, its own Supabase project and keys. It never
+  # deploys on its own: deploy a branch or commit by hand from the dashboard
+  # before merging. The free plan lets it sleep, so only production stays awake.
+  - type: web
+    name: marlix-api-staging
+    runtime: node
+    plan: free
+    region: virginia
+    rootDir: api
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeployTrigger: "off"
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: NODE_ENV
+        value: production
+      - key: GROQ_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
+      - key: GROQ_REASONING_EFFORT
+        value: low
+      - key: LLM_TIMEOUT_MS
+        value: "15000"

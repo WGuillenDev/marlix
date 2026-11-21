@@ -1,0 +1,5 @@
+{
+  "API_BASE_URL": "https://marlix-api-staging.onrender.com",
+  "SUPABASE_URL": "https://<staging-project-ref>.supabase.co",
+  "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_..."
+}
