@@ -40,3 +40,6 @@ Thumbs.db
 backups/
 *.age
 marlix-backup-key*.txt
+
+# Private maintainer notes, kept outside the repository
+*.local.md

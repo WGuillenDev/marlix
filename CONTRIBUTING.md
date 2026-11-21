@@ -11,12 +11,12 @@ The repository is public: no secrets or real user data in it, ever.
 
 ## Workflow
 
-1. Start at [`status.md`](status.md) and follow the [current workflow](docs/workflow.md). Before C10, v0.2 tasks are defined by their V2-NN entries in the [approved design](docs/designs/marlix-v0-2.md#detailed-implementation-plan). Use existing GitHub issues to track their fixes.
-2. Create a branch from `main`: `<type>/<short-description>`, lowercase with hyphens.
-3. Make small, frequent commits.
-4. Open a pull request with the task ID and verification evidence. Include `Closes #N` when the change resolves a GitHub issue.
+1. Start at [`status.md`](status.md) and follow the [current workflow](docs/workflow.md). Before C10, v0.2 tasks are the V2-NN entries of the [approved design](docs/designs/marlix-v0-2.md#work-order), and each pull request states the acceptance criteria it closes with evidence. Use existing GitHub issues to track their fixes.
+2. Create a branch from `main`: `<type>/<short-description>`, lowercase with hyphens. The maintainer's own work goes through the permanent `wil` branch instead ([Branches](docs/workflow.md#branches-main-and-wil)).
+3. Make small commits, one coherent change each.
+4. Open a pull request into `main` using the [template](.github/pull_request_template.md): work item and Sprint Goal, why, what changed, acceptance criteria with evidence, verification, risks and follow-ups. Include `Closes #N` only when the change fully resolves a GitHub issue.
 5. Wait for the CI checks to pass and review your own PR against the Definition of Done before merging.
-6. Merge into `main` and delete the branch.
+6. Squash merge into `main`. Delete topic branches after merging; `wil` is kept and prepared for the next item.
 
 `main` must always build and run. It only receives changes through pull requests, and GitHub blocks the merge until the [CI](.github/workflows/ci.yml) passes: the backend's type check, tests and build, the app's format check, analysis and tests, and the database privilege and RLS tests.
 
@@ -41,7 +41,7 @@ A change to the database is a file in [`docs/migrations/`](docs/migrations/) nam
 
 ## Commits
 
-[Conventional Commits](https://www.conventionalcommits.org/), in English, present tense, no trailing period:
+[Conventional Commits](https://www.conventionalcommits.org/), in English, imperative mood, no trailing period. Use `type(scope): subject` when a scope adds clarity (`api`, `app`, `db`, `site`, `infra`, `ci`) and `type: subject` otherwise:
 
 ~~~
 feat: add POST /chat endpoint
@@ -50,7 +50,7 @@ docs: document the API contract
 chore: install express and typescript
 ~~~
 
-The commit type describes that specific change, not the whole task. If a commit message needs the word "and", it is probably two commits.
+The commit type describes that specific change, not the whole task. If a commit message needs the word "and", it is probably two commits. Commit messages and pull request descriptions carry no automatic AI attribution lines ([No AI attribution](docs/workflow.md#no-ai-attribution)); human co-authors are credited as usual.
 
 ## Language and naming
 
@@ -67,7 +67,7 @@ The commit type describes that specific change, not the whole task. If a commit 
 - [ ] If the API contract changed, the contract file is updated
 - [ ] If the database changed, the ERD and migration are updated
 - [ ] The README is still accurate
-- [ ] The branch was deleted after merging
+- [ ] A topic branch was deleted after merging (`wil` is kept)
 
 ## Never commit
 
