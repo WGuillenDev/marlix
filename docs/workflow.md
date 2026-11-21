@@ -1,6 +1,6 @@
 # Workflow
 
-How a v0.2 task goes from start to merge before C10, the owner's approval of the move from Notion to GitHub Issues and a board. These rules come from section 10 of the [v0.2 design](designs/marlix-v0-2.md#10-marlix-v02-development-flow), approved on 2026-11-20. What depends on C10 (the board, the labels, [10.4 as written](designs/marlix-v0-2.md#104-the-life-of-a-task) and [10.9](designs/marlix-v0-2.md#109-moving-the-backlog-from-notion-to-github-issues-and-a-projects-board-c10-pending-the-authors-approval)) stays in the design until V2-04.
+How a v0.2 task goes from start to merge before C10, the owner's approval to adopt GitHub Issues and Projects for the v0.2 backlog. These rules come from section 10 of the [v0.2 design](designs/marlix-v0-2.md#10-marlix-v02-development-flow), approved on 2026-11-20. The board rules, labels and steps in [10.4](designs/marlix-v0-2.md#104-the-life-of-a-task) and [10.9](designs/marlix-v0-2.md#109-adopting-github-issues-and-projects-c10) take effect in V2-04.
 
 **A** is the assistant and **O** is the owner.
 
@@ -14,7 +14,7 @@ The life of a task ([10.4](designs/marlix-v0-2.md#104-the-life-of-a-task)) witho
 4.  **Branch (A).** `<type>/<short-description>` from an up-to-date `main`.
 5.  **Work (A).** As in [step 5 of section 10.4](designs/marlix-v0-2.md#104-the-life-of-a-task).
 6.  **Verify (A).** Run the checks of [step 6 of section 10.4](designs/marlix-v0-2.md#104-the-life-of-a-task), and write the evidence for each acceptance criterion in the pull request body.
-7.  **Prepare the summary (A).** Edit `status.md` as it should read once the pull request is merged.
+7.  **Prepare the summary (A).** Edit `status.md` as it should read once the pull request is merged. Recalculate the task progress bar and mark any launch criteria this change verifies, using the rules below.
 8.  **Hand over (A).** As in [step 8 of section 10.4](designs/marlix-v0-2.md#104-the-life-of-a-task).
 9.  **Commit and push (O).** Run the commands and say "ready".
 10. **Open the pull request (A).** `gh pr create` with an English body: the task ID, the acceptance evidence, "How to test" and the Definition of Done checklist.
@@ -88,22 +88,22 @@ A worked example, written for the flow after C10, is in [section 10.5 of the des
 
 ## `status.md`
 
-`status.md`, at the repository root, is the entry point of every session.
+[`status.md`](../status.md) is the entry point of every session. Start with its active task and next step, then open the relevant entry in the design for scope and acceptance criteria. When using pstack, give it that task and follow the same workflow for verification and handoff.
 
 ### Rules
 
 *   **Size:** it fits on one screen, about 70 lines, in English, with short lines and links instead of explanations.
 *   **Fixed sections, in this order:** Progress; Active task; Review; Next up (Ready, at most 5); Blocked; Launch criteria still pending; Decisions waiting on the owner; Next step; Later (at most 5 one-line items).
 *   **No history.** A finished task leaves `status.md` when its pull request merges; the history is the git log, the closed issues and `CHANGELOG.md`.
-*   **Privacy.** The repository is public, so `status.md` contains no names of testers, hosts or users (use roles: "owner", "host"), no emails, no device or account identifiers, no credentials, keys or tokens, no screenshots or conversation content, and no counts that identify a person. Notion links are not pasted either ([10.9](designs/marlix-v0-2.md#109-moving-the-backlog-from-notion-to-github-issues-and-a-projects-board-c10-pending-the-authors-approval)).
+*   **Privacy.** Record the result of each external check and its effect on the work. Keep account, billing and tester details, credentials, console screenshots, and private reports outside the public repository. Follow [the security policy](../SECURITY.md#reporting-a-vulnerability) for vulnerability reports.
 *   **UI method line.** While the active task is one of the UI tasks of [section 4](designs/marlix-v0-2.md#4-app-changes), "Active task" shows `UI method: ui-ux-pro-max` with a link to the task's UI section; otherwise the line is absent.
 *   **Stale check:** if the `Updated` date is older than three days, check the board (before C10, `git log` and the merged pull requests) before trusting the file.
 
 ### Interim mode (before C10)
 
-This block is the one place that defines how the flow runs before the backlog moves.
+These rules apply until the owner approves GitHub Issues and Projects for the v0.2 backlog.
 
-*   The V2-NN list of the [Detailed Implementation Plan](designs/marlix-v0-2.md#detailed-implementation-plan) is the v0.2 backlog. V2 tasks are not copied into Notion; Notion keeps only work outside v0.2.
+*   The V2-NN list of the [Detailed Implementation Plan](designs/marlix-v0-2.md#detailed-implementation-plan) is the v0.2 backlog. Use the repository for task state and GitHub for discussion and review on existing issues and pull requests.
 *   "Next up" lists the V2 tasks whose dependencies are all completed and verified and whose gate does not prevent starting (V2-04 waits for C10), in the order of [10.3](designs/marlix-v0-2.md#103-the-kanban-board) (priority, then number). Experiment tasks appear only when no P0 or P1 task is eligible.
 *   A task closed as not applicable is removed from the launch count (the denominator drops, for example from 28 to 27, and the scope line records why), and counts as met for the tasks that depend on it.
 *   The five-line [blocker record](#blocked-tasks-and-switching) goes in the "Blocked" section of `status.md`.
@@ -147,7 +147,8 @@ A pull request cannot contain the fact that it was merged, so it carries the sta
 *   **Each delivery counts once.** The unit is the task (the issue after C10), not the pull request. A task that needed three pull requests counts as one. If a task is split, the parent leaves the total and only the children count. A bug found after a task is Done is a new task and enters the total. That makes the bar move backwards, and it shows the real state.
 *   **Experiments stay out.** If an experiment passes its exit criterion and joins v0.2, it enters the total, and the change is recorded in the scope line.
 *   **Scope changes are visible.** The `Scope` line gives the total, the date and size of the approved scope, and the last three changes with their dates. When tasks are added or removed, the total is recomputed and the line is updated in the same edit.
-*   **Launch readiness is separate.** The file shows "Launch criteria met: x of 11" and lists the pending criteria. Finishing every task is not the same as being ready to publish: the launch also needs the closed test, the restore drill and the policy updates.
+*   **Launch checkboxes.** In `status.md`, pending launch criteria use `- [ ]`. When evidence confirms a criterion, move it under `Met:` and mark it `- [x]`. Update both the pending heading count and `Launch criteria met: x of 11` in the same edit. If a criterion stops being true, move it back to pending and restore `- [ ]`.
+*   **Task progress and launch readiness are counted independently.** The progress bar counts completed and verified tasks. The launch counter counts verified criteria such as the closed test, the restore drill and the policy updates. Update both when the same delivery changes both.
 *   **How it is recalculated.** Before C10, from the [Work order](designs/marlix-v0-2.md#work-order) and the "Completed and verified" line. After C10, in [step 7 of section 10.4](designs/marlix-v0-2.md#104-the-life-of-a-task), the assistant lists the issues with `gh issue list --milestone v0.2 --state all --limit 200 --json number,state,stateReason,labels`, counts them by the rules above with the current task counted as done, and writes the lines. At step 13 it checks the count again.
 
 **Before C10 (the interim bars).**
@@ -157,7 +158,7 @@ A pull request cannot contain the fact that it was merged, so it carries the sta
 *   **Done:** a task counts when every acceptance criterion is ticked with evidence in its pull request and the pull request is merged. A task with no pull request (V2-02, V2-03) counts when the owner confirms the result and `status.md` records it. A task whose post-merge check fails stops counting.
 *   **A task that does not apply** (for example V2-03, if C1 shows the closed test is not required, or V2-12b, if C6 (d) shows a second organization brings no separate limit) is removed from the total and recorded in the scope line.
 *   **The list of done tasks** is one line in `status.md`, "Completed and verified: V2-01, V2-02", and exists only before C10.
-*   **At C10,** step T5 of [10.9](designs/marlix-v0-2.md#109-moving-the-backlog-from-notion-to-github-issues-and-a-projects-board-c10-pending-the-authors-approval) creates an issue for every task, with the completed ones already closed, so the totals and the done counts carry over. The "Completed and verified" line is then removed.
+*   **At C10,** step T5 of [10.9](designs/marlix-v0-2.md#109-adopting-github-issues-and-projects-c10) maps every task to a GitHub issue, with completed tasks recorded as closed, so the totals and done counts carry over. The "Completed and verified" line is then removed.
 
 ### Automation: when it would add value
 

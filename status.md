@@ -12,10 +12,18 @@ Completed and verified: V2-01
 Launch criteria met: 0 of 11. Finished tasks are not the same as ready to publish.
 
 ## Active task
-V2-02 Verify the external conditions · P0 · M0 · owner
+[V2-02 Verify the external conditions](docs/designs/marlix-v0-2.md#organization-and-verification-m0) · P0 · M0 · owner
+
+- C1: closed testing is required and in progress on `0.1.2+3`. Play App Signing is active. Developer identity verification is pending; v0.2 is the planned first public release.
+- C2: Costa Rica's general VAT rate on cross-border digital services is 13%. Keep `tax_multiplier = 1.13` provisional until the actual Groq charge is confirmed.
+- C5: V2-34 verifies the current Gmail SMTP setup for the closed test. V2-06a provides a verified domain sender for launch.
+- C6: owner accepted criterion 4 with available evidence. Groq Free shows usage per model in UTC; no export was visible and invoice history is unavailable on Free. Global and inference ZDR are enabled.
+- C6 follow-up: V2-09/V2-10 test billing of errors and aborted streams and `include_usage`; V2-35 rechecks the second organization and charge timing. Groq documents mixed billing for new Developer accounts; actual timing unconfirmed.
+- C11: production health monitoring is active. Criterion 7 met.
 
 ## Review
-Nothing waiting.
+- [PR #224](https://github.com/WGuillenDev/marlix/pull/224): update against `main` and verify CI before the owner's merge.
+- [PR #226](https://github.com/WGuillenDev/marlix/pull/226): replacement for [#223](https://github.com/WGuillenDev/marlix/pull/223) with account-deletion tests. Close #223 after #226 merges.
 
 ## Next up (Ready, in order)
 1. V2-05a Staging environment · P0
@@ -25,7 +33,12 @@ Nothing waiting.
 5. V2-16 Reduced-motion setting · P1
 
 ## Blocked
-Nothing blocked.
+- V2-35 — Cause: Groq Developer upgrade unavailable and charge timing unconfirmed.
+  - Depends on: Developer access and C6(f).
+  - Action to unblock: recheck upgrade availability and confirm billing timing before paying.
+  - Who acts: owner and Groq.
+  - Recorded on: 2026-11-20.
+- Related gates remain in force for V2-10 and V2-12b. See [task dependencies](docs/designs/marlix-v0-2.md#work-order).
 
 ## Launch criteria still pending (11 of 11)
 - [ ] 1 Closed test done or not required (C1)
@@ -41,12 +54,16 @@ Nothing blocked.
 - [ ] 11 Groq paid with ZDR and spend limit
 
 ## Decisions waiting on the owner
-- Launch: C1, C2, C3, C5, C6, C11, Q13
+- Launch: C1 (identity), C2 (Groq tax treatment), C3, C6, Q13
 - Sala beta: C8, Q15, Q16, Q18, Q19
-- Process: C10
+- Process: C10 (approve adopting GitHub Issues and Projects for the v0.2 backlog)
 
 ## Next step
-Owner: open Play Console, the Groq console, the Supabase SMTP settings, UptimeRobot and a card statement with a foreign-service charge, and record the answers of V2-02 criteria 1 to 8.
+Owner: confirm developer identity verification in Play Console. Record the result for V2-02, then take V2-05a once V2-02 is closed.
 
 ## Later
-- Review the existing documentation against the layout of 10.1 (README short, designs in `docs/designs/`, guides in force, diagrams beside their topic)
+- V2-14: revisit [PR #221](https://github.com/WGuillenDev/marlix/pull/221) for notifications.
+- V2-15: review issues #186–#188; #186 was reproduced and sign-up still completes.
+- V2-08: review the related security findings. Review API rate limits before public launch.
+- Keep issue #213 open until v0.2 is published.
+- Review the existing documentation against the layout in [section 10.1](docs/designs/marlix-v0-2.md#101-where-each-kind-of-information-lives).
