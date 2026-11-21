@@ -644,7 +644,7 @@ Both timings stay at or below USD 10 in every cash month; the worst month is 9.8
 
 ### 7. Experiments and exit criteria
 
-Each experiment is behind a flag or a separate spike. It enters v0.2 only if it meets its criterion. None blocks the launch. Before C10, an experiment task is taken only when "Next up" in `status.md` lists no P0 or P1 task; after C10, only when no P0 or P1 issue is in Ready.
+Each experiment is behind a flag or a separate spike. It enters v0.2 only if it meets its criterion. None blocks the launch. Before C10, take an experiment only when "Ready to start" in `status.md` has no eligible P0 or P1 task. After C10, use the same rule on the Ready board column.
 
 | Bet | Small test | Continue if | Otherwise |
 |---|---|---|---|
@@ -916,7 +916,7 @@ Before C10: [`status.md`](../workflow.md#statusmd) in `docs/workflow.md` holds t
 *   **`status.md`:** from 10.6, the rules, the interim mode, "The update is written as if the pull request were merged", "Publishing with a protected `main`", the progress bars, "Automation", the interim template and the event table with three columns (Event, Interim before C10, `status.md`). In the interim template, "the template above" becomes a link to the 10.6 template in this design.
 *   **References in all copied text:** "this design" and "the Detailed Implementation Plan" become links to `docs/designs/marlix-v0-2.md`; a reference to moved text (10.3's Definition of Ready, blocker record, switching rules and post-merge checks; the 10.6 rules and table) becomes a link to the matching `docs/workflow.md` heading; any other section reference (10.3's columns, 10.4, 10.9, section 4, the Work order) becomes a link to that section of the design; "above" and "below" are replaced by the link.
 
-This line is the first line under the "Definition of Ready" heading and under the "Blocked tasks and switching" heading: "Before C10, 'issue' means the V2-NN entry; 'Backlog' means a V2-NN task not yet in 'Next up'; 'Ready' means 'Next up'; 'In Progress' means the active or paused task in `status.md`; 'In Review' means an open pull request; 'Blocked by' means the task's Depends on; a reopened task stops counting and becomes the active task again; the blocker record and its clearing date go in `status.md`'s Blocked section; there is no label."
+The [workflow](../workflow.md#statusmd) defines how the summary shows readiness, active work, reviews, and blockers. This design defines the task priorities and dependencies.
 
 These stay in this design until V2-04 moves them: 10.3's columns, labels and board mechanics; 10.4 as written (with the board); 10.6's template after C10; the board and issue columns of the event table; and 10.9.
 
@@ -936,30 +936,39 @@ These stay in this design until V2-04 moves them: 10.3's columns, labels and boa
 **Template with a complete example (after C10).** The numbers are illustrative until the issues exist.
 
 ```markdown
-# marlix status
+# Marlix v0.2
 
-Updated: 2026-12-08 · Board: <URL of the GitHub Projects board> · Milestone: M1 Foundations (2026-12-01 to 2026-12-14)
+**Release progress** `[██░░░░░░░░]` **28%** · 8 of 28 launch tasks verified
 
-## Progress
-v0.2 launch progress [██░░░░░░░░] 28% (8 of 28 launch tasks complete)
-Sala beta: 2 of 6 tasks complete (does not block the launch)
+**Requirements for release** 2 of 11 met · **Sala beta** 2 of 6 tasks verified
+
 Scope: 28 tasks; approved on 2026-12-01 at 27. Changes: +#240 greeting by local
 time (2026-12-05), -#237 voice comparison (moved to experiments, 2026-12-06),
 +#241 reminder migration test matrix (2026-12-07).
-Launch criteria met: 2 of 11. Finished tasks are not the same as ready to publish.
+
+## Milestones
+
+| Milestone | Status | Done when |
+| --- | --- | --- |
+| Build the technical foundations (M1) | In progress | Launch criteria 3, 4, 5, and 11 pass in staging, and criterion 11 passes in production. |
 
 ## Active task
-#230 Make the avatar react to device orientation · P1 · In Progress
-Branch: feature/avatar-device-orientation
-Criteria 1 to 6 are ticked. Criterion 7 (no frame over 16 ms on the Galaxy S24) is still to measure.
 
-## Review
-Nothing waiting.
+**Make the avatar react to device orientation (#230)**
+- **Verified:** Criteria 1 to 6 passed.
+- **To finish:** With the owner's agreement, run the app in profile mode on the
+  Galaxy S24. Tilt, invert, and straighten it for 30 seconds. Record the frame
+  times for criterion 7 and hand off the commit commands once it passes.
 
-## Next up (Ready, in order)
-1. #231 Add the palette, pattern and accessory picker · P1
-2. #234 Add the «Recordá esto» button and notice · P1
-3. #240 Add the greeting by local time · P1
+## In review
+
+No open pull requests.
+
+## Ready to start
+
+1. Add the palette, pattern, and accessory picker (#231).
+2. Add the «Recordá esto» button and notice (#234).
+3. Add the greeting by local time (#240).
 
 ## Blocked
 - #227 Isolate the classifier in its own Groq organization · P0 · paused in In Progress
@@ -969,10 +978,12 @@ Nothing waiting.
   organization gets its own spend limit and ZDR switch; tell the assistant.
   Recorded on: 2026-12-06
 
-## Launch criteria still pending (9 of 11)
+## Launch checklist
 - [ ] 1 Closed test: day 9 of 14, enough testers opted in; then production access
+- [x] 2 Restore drill on a real project
 - [ ] 3 Spend governor in production
 - [ ] 4 Classifier quota isolated · crisis:eval green
+- [x] 5 Own-domain sender verified
 - [ ] 6 Launch features done (avatar frames, voices, memory, greeting, games)
 - [ ] 7 Production build without the Sala; nothing advertises it
 - [ ] 8 Privacy policy, data safety and health declaration updated
@@ -980,25 +991,16 @@ Nothing waiting.
 - [ ] 10 Checks green; release build tested on the Galaxy S24, the low-end AVD and internal app sharing
 - [ ] 11 Groq paid plan with ZDR and the provider spend limit
 
-Met:
-
-- [x] 2 Restore drill on a real project
-- [x] 5 Own-domain sender verified
-
-## Decisions waiting on the owner
+## Owner decisions
 - C8 Confirm the host of the Sala (the beta waits until there is one)
 - Q15 Sala moderation coverage · Q16 Sala message that expresses distress
-
-## Next step
-On the Galaxy S24 (ask first that it is free): run the app in profile mode,
-tilt, invert and straighten the phone for 30 seconds, and record the frame times for
-criterion 7 of #230. Then tick it, check that this file reads 9 of 28, and hand the
-commit commands to the owner.
 
 ## Later
 - Lower the Groq spend limit on <date> and restore it on <date> (usage months around the domain renewal); confirm the renewal price
 - Compare Supertonic with Kokoro or Piper by blind listening
 - 3D object feasibility test (cap USD 3 before tax, in its own month)
+
+Updated: 2026-12-08 · Board: <URL of the GitHub Projects board>
 ```
 
 #### 10.7 Release
@@ -1230,7 +1232,7 @@ The **List** column classifies every task once: **Launch** (blocks the v0.2 laun
 | 39 | V2-27 | Medical-urgency layer | Experiment | M4 | P2 | V2-07 | C7 |
 | 40 | V2-30 | Photo-to-skin experiment | Experiment | M4 | P2 | V2-19, V2-29 | experiment result |
 
-Counts: 28 Launch tasks, 6 Sala tasks, 5 Experiment tasks and 1 Process task. Experiment tasks are taken as section 7 says: before C10, only when "Next up" lists no P0 or P1 task.
+Counts: 28 Launch tasks, 6 Sala tasks, 5 Experiment tasks and 1 Process task. Before C10, take experiments only when "Ready to start" has no eligible P0 or P1 task, as specified in section 7.
 
 **What each gate means.**
 
@@ -1357,7 +1359,7 @@ Every task uses the same fields, in this order: **Depends on** (task IDs), **Gat
     *   `CONTRIBUTING.md` (modify): the workflow steps, the flag rule and the Definition of Done additions of 10.2.
     *   `docs/workflow.md` (modify): receives what V2-01 left in the design ("What moves where", 10.6): 10.3's columns, labels and board mechanics, 10.4 as written, 10.6's template after C10 and the board and issue columns of the event table, and 10.9. The design keeps a link.
     *   `docs/decisions.md` (modify): record the transition and the flow.
-    *   `status.md` (modify): compute the bars from the issues of the milestone `v0.2` (with the `sala` and `experiment` labels), put the board link in the header, and remove the "Completed and verified" line.
+    *   `status.md` (modify): compute the bars from the issues of the milestone `v0.2` (with the `sala` and `experiment` labels), put the board link next to the updated date, and remove the "Completed and verified" line.
     *   `CLAUDE.md` (local, ignored by git; edited last, step T8): point the assistant to the adopted GitHub workflow through `status.md`.
     *   Outside the repository: the GitHub Project, labels and milestone, and the issues, following steps T1 to T8 of 10.9.
 *   **Acceptance criteria:**
