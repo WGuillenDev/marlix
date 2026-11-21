@@ -25,24 +25,21 @@
 - **Verified (2026-11-20):**
   - Supabase staging has its own project. Its migration checks returned `ok`.
   - Render `marlix-api-staging` returns `200 {"status":"ok"}` on `/health`. Auto-deploy is off. The first deploy failed only because three variables were empty.
-  - CI passed for [PR #229](https://github.com/WGuillenDev/marlix/pull/229), which merged.
+  - CI passed for [PR #229](https://github.com/WGuillenDev/marlix/pull/229) and [PR #230](https://github.com/WGuillenDev/marlix/pull/230), which merged. `main` has the integration runner and the `.gitignore` rules.
   - `app/config/staging.json` is complete and Git ignores it. `node tool/verify-integration.mjs staging --check` passes.
   - The integration suite builds, installs, and starts on the `Pixel_8` emulator.
 - **Failing:**
   - Criterion 4: the suite's sign-up fails with `AuthFailureException: unexpected`. Staging `/auth/v1/settings` shows `disable_signup: true`.
-  - Criterion 5: [Staging keepalive](https://github.com/WGuillenDev/marlix/actions/runs/44858996385) fails with `Network is unreachable`. `STAGING_DATABASE_URL` is the direct connection, which is IPv6 only. GitHub runners have no IPv6.
+  - Criterion 5: [Staging keepalive](https://github.com/WGuillenDev/marlix/actions/runs/44865007387) fails with `Network is unreachable`. `STAGING_DATABASE_URL` is the direct connection, which is IPv6 only. GitHub runners have no IPv6.
 - **To finish:**
   1. Owner: in Supabase staging, turn on **Allow new users to sign up** (Authentication → Sign In / Providers). Keep **Confirm email** off until the suite passes.
   2. Owner: replace the `STAGING_DATABASE_URL` secret with the staging [Session pooler connection](docs/backups.md#one-time-setup) on port 5432. Set it from a terminal.
-  3. Owner: open, commit, and merge the runner PR (`app/tool/verify-integration.mjs` and the `app/.gitignore` rules). `origin/main` has neither; `docs/development.md` already refers to the runner.
-  4. Assistant (`/pstack:poteto-mode`, from this file): rerun **Staging keepalive** from `main` and confirm `select 1` passes. Start the `Pixel_8` emulator, then run `node tool/verify-integration.mjs staging` from `app/`, and confirm the app signs in.
-  5. Assistant: record the evidence here, move V2-05a to "Completed and verified", and set the bar to **10%** · 3 of 28. Tell the owner to turn **Confirm email** back on.
-  6. Next task after closing: V2-05b, restore drill against staging.
+- **Then, the assistant** (`/pstack:poteto-mode`, from this file): rerun **Staging keepalive** from `main` and confirm `select 1` passes. Start the `Pixel_8` emulator and run `node tool/verify-integration.mjs staging` from `app/`. If both pass: record the evidence here, move V2-05a to "Completed and verified", set the bar to **10%** · 3 of 28, tell the owner to turn **Confirm email** back on, and take V2-05b (restore drill against staging).
 - **Notes:** If the debug build fails in `record_android` with `Unresolved reference 'PolicyAction'`, delete `app/build/record_android` and rebuild; it was a stale Kotlin cache. The local `app/pubspec.lock` differs only because Flutter 3.47.4 rewrote it (`test_api` and the SDK constraint); do not commit it.
 
 ## In review
 
-No open PR. The runner PR is not created yet.
+No open PR for V2-05a. The documentation branch `docs/v0-2-status-layout` waits for a rebase onto `main`.
 
 ## Ready to start
 
