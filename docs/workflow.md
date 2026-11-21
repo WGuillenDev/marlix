@@ -9,7 +9,7 @@ How a v0.2 task goes from start to merge before C10, the owner's approval to ado
 The life of a task ([10.4](designs/marlix-v0-2.md#104-the-life-of-a-task)) without a board or issues.
 
 1.  **Start the session (A).** Read `status.md`, run `git status` and `git log -5`, and check the CI of `main`. If `status.md` disagrees with `git log` and the merged pull requests, fix `status.md`.
-2.  **Choose (A, O agrees).** Take the first task of "Next up". If a task is already active or paused, apply the switching rules ([Blocked tasks and switching](#blocked-tasks-and-switching)).
+2.  **Choose (A, O agrees).** Refresh "Ready to start" against the design and take its first task. If a task is already active or paused, apply the switching rules ([Blocked tasks and switching](#blocked-tasks-and-switching)).
 3.  **Take it (A).** Mark it as the active task in `status.md` and re-read its entry in [the design](designs/marlix-v0-2.md#detailed-implementation-plan) against reality. If the scope has to change, tell the owner first and propose the change to the design. Anything outside the scope becomes a new V2-NN task.
 4.  **Branch (A).** `<type>/<short-description>` from an up-to-date `main`.
 5.  **Work (A).** As in [step 5 of section 10.4](designs/marlix-v0-2.md#104-the-life-of-a-task).
@@ -24,7 +24,7 @@ The life of a task ([10.4](designs/marlix-v0-2.md#104-the-life-of-a-task)) witho
 
 ## Definition of Ready
 
-Before C10, 'issue' means the V2-NN entry; 'Backlog' means a V2-NN task not yet in 'Next up'; 'Ready' means 'Next up'; 'In Progress' means the active or paused task in `status.md`; 'In Review' means an open pull request; 'Blocked by' means the task's Depends on; a reopened task stops counting and becomes the active task again; the blocker record and its clearing date go in `status.md`'s Blocked section; there is no label.
+Before C10, an issue is a V2 task in the design. "Ready to start" shows eligible tasks, "Active task" shows the work in progress, and "In review" shows open pull requests. Dependencies come from the design. Record blockers and clearing dates under "Blocked". A reopened task stops counting as verified and becomes the active task.
 
 An item moves from Backlog to Ready only if all of this is true:
 
@@ -40,11 +40,11 @@ An item moves from Backlog to Ready only if all of this is true:
 
 ## Blocked tasks and switching
 
-Before C10, 'issue' means the V2-NN entry; 'Backlog' means a V2-NN task not yet in 'Next up'; 'Ready' means 'Next up'; 'In Progress' means the active or paused task in `status.md`; 'In Review' means an open pull request; 'Blocked by' means the task's Depends on; a reopened task stops counting and becomes the active task again; the blocker record and its clearing date go in `status.md`'s Blocked section; there is no label.
+Before C10, [`status.md`](#statusmd) tracks readiness, active work, reviews, and blockers. The design supplies each task's dependencies.
 
 **One main task at a time.** Exactly one task is the active main task. The assistant does not start a second one for convenience.
 
-**When a task is blocked.** Its blocker is recorded before anything else, in the Blocked section of `status.md`, with five lines:
+**When a task is blocked.** Record its blocker first under "Blocked" in `status.md`. A compact table can carry the same fields:
 
 *   **Cause:** what is stopping the work.
 *   **Depends on:** the task, condition or role it waits for (for example "C6, the owner reading the Groq console").
@@ -88,13 +88,15 @@ A worked example, written for the flow after C10, is in [section 10.5 of the des
 
 ## `status.md`
 
-[`status.md`](../status.md) is the entry point of every session. Start with its active task and next step, then open the relevant entry in the design for scope and acceptance criteria. When using pstack, give it that task and follow the same workflow for verification and handoff.
+[`status.md`](../status.md) is the entry point of every session. Read "Active task" and "To finish", then open the task in the design for scope, dependencies, and acceptance criteria. With pstack in Claude Code, use `/pstack:poteto-mode` with the task's outcome and the evidence needed to close it. Follow the same verification and owner handoff.
 
 ### Rules
 
 *   **Size:** it fits on one screen, about 70 lines, in English, with short lines and links instead of explanations.
-*   **Fixed sections, in this order:** Progress; Active task; Review; Next up (Ready, at most 5); Blocked; Launch criteria still pending; Decisions waiting on the owner; Next step; Later (at most 5 one-line items).
-*   **No history.** A finished task leaves `status.md` when its pull request merges; the history is the git log, the closed issues and `CHANGELOG.md`.
+*   **Layout.** Put the release progress bar, release requirements count, and Sala beta count directly below the title. Follow with "Milestones", "Active task", "In review", "Ready to start" (up to five tasks), "Blocked", "Launch checklist", "Owner decisions", and "Later" (up to five items). End with the updated date and links to the design and workflow.
+*   **Milestones.** Show the main release milestones in plain English with their IDs, status, and exit conditions from the [design](designs/marlix-v0-2.md#9-sequence-and-milestones). Link to the full plan for experiments and the Sala. Mark a milestone complete when its exit conditions pass.
+*   **Task names.** Put the outcome first and the ID in parentheses. The design supplies priority and dependencies. Keep the immediate steps in a single "To finish" entry under "Active task", with the evidence and the person responsible for each action where needed.
+*   **Keep the summary current.** Remove completed task details once the work is verified. Before C10, keep completed IDs for the release count. Git history, closed issues, and `CHANGELOG.md` carry the history.
 *   **Privacy.** Record the result of each external check and its effect on the work. Keep account, billing and tester details, credentials, console screenshots, and private reports outside the public repository. Follow [the security policy](../SECURITY.md#reporting-a-vulnerability) for vulnerability reports.
 *   **UI method line.** While the active task is one of the UI tasks of [section 4](designs/marlix-v0-2.md#4-app-changes), "Active task" shows `UI method: ui-ux-pro-max` with a link to the task's UI section; otherwise the line is absent.
 *   **Stale check:** if the `Updated` date is older than three days, check the board (before C10, `git log` and the merged pull requests) before trusting the file.
@@ -104,9 +106,9 @@ A worked example, written for the flow after C10, is in [section 10.5 of the des
 These rules apply until the owner approves GitHub Issues and Projects for the v0.2 backlog.
 
 *   The V2-NN list of the [Detailed Implementation Plan](designs/marlix-v0-2.md#detailed-implementation-plan) is the v0.2 backlog. Use the repository for task state and GitHub for discussion and review on existing issues and pull requests.
-*   "Next up" lists the V2 tasks whose dependencies are all completed and verified and whose gate does not prevent starting (V2-04 waits for C10), in the order of [10.3](designs/marlix-v0-2.md#103-the-kanban-board) (priority, then number). Experiment tasks appear only when no P0 or P1 task is eligible.
+*   "Ready to start" lists up to five V2 tasks whose dependencies are all completed and verified and whose gate permits starting (V2-04 waits for C10). Use the order in [10.3](designs/marlix-v0-2.md#103-the-kanban-board) (priority, then number). Refresh the list after a task closes or a blocker clears. Experiment tasks appear only when no P0 or P1 task is eligible.
 *   A task closed as not applicable is removed from the launch count (the denominator drops, for example from 28 to 27, and the scope line records why), and counts as met for the tasks that depend on it.
-*   The five-line [blocker record](#blocked-tasks-and-switching) goes in the "Blocked" section of `status.md`.
+*   Record [blockers](#blocked-tasks-and-switching) under "Blocked". A dependency can share the same table with other blockers.
 *   The detail of a task is its entry in [the design](designs/marlix-v0-2.md#detailed-implementation-plan). The acceptance evidence goes in the pull request body. A task with no pull request (V2-02, V2-03) is recorded in `status.md` and, when it changes a decision, in `docs/decisions.md`.
 *   The stale check compares with `git log`; no board steps run.
 *   When two pull requests wait in review, only the one merged second updates the bars, after a rebase on `main`.
@@ -116,13 +118,13 @@ These rules apply until the owner approves GitHub Issues and Projects for the v0
 | Event | Interim (before C10) | `status.md` |
 |---|---|---|
 | A task is defined | A V2-NN entry is added to [the design](designs/marlix-v0-2.md#detailed-implementation-plan) | Nothing, unless the scope changes (progress section) |
-| A task becomes Ready | Its dependencies are verified | Nothing, unless it enters the top five of "Next up" |
+| A task becomes Ready | Its dependencies are verified | Refresh the top five in "Ready to start" |
 | A task is taken | Branch created | "Active task" |
 | A task blocks | Blocker record in `status.md` | "Blocked", and "Active task" if another task is taken |
-| The pull request opens | The body carries the acceptance evidence | Nothing new |
+| The pull request opens | The body carries the acceptance evidence | Link it under "In review" |
 | The pull request merges | Nothing | Nothing: it was written in the pull request |
-| The owner decides something | `docs/decisions.md` if lasting | "Decisions waiting on the owner" |
-| A session ends | Nothing | "Next step" rewritten |
+| The owner decides something | `docs/decisions.md` if lasting | Update "Owner decisions" |
+| A session ends | Nothing | Update the active task's "To finish" entry |
 
 ### The update is written as if the pull request were merged
 
@@ -138,16 +140,16 @@ A pull request cannot contain the fact that it was merged, so it carries the sta
 
 ### The progress bars
 
-`status.md` shows two lines: the launch bar, and a separate count for the Sala beta. Experiments appear in neither.
+`status.md` opens with the launch bar, the release requirements count, and a separate Sala beta count. Experiments are tracked in the design.
 
 *   **Launch total:** after C10, the issues in the milestone `v0.2` with neither the `experiment` nor the `sala` label, minus those closed as "not planned". Before C10, the launch blockers of the [Work order](designs/marlix-v0-2.md#work-order).
 *   **Done:** the tasks of that total that are completed **and verified**: the pull request is merged and the [post-merge checks](#post-merge-checks) passed. A reopened task stops counting.
 *   **Percent:** the whole number below `100 × done ÷ total`. **Filled cells:** the whole number of tens in that percent, out of ten cells, so the bar never shows more than is done.
-*   **Format:** `v0.2 launch progress [██░░░░░░░░] 28% (8 of 28 launch tasks complete)`, and on the next line `Sala beta: 2 of 6 tasks complete (does not block the launch)`.
+*   **Format:** `Release progress [██░░░░░░░░] 28% · 8 of 28 launch tasks verified`. On the next line, show `Requirements for release 2 of 11 met · Sala beta 2 of 6 tasks verified`.
 *   **Each delivery counts once.** The unit is the task (the issue after C10), not the pull request. A task that needed three pull requests counts as one. If a task is split, the parent leaves the total and only the children count. A bug found after a task is Done is a new task and enters the total. That makes the bar move backwards, and it shows the real state.
 *   **Experiments stay out.** If an experiment passes its exit criterion and joins v0.2, it enters the total, and the change is recorded in the scope line.
 *   **Scope changes are visible.** The `Scope` line gives the total, the date and size of the approved scope, and the last three changes with their dates. When tasks are added or removed, the total is recomputed and the line is updated in the same edit.
-*   **Launch checkboxes.** In `status.md`, pending launch criteria use `- [ ]`. When evidence confirms a criterion, move it under `Met:` and mark it `- [x]`. Update both the pending heading count and `Launch criteria met: x of 11` in the same edit. If a criterion stops being true, move it back to pending and restore `- [ ]`.
+*   **Launch checkboxes.** Keep the 11 criteria in order under "Launch checklist". Mark a criterion `- [x]` once evidence confirms it. Restore `- [ ]` if the criterion stops being true. Update "Requirements for release" in the same edit.
 *   **Task progress and launch readiness are counted independently.** The progress bar counts completed and verified tasks. The launch counter counts verified criteria such as the closed test, the restore drill and the policy updates. Update both when the same delivery changes both.
 *   **How it is recalculated.** Before C10, from the [Work order](designs/marlix-v0-2.md#work-order) and the "Completed and verified" line. After C10, in [step 7 of section 10.4](designs/marlix-v0-2.md#104-the-life-of-a-task), the assistant lists the issues with `gh issue list --milestone v0.2 --state all --limit 200 --json number,state,stateReason,labels`, counts them by the rules above with the current task counted as done, and writes the lines. At step 13 it checks the count again.
 
@@ -170,22 +172,28 @@ None is needed to start. The flow has about 30 tasks, one person and about one p
 
 ### Interim template (before C10)
 
-Only these parts differ from [the template after C10 in section 10.6 of the design](designs/marlix-v0-2.md#106-statusmd-the-entry-point-of-every-session); the other sections are the same.
+Use the same layout before and after C10. Before C10, include the completed V2 IDs. After C10, show the board link and track completion through the issues. This example shows how the opening sections read after V2-05a passes.
 
 ```markdown
-# marlix status
+# Marlix v0.2
 
-Updated: 2026-12-03 · Board: none yet (C10 pending); tasks use their V2 ID · Milestone: M0 Unblock
+**Release progress** `[█░░░░░░░░░]` **10%** · 3 of 28 launch tasks verified
 
-## Progress
-v0.2 launch progress [█░░░░░░░░░] 10% (3 of 28 launch tasks complete)
-Sala beta: 0 of 6 tasks complete (does not block the launch)
-Scope: 28 launch tasks from docs/designs/marlix-v0-2.md (experiments and V2-04 not counted).
-Completed and verified: V2-01, V2-02, V2-05a
-Launch criteria met: 0 of 11. Finished tasks are not the same as ready to publish.
+**Requirements for release** 0 of 11 met · **Sala beta** 0 of 6 tasks verified
+
+- Completed and verified: V2-01, V2-02, V2-05a
+- Scope: 28 launch tasks. The Sala, experiments, and V2-04 are tracked separately.
+
+## Milestones
+
+| Milestone | Status | Done when |
+| --- | --- | --- |
+| Prepare the test environment (M0) | **In progress** | The Google Play path is defined and a backup is restored and tested in staging. |
 
 ## Active task
-V2-05b Restore drill against staging · P0 · M0
+**Test a backup restore in staging (V2-05b)**
+
+- **To finish:** Restore the backup, verify the data, and sign in from the app.
 ```
 
 Check of the numbers: 3 ÷ 28 is 10.7%, whose whole number below is 10%, so one cell is filled. No criterion is met yet: the restore drill (criterion 2) is V2-05b, still active.

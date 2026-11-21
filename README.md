@@ -181,7 +181,19 @@ The CI runs the same checks on every pull request. Environment variables, integr
 
 ## Project status
 
-Design, backend, safety, chat, memory, avatar and voice are done, and so are the end-to-end tests, the daily backup, the monitoring and email confirmation. The first public release, [v0.1.0](https://github.com/WGuillenDev/marlix/releases/tag/v0.1.0), is a signed APK on GitHub Releases. Next come CodeQL code scanning and publishing on Google Play. See the [changelog](CHANGELOG.md).
+**v0.2 · In development**
+
+### What’s ahead
+
+- **Make your beagle your own.** Mix colors, patterns, and accessories. See new expressions and watch your beagle move when you tilt your phone.
+- **Explore a redesigned app.** Chat, activities, and customization get their own tabs, with better screen reader support, larger text, and a reduced-motion option.
+- **Preview a voice before you pick it.** Listen to samples of all ten voices.
+- **Save what matters.** Tap “Remember this” to save something from a conversation and undo it right away if you change your mind.
+- **Greetings and reminders.** Get a greeting that matches your time of day when you open Marlix, plus updated daily reminders.
+- **Take a breather or play.** Follow a breathing exercise with your beagle or play a new spot-the-change game.
+- **Find crisis guidance offline.** The app will be able to show guidance and help numbers even when the connection drops.
+- **Meet people in Marlix Room.** A new group text chat with conversation starters, planned as an invitation-only beta.
+- **Try photo-inspired avatars.** Planned experiments will explore using photos of objects to personalize the beagle or create a 3D avatar.
 
 ## Documentation
 

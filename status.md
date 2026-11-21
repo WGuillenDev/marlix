@@ -1,73 +1,88 @@
-# marlix status
+# Marlix v0.2
 
-Updated: 2026-11-20 · Board: none yet (C10 pending); tasks use their V2 ID · Milestone: M0 Unblock
+**Release progress** `[░░░░░░░░░░]` **7%** · 2 of 28 launch tasks verified
 
-Rules: [docs/workflow.md](docs/workflow.md) · Design: [docs/designs/marlix-v0-2.md](docs/designs/marlix-v0-2.md)
+**Requirements for release** 0 of 11 met · **Sala beta** 0 of 6 tasks verified
 
-## Progress
-v0.2 launch progress [█░░░░░░░░░] 7% (2 of 28 launch tasks complete)
-Sala beta: 0 of 6 tasks complete (does not block the launch)
-Scope: 28 launch tasks from docs/designs/marlix-v0-2.md (experiments and V2-04 not counted).
-Completed and verified: V2-01, V2-02
-Launch criteria met: 0 of 11. Finished tasks are not the same as ready to publish.
+- Completed and verified: V2-01, V2-02
+- Scope: 28 launch tasks. The Sala, experiments, and V2-04 are tracked separately.
+
+## Milestones
+
+| Milestone | Status | Done when |
+| --- | --- | --- |
+| Prepare the test environment (M0) | **In progress** | The Google Play path is defined and a backup is restored and tested in staging. |
+| Build the technical foundations (M1) | Planned | Email, crisis detection, and spend controls meet launch criteria 3, 4, 5, and 11. |
+| Deliver the v0.2 features (M3) | Planned | The features required for launch are verified. |
+| Publish v0.2 (M5) | Planned | All 11 release requirements are met and v0.2 is live on Google Play. |
+
+[Full milestone plan, including experiments and the Sala](docs/designs/marlix-v0-2.md#9-sequence-and-milestones)
 
 ## Active task
-[V2-05a Staging environment](docs/designs/marlix-v0-2.md#detailed-implementation-plan) · P0 · M0 · owner
 
-- C1: closed testing is required and in progress on `0.1.2+3`. Play App Signing is active. Developer identity verified: Play Console showed «Se verificó correctamente tu identidad» on 2026-11-05 (owner-confirmed 2026-11-20). v0.2 is the planned first public release.
-- C2: Costa Rica's general VAT rate on cross-border digital services is 13%. Keep `tax_multiplier = 1.13` provisional until the actual Groq charge is confirmed.
-- C5: V2-34 verifies the current Gmail SMTP setup for the closed test. V2-06a provides a verified domain sender for launch.
-- C6: owner accepted criterion 4 with available evidence. Groq Free shows usage per model in UTC; no export was visible and invoice history is unavailable on Free. Global and inference ZDR are enabled.
-- C6 follow-up: V2-09/V2-10 test billing of errors and aborted streams and `include_usage`; V2-35 rechecks the second organization and charge timing. Groq documents mixed billing for new Developer accounts; actual timing unconfirmed.
-- C11: production health monitoring is active. Criterion 7 met.
+**[Prepare and verify staging (V2-05a)](docs/designs/marlix-v0-2.md#detailed-implementation-plan)**
 
-## Review
-Nothing waiting. V2-05a repository changes are local and uncommitted (`render.yaml`, `.github/workflows/staging-keepalive.yml`, `app/config/staging.example.json`, `docs/development.md`, `docs/monitoring.md`).
+- **Verified (2026-11-20):**
+  - Supabase staging has its own project. Its migration checks returned `ok`.
+  - Render `marlix-api-staging` returns `200 {"status":"ok"}` on `/health`. Auto-deploy is off. The first deploy failed only because three variables were empty.
+  - CI passed for [PR #229](https://github.com/WGuillenDev/marlix/pull/229) and [PR #230](https://github.com/WGuillenDev/marlix/pull/230), which merged. `main` has the integration runner and the `.gitignore` rules.
+  - `app/config/staging.json` is complete and Git ignores it. `node tool/verify-integration.mjs staging --check` passes.
+  - The integration suite builds, installs, and starts on the `Pixel_8` emulator.
+- **Failing:**
+  - Criterion 4: the suite's sign-up fails with `AuthFailureException: unexpected`. Staging `/auth/v1/settings` shows `disable_signup: true`.
+  - Criterion 5: [Staging keepalive](https://github.com/WGuillenDev/marlix/actions/runs/44865007387) fails with `Network is unreachable`. `STAGING_DATABASE_URL` is the direct connection, which is IPv6 only. GitHub runners have no IPv6.
+- **To finish:**
+  1. Owner: in Supabase staging, turn on **Allow new users to sign up** (Authentication → Sign In / Providers). Keep **Confirm email** off until the suite passes.
+  2. Owner: replace the `STAGING_DATABASE_URL` secret with the staging [Session pooler connection](docs/backups.md#one-time-setup) on port 5432. Set it from a terminal.
+- **Then, the assistant** (`/pstack:poteto-mode`, from this file): rerun **Staging keepalive** from `main` and confirm `select 1` passes. Start the `Pixel_8` emulator and run `node tool/verify-integration.mjs staging` from `app/`. If both pass: record the evidence here, move V2-05a to "Completed and verified", set the bar to **10%** · 3 of 28, tell the owner to turn **Confirm email** back on, and take V2-05b (restore drill against staging).
+- **Notes:** If the debug build fails in `record_android` with `Unresolved reference 'PolicyAction'`, delete `app/build/record_android` and rebuild; it was a stale Kotlin cache. The local `app/pubspec.lock` differs only because Flutter 3.47.4 rewrote it (`test_api` and the SDK constraint); do not commit it.
 
-## Next up (Ready, in order)
-1. V2-05b Restore drill against staging · P0 (needs V2-05a)
-2. V2-37 Crisis layer 1 on the phone · P0
-3. V2-14 Greeting by local time and reminder migration · P1
-4. V2-15 Navigation, theme, first use and accessibility · P1
-5. V2-16 Reduced-motion setting · P1
+## In review
+
+No open PR for V2-05a. The documentation branch `docs/v0-2-status-layout` waits for a rebase onto `main`.
+
+## Ready to start
+
+After the active task is done, refresh this list before choosing the first task.
+
+1. Show the crisis response when the API is unavailable (V2-37).
+2. Update greetings and migrate reminders (V2-14).
+3. Improve navigation, theme, first use, and accessibility (V2-15).
+4. Add a reduced-motion setting (V2-16).
 
 ## Blocked
-- V2-35 — Cause: Groq Developer upgrade unavailable and charge timing unconfirmed.
-  - Depends on: Developer access and C6(f).
-  - Action to unblock: recheck upgrade availability and confirm billing timing before paying.
-  - Who acts: owner and Groq.
-  - Recorded on: 2026-11-20.
-- Related gates remain in force for V2-10 and V2-12b. See [task dependencies](docs/designs/marlix-v0-2.md#work-order).
 
-## Launch criteria still pending (11 of 11)
-- [ ] 1 Closed test done or not required (C1)
-- [ ] 2 Restore drill on a real project
-- [ ] 3 Spend governor in production
-- [ ] 4 Classifier isolated, crisis:eval green
-- [ ] 5 Own-domain sender verified
-- [ ] 6 Launch features done
-- [ ] 7 Production build without the Sala
-- [ ] 8 Privacy policy, data safety, health declaration
-- [ ] 9 v0.1 APKs work
-- [ ] 10 Checks green, release build tested
-- [ ] 11 Groq paid with ZDR and spend limit
+| Task | Waiting for | How it unblocks | Who | Recorded |
+| --- | --- | --- | --- | --- |
+| Test a backup restore in staging (V2-05b) | V2-05a | Close V2-05a after verification. | Owner and assistant | 2026-11-20 |
+| Move Groq to the paid plan (V2-35) | Developer access and charge timing (C6(f)) | Recheck availability and confirm charge timing before paying. Gates on V2-10 and V2-12b also apply. | Owner and Groq | 2026-11-20 |
 
-## Decisions waiting on the owner
-- Launch: C2 (Groq tax treatment), C3, C6, Q13
-- Sala beta: C8, Q15, Q16, Q18, Q19
-- Process: C10 (approve adopting GitHub Issues and Projects for the v0.2 backlog)
+## Launch checklist
 
-## Next step
-Owner: create the staging infrastructure for V2-05a (steps below), then say "staging listo". The assistant then runs `node tool/verify-integration.mjs staging` from `app/` and records the evidence.
-1. Supabase: new project (Free) for staging. In the SQL Editor run `docs/schema.sql`, then `docs/verify-migrations.sql` (every row `ok`). Turn `Confirm email` off there while the integration suite runs.
-2. Render: New → Blueprint from this repo after the PR merges (or a Web Service named `marlix-api-staging`, root `api`, auto-deploy off). Set `SUPABASE_URL`, `SUPABASE_SECRET_KEY` and `GROQ_API_KEY` to staging values; share no key with production.
-3. GitHub: repository secret `STAGING_DATABASE_URL`, then run the "Staging keepalive" workflow once by hand.
-4. Local: copy `app/config/staging.example.json` to `app/config/staging.json` with the staging URLs and publishable key.
-Evidence so far (2026-11-20): `GET https://marlix-api-staging.onrender.com/health` returns 404, so the service does not exist yet; `verify-integration.mjs staging --check` fails only because `config/staging.json` is missing.
+- [ ] 1. Closed test complete or confirmed unnecessary (C1)
+- [ ] 2. Restore drill passed on a real project
+- [ ] 3. Spend governor running in production
+- [ ] 4. Classifier isolated and crisis evaluation passing
+- [ ] 5. Own-domain sender verified
+- [ ] 6. Launch features complete
+- [ ] 7. Production build excludes the Sala
+- [ ] 8. Privacy policy, data safety, and health declaration complete
+- [ ] 9. v0.1 APKs still work
+- [ ] 10. Checks pass and the release build has been tested
+- [ ] 11. Paid Groq with ZDR and a spend limit
+
+## Owner decisions
+
+- **Launch:** C2 (treat 13% VAT as provisional until a Groq charge confirms it), C3, C6, and Q13.
+- **Sala beta:** C8, Q15, Q16, Q18, and Q19.
+- **Workflow:** C10, adoption of GitHub Issues and Projects.
 
 ## Later
-- V2-14: revisit [PR #221](https://github.com/WGuillenDev/marlix/pull/221) for notifications.
-- V2-15: review issues #186–#188; #186 was reproduced and sign-up still completes.
-- V2-08: review the related security findings. Review API rate limits before public launch.
-- Keep issue #213 open until v0.2 is published.
-- Review the existing documentation against the layout in [section 10.1](docs/designs/marlix-v0-2.md#101-where-each-kind-of-information-lives).
+
+- Play closed testing is in progress on `0.1.2+3`. App Signing is active. Play verified developer identity on 2026-11-05. Keep [issue #213](https://github.com/WGuillenDev/marlix/issues/213) open until publication.
+- V2-34 checks Gmail SMTP and Groq Free capacity. The owner accepted the available C6 evidence. Usage is per model and in UTC. No export was visible, Free has no invoice history, and global and inference ZDR are on. V2-06a verifies an own-domain sender.
+- V2-09 and V2-10 check charges for errors and aborted streams and verify `include_usage`. V2-35 rechecks a second organization and when Groq charges. Mixed billing is documented, and actual charge timing remains unconfirmed. Production health monitoring is active.
+- Revisit [PR #221](https://github.com/WGuillenDev/marlix/pull/221) in V2-14 and issues #186–#188 in V2-15. Sign-up still completes in the reproduced #186 case.
+- Review transcription alerts in V2-08, API rate limits before publication, and [the documentation layout](docs/designs/marlix-v0-2.md#101-where-each-kind-of-information-lives) separately.
+
+Updated: 2026-11-20 · [Design](docs/designs/marlix-v0-2.md) · [Workflow](docs/workflow.md)
