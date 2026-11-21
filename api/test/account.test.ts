@@ -127,22 +127,30 @@ describe('DELETE /v1/account', () => {
 
 describe('createSupabaseAccountStore', () => {
   it('hard-deletes the user with the Auth admin API', async () => {
-    const { client, calls } = fakeSupabaseClient(() => ({ body: {} }));
+    // supabase-js 2.119 looks the user up before deleting it, so the store makes two calls.
+    const { client, calls } = fakeSupabaseClient((call) =>
+      call.method === 'GET' ? { body: { id: USER, aud: 'authenticated' } } : { body: {} },
+    );
 
     await createSupabaseAccountStore(client).deleteAccount(USER);
 
-    assert.equal(calls.length, 1);
-    assert.equal(calls[0]!.method, 'DELETE');
-    assert.equal(calls[0]!.table, USER);
-    assert.deepEqual(calls[0]!.body, { should_soft_delete: false });
+    assert.deepEqual(
+      calls.map((call) => [call.method, call.table]),
+      [
+        ['GET', USER],
+        ['DELETE', USER],
+      ],
+    );
+    assert.deepEqual(calls[1]!.body, { should_soft_delete: false });
   });
 
   it('is done when the user was already deleted', async () => {
-    const { client } = fakeSupabaseClient(() => ({
+    const { client, calls } = fakeSupabaseClient(() => ({
       status: 404,
       body: { code: 404, error_code: 'user_not_found', msg: 'User not found' },
     }));
     await createSupabaseAccountStore(client).deleteAccount(USER);
+    assert.ok(calls.every((call) => call.method !== 'DELETE'));
   });
 
   it('fails, logging only the code, for any other error', async () => {
