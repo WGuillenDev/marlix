@@ -1,6 +1,6 @@
 # Next release execution plan
 
-This file is the only active source for the next Marlix release. It records which phase is next, what is done, where the evidence is, and where to resume. The [phase tracking table](#6-phase-tracking) holds the current state. The A0 candidate passed its local checks and waits for verification in staging. Phase 1a is authorized and has not started.
+This file is the only active source for the next Marlix release. It records which phase is next, what is done, where the evidence is, and where to resume. The [phase tracking table](#6-phase-tracking) holds the current state. The A0 candidate passed its local and staging checks and waits for approval to reach `main`. Phase 1a is authorized and has not started.
 
 Lasting decisions go to [`docs/decisions.md`](../decisions.md). Phase evidence goes to `docs/qa/phase-<n>-evidence.md`, one file per phase, with real commands and results. The approved [v0.2 design](../designs/marlix-v0-2.md) stays as the reference for its acceptance criteria. This plan replaces its release sequence, milestones and earlier development flow.
 
@@ -132,7 +132,7 @@ Status: `1a authorized on 2026-11-25, blocked by A0`. Deliveries 1b to 1d wait f
 
 - **Depends on:** row A0 (the architecture move has landed or the owner has decided how to handle it).
 - **Method:** a heuristic and functional audit guided by `ui-ux-pro-max`. It runs on the `Pixel_8` emulator against staging: the release APK, and a debug build when a step needs it. Each flow is a list of steps, and each step has an expected result and an observed result.
-- **Account emails:** sign-up codes and password recovery use the sender available in staging. The own-domain sender stays in Phase 14. Staging sends the default link emails today, and its templates cannot be edited without a custom SMTP sender ([decision D13](#decisions-that-need-the-owner)). The sign-up code and password recovery steps need that decision.
+- **Account emails:** sign-up codes and password recovery use the sender available in staging. The own-domain sender stays in Phase 14. Staging uses a Gmail account dedicated to staging as its sender, with the Marlix code templates ([decision D13](#decisions-that-need-the-owner)). If a real code does not arrive, that step stays pending.
 - **Flows:**
 	- **Sign-up and access:** sign-up with the six-digit code, sign-in, wrong password, password recovery, age check, AI notice, consent, onboarding, sign-out, delete account.
 	- **Chat:** send, streamed reply, retry after a failure, history paging, the warning before the daily limit, the daily limit itself, crisis reply, offline.
@@ -260,8 +260,8 @@ These facts decide whether a phase can push to `main` on its own. Each one was c
 | Phase | Status | Exit criterion | Evidence | Commit | Blockers | Next step |
 | --- | --- | --- | --- | --- | --- | --- |
 | 0. Plan consolidation | Done, committed locally | This plan exists, the old tracking files are retired, and active links point here | This plan | The documentation commit that follows `9390079` | Reaches `main` together with A0 | None |
-| A0. Architecture move | Local checks pass, staging verification pending | API and app checks pass on the moved code, the docs that point at old paths are updated, the new API passes in staging, and the verified commit is on `main` | [A0 evidence](../qa/phase-a0-evidence.md) | `c3099a3`, `9390079` and the documentation commit (local) | Maintainer approval for the branch push and the staging deploy | Push `release/next-release`, deploy that commit to staging, verify it, then ask to push it to `main` |
-| 1. UX audit and fixes | 1a authorized, blocked. 1b to 1d pending | See [Phase 1](#phase-1-ux-audit-and-bug-fixes) | `docs/qa/phase-1-evidence.md` (not created) | None | A0. D13: staging cannot send six-digit codes with its current sender | Close A0, settle the staging sender, run 1a |
+| A0. Architecture move | Verified in staging, not on `main` | API and app checks pass on the moved code, the docs that point at old paths are updated, the new API passes in staging, and the verified commit is on `main` | [A0 evidence](../qa/phase-a0-evidence.md) | `a379210` (on `release/next-release`) | Maintainer approval for the push to `main`, which deploys production | Push `a379210` to `main`, watch CI and the production deploy, check `/health` |
+| 1. UX audit and fixes | 1a authorized, blocked. 1b to 1d pending | See [Phase 1](#phase-1-ux-audit-and-bug-fixes) | `docs/qa/phase-1-evidence.md` (not created) | None | A0 on `main`. Staging sender not configured yet (D13) | Close A0, configure the staging sender, test real code delivery, run 1a |
 | 2. DeepSeek evaluation | Not started | See [Phase 2](#phase-2-deepseek-evaluation) | None | None | D1 (key and first top-up) | Waits for Phase 1 and D1 |
 | 3. Android voice spike | Not started | See [Phase 3](#phase-3-android-voice-spike) | None | None | S24 availability, listeners | Waits for Phase 1 |
 | 4. Reusable mascot spike | Not started | See [Phase 4](#phase-4-reusable-mascot-spike) | None | None | None | Waits for Phase 1 |
@@ -299,4 +299,4 @@ These items were open on the retired board on 2026-11-22. They keep their v0.2 a
 | D10 | The v0.2 items listed in C7 | Keep «Recordá esto» and the greeting, defer the rest | Phase planning after Phase 7 |
 | D11 | Who lands the architecture move (row A0) | Answered on 2026-11-25: verify it and commit it. Integration follows D12 | None |
 | D12 | How to verify and integrate changes under `api/` while a push to `main` deploys production | Answered on 2026-11-26 for A0: verify the candidate in staging first, then approve the push to `main` with its production deploy | None |
-| D13 | Sender for staging account emails, so the six-digit code flows can be audited. Options: (a) a custom SMTP sender for staging that costs nothing and needs no domain; (b) audit those steps with codes issued by the Supabase admin API, which leaves email delivery unverified; (c) leave them blocked until Phase 14 | (a) | Phase 1a (sign-up code and password recovery steps) |
+| D13 | Sender for staging account emails, so the six-digit code flows can be audited | Answered on 2026-11-26: a Gmail account dedicated to staging, with real delivery tests. The own-domain sender stays for production in Phase 14 | None |

@@ -1,6 +1,6 @@
 # A0 evidence: Clean Architecture and DDD move
 
-Local checks run on 2026-11-25. Result: **the candidate passes them. A0 is open**: the new API has not run in staging, and the candidate is not on `main` ([decision D12](../plans/next-release-execution-plan.md#decisions-that-need-the-owner)).
+Local checks run on 2026-11-25, staging checks on 2026-11-26. Result: **the candidate `a379210` passes both. A0 stays open until that commit is on `main`** ([decision D12](../plans/next-release-execution-plan.md#decisions-that-need-the-owner)).
 
 ## Candidate
 
@@ -8,9 +8,9 @@ Local checks run on 2026-11-25. Result: **the candidate passes them. A0 is open*
 | --- | --- |
 | `c3099a3` | `refactor(api)`: the backend grouped by capability, with a dependency-direction test |
 | `9390079` | `refactor(app)`: the app grouped by feature, with a dependency-direction test |
-| The commit that adds this file | Documentation: new code paths, retired documents and the execution plan |
+| `a379210` | Documentation: new code paths, retired documents and the execution plan |
 
-The base is `65a0594` (`origin/main`). The commits are on the local branch `release/next-release`.
+The base is `65a0594` (`origin/main`). The candidate was pushed to `release/next-release` on 2026-11-26. The commit that records the staging results sits on top of it and is not part of the candidate.
 
 ## Checks
 
@@ -48,7 +48,9 @@ Follow-ups it raised, none blocking:
 
 ## Limits and pending
 
-- The new backend has not run against a real database or model provider. That needs a deploy to staging or production.
+- The new backend has run in staging only, not in production.
+- The message retention job found nothing old enough to delete, so its deletion path did not run in staging. Unit tests cover it.
+- The transcription check sent a synthetic tone. It shows the route and the provider answer, not recognition quality.
 - Voice mode, chat screens and signed-in screens were not driven by hand.
 - `app/pubspec.lock` is not part of the candidate. With Flutter 3.47.4, resolving packages rewrites `test_api` from 0.7.14 to 0.7.12. The change comes from the toolchain, not from the move, and stays uncommitted.
 - Seen on the two screens while checking, for Phase 1a to record: the copy mixes voseo with «quieras» and «necesitas» ([#187](https://github.com/WGuillenDev/marlix/issues/187)).
@@ -56,10 +58,14 @@ Follow-ups it raised, none blocking:
 
 ## Staging verification
 
-Pending. The plan:
+`marlix-api-staging` was deployed by hand with the commit `a379210104c88437f13e9e4ddf427ac331dd63f8`, using the staging database and credentials already configured.
 
-1. Deploy the exact candidate commit to `marlix-api-staging` and confirm the deployed SHA.
-2. `GET /health` answers `ok`, and the unauthenticated requests of the side-by-side check answer as expected.
-3. `node tool/verify-integration.mjs staging` passes on `Pixel_8`.
-4. A staging-only script covers what the suite does not: onboarding, a streamed chat reply and transcription, with a throwaway account that it deletes.
-5. The service logs show no error from the startup jobs (memory and retention).
+| Check | Result |
+| --- | --- |
+| Deployed commit | The Render build log reads `Checking out commit a379210104c88437f13e9e4ddf427ac331dd63f8`, and the service shows `a379210` as live. The deployment record that Render sends to GitHub shows the head of `main` instead, so it does not identify a commit deployed by hand |
+| Staging script: health, security headers, help resources, protected routes without a token, forged token, malformed JSON, unknown route | Pass |
+| Staging script, with a throwaway account: sign-up, profile, onboarding (refused without consent, accepted once, refused twice), streamed voice reply, one interaction counted, streamed crisis reply, history, transcription (two refusals and one accepted clip), account deletion, no sign-in after deletion | Pass, 26 of 26 checks in total with the row above |
+| `node tool/verify-integration.mjs staging` on `Pixel_8` | 12 of 12 passed |
+| Crisis classifier | A harmless ambiguous message got a normal reply. An ambiguous risk message got the crisis reply, and the log shows the `classifier` layer |
+| Memory extraction | No memory before the idle window. After it, the background job added 2 facts, one about the synthetic message. The account was then deleted |
+| Service logs from the deploy to the end of the checks | No error. They show crisis activations and the extraction count, with no message text |
