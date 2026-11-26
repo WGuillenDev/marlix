@@ -1,6 +1,6 @@
 # A0 evidence: Clean Architecture and DDD move
 
-Local checks run on 2026-11-25, staging checks on 2026-11-26. Result: **the candidate `a379210` passes both. A0 stays open until that commit is on `main`** ([decision D12](../plans/next-release-execution-plan.md#decisions-that-need-the-owner)).
+Local checks run on 2026-11-25, staging checks on 2026-11-26. Result: **the candidate `a379210` passes both. A0 stays open until that code is on `main` and the production deploy is confirmed** ([decision D12](../plans/next-release-execution-plan.md#decisions-that-need-the-owner)).
 
 ## Candidate
 
@@ -10,7 +10,7 @@ Local checks run on 2026-11-25, staging checks on 2026-11-26. Result: **the cand
 | `9390079` | `refactor(app)`: the app grouped by feature, with a dependency-direction test |
 | `a379210` | Documentation: new code paths, retired documents and the execution plan |
 
-The base is `65a0594` (`origin/main`). The candidate was pushed to `release/next-release` on 2026-11-26. The commit that records the staging results sits on top of it and is not part of the candidate.
+The base is `65a0594` (`origin/main`). The candidate was pushed to `release/next-release` on 2026-11-26. The commits after `a379210` change only documentation, so `api/` and `app/` in the final candidate are the ones that were verified.
 
 ## Checks
 

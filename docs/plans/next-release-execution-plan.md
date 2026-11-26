@@ -1,6 +1,6 @@
 # Next release execution plan
 
-This file is the only active source for the next Marlix release. It records which phase is next, what is done, where the evidence is, and where to resume. The [phase tracking table](#6-phase-tracking) holds the current state. The A0 candidate passed its local and staging checks and waits for approval to reach `main`. Phase 1a is authorized and has not started.
+This file is the only active source for the next Marlix release. It records which phase is next, what is done, where the evidence is, and where to resume. The [phase tracking table](#6-phase-tracking) holds the current state. The A0 candidate passed its local and staging checks. Phase 1a is authorized and has not started. The staging email sender (SMTP) is pending.
 
 Lasting implementation decisions go to [`docs/decisions.md`](../decisions.md). Phase evidence goes to `docs/qa/phase-<n>-evidence.md`, one file per phase, with real commands and results. Use the approved [v0.2 design](../designs/marlix-v0-2.md) for acceptance criteria that this plan does not supersede. This plan governs the release sequence, selected tools, fallbacks and launch criteria.
 
@@ -71,7 +71,7 @@ For visual review, serve a Flutter web build when supported. If a feature requir
 
 ### Code layout
 
-Marlix keeps the Clean Architecture and domain-driven layout it is adopting. That move is committed locally and not yet on `main` (see row A0 in the [tracking table](#6-phase-tracking)). Code is grouped by capability:
+Marlix keeps the Clean Architecture and domain-driven layout it is adopting. Row A0 of the [tracking table](#6-phase-tracking) records the state of that move. Code is grouped by capability:
 
 - **API**: `api/src/modules/<capability>/{domain,application,infrastructure,presentation}`. Today's capabilities are `conversation`, `safety`, `memory`, `identity` and `usage`. `api/src/shared/` holds the model port (`application/ai/`), the provider adapters (`infrastructure/ai/`) and the configuration.
 - **App**: `app/lib/features/<capability>/{domain,application,infrastructure,presentation,composition}` for `account`, `conversation`, `safety`, `memory`, `settings`, `avatar` and `voice`, plus `app/lib/shared/` and `app/lib/bootstrap/`.
@@ -125,7 +125,7 @@ Phases 2, 3 and 4 do not depend on each other. Phases 8 to 17 depend on Phase 7.
 
 ### Phase 1. UX audit and bug fixes
 
-Status: `1a authorized on 2026-11-25, blocked by A0`. Deliveries 1b to 1d wait for their own instruction.
+Status: `1a authorized on 2026-11-25, not started`. It waits for A0 to be confirmed on `main` and for the staging email sender, which is pending. Deliveries 1b to 1d wait for their own instruction.
 
 - **Depends on:** row A0 (the architecture move has landed or the owner has decided how to handle it).
 - **Method:** a heuristic and functional audit guided by `ui-ux-pro-max`. It runs on the `Pixel_8` emulator against staging: the release APK, and a debug build when a step needs it. Each flow is a list of steps, and each step has an expected result and an observed result.
@@ -249,9 +249,9 @@ These facts decide whether a phase can push to `main` on its own. Each one was c
 
 | Phase | Status | Exit criterion | Evidence | Commit | Blockers | Next step |
 | --- | --- | --- | --- | --- | --- | --- |
-| 0. Plan consolidation | Done, committed locally | This plan exists, the old tracking files are retired, and active links point here | This plan | The documentation commit that follows `9390079` | Reaches `main` together with A0 | None |
-| A0. Architecture move | Verified in staging, not on `main` | API and app checks pass on the moved code, the docs that point at old paths are updated, the new API passes in staging, and the verified commit is on `main` | [A0 evidence](../qa/phase-a0-evidence.md) | `a379210` (on `release/next-release`) | Maintainer approval for the push to `main`, which deploys production | Push `a379210` to `main`, watch CI and the production deploy, check `/health` |
-| 1. UX audit and fixes | 1a authorized, blocked. 1b to 1d pending | See [Phase 1](#phase-1-ux-audit-and-bug-fixes) | `docs/qa/phase-1-evidence.md` (not created) | None | A0 on `main`. Staging sender not configured yet (D13) | Close A0, configure the staging sender, test real code delivery, run 1a |
+| 0. Plan consolidation | Done | This plan exists, the old tracking files are retired, and active links point here | This plan | `a379210` and the documentation commits after it | None. It reaches `main` with A0 | None |
+| A0. Architecture move | Verified in staging. Integration waits for approval | API and app checks pass on the moved code, the docs that point at old paths are updated, the new API passes in staging, and the verified code is on `main` | [A0 evidence](../qa/phase-a0-evidence.md) | `c3099a3`, `9390079`. Staging ran `a379210` | Maintainer approval for the push to `main`, which deploys production | After the approved push, confirm CI, the deployed commit and `/health`, and record them in this row |
+| 1. UX audit and fixes | 1a authorized, not started. 1b to 1d pending | See [Phase 1](#phase-1-ux-audit-and-bug-fixes) | `docs/qa/phase-1-evidence.md` (not created) | None | Staging SMTP pending (D13): the Gmail app password is not entered in Supabase staging. A0 confirmed on `main` | Next working day: the maintainer enters the Gmail app password in Supabase staging. Then configure the code templates and verify sign-up and password recovery in Phase 1a |
 | 2. DeepSeek evaluation | Not started | See [Phase 2](#phase-2-deepseek-evaluation) | None | None | Key and approved first top-up for the live run | After Phase 1, prepare the harness and synthetic fixtures while credentials are pending |
 | 3. Android voice spike | Not started | See [Phase 3](#phase-3-android-voice-spike) | None | None | S24 availability, listeners | Waits for Phase 1 |
 | 4. Reusable mascot spike | Not started | See [Phase 4](#phase-4-reusable-mascot-spike) | None | None | None | Waits for Phase 1 |
@@ -290,5 +290,5 @@ These items were open on the retired board on 2026-11-22. They keep their v0.2 a
 | D10 | The v0.2 items listed in C7 | Keep «Recordá esto» and the greeting, defer the rest | Phase planning after Phase 7 |
 | D11 | Who lands the architecture move (row A0) | Answered on 2026-11-25: verify it and commit it. Integration follows D12 | None |
 | D12 | How to verify and integrate changes under `api/` while a push to `main` deploys production | Answered on 2026-11-26 for A0: verify the candidate in staging first, then approve the push to `main` with its production deploy | None |
-| D13 | Dedicated Gmail SMTP for staging | Owner enters the app password in Supabase staging. Run real delivery checks using the six-digit templates | Registration and recovery email delivery in Phase 1a |
+| D13 | Dedicated Gmail SMTP for staging. **Pending setup** | The maintainer enters the app password in Supabase staging. Then configure the six-digit templates and run real delivery checks | Registration and recovery email delivery in Phase 1a |
 | D14 | Review three `ui-ux-pro-max` proposals in the owner's Chrome with WebMobileFirst | Owner picks one option or a combination. Record approval before implementing the Flutter redesign | Phase 7 |
