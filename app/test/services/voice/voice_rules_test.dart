@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marlix/models/voice_config.dart';
-import 'package:marlix/services/voice/native_voice_engine.dart';
-import 'package:marlix/services/voice/sentences.dart';
-import 'package:marlix/services/voice/voice_planner.dart';
+import 'package:marlix/features/voice/domain/voice_config.dart';
+import 'package:marlix/features/voice/infrastructure/native_voice_engine.dart';
+import 'package:marlix/features/voice/domain/sentences.dart';
+import 'package:marlix/features/voice/application/voice_planner.dart';
 
 const nativeOnly = VoiceConfig(
   engine: VoiceEngineKind.native,

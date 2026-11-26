@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marlix/services/voice/echo.dart';
+import 'package:marlix/features/voice/domain/echo.dart';
 
 void main() {
   group('speechWords', () {

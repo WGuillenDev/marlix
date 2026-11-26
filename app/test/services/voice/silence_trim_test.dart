@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marlix/services/voice/silence_trim.dart';
+import 'package:marlix/features/voice/domain/silence_trim.dart';
 
 void main() {
   const rate = 1000;

@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marlix/screens/help_screen.dart';
-import 'package:marlix/services/help_resources.dart';
+import 'package:marlix/features/safety/presentation/help_screen.dart';
+import 'package:marlix/features/safety/presentation/help_resources.dart';
 
 import '../helpers/fake_backend.dart';
 

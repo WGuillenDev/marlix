@@ -1,13 +1,14 @@
+import 'package:marlix/bootstrap/storage_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marlix/models/profile.dart';
-import 'package:marlix/models/voice_config.dart';
-import 'package:marlix/screens/onboarding/profile_controller.dart';
-import 'package:marlix/screens/voice/voice_controller.dart';
-import 'package:marlix/services/help_resources.dart';
-import 'package:marlix/services/voice/voice_planner.dart';
-import 'package:marlix/services/voice/voice_providers.dart';
+import 'package:marlix/features/account/domain/profile.dart';
+import 'package:marlix/features/voice/domain/voice_config.dart';
+import 'package:marlix/features/account/presentation/profile_controller.dart';
+import 'package:marlix/features/voice/presentation/voice_controller.dart';
+
+import 'package:marlix/features/voice/application/voice_planner.dart';
+import 'package:marlix/features/voice/composition/voice_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/voice/voice_fakes.dart';

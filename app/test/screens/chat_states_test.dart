@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marlix/screens/chat/chat_screen.dart';
-import 'package:marlix/screens/help_screen.dart';
-import 'package:marlix/widgets/chat_states.dart';
-import 'package:marlix/widgets/phone_format.dart';
-import 'package:marlix/widgets/message_bubble.dart';
-import 'package:marlix/widgets/typing_indicator.dart';
+import 'package:marlix/features/conversation/presentation/chat_screen.dart';
+import 'package:marlix/features/safety/presentation/help_screen.dart';
+import 'package:marlix/features/conversation/presentation/widgets/chat_states.dart';
+import 'package:marlix/features/safety/presentation/phone_format.dart';
+import 'package:marlix/features/conversation/presentation/widgets/message_bubble.dart';
+import 'package:marlix/features/conversation/presentation/widgets/typing_indicator.dart';
 
 import '../helpers/fake_backend.dart';
 

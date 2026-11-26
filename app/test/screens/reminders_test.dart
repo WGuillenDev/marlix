@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marlix/screens/chat/chat_screen.dart';
-import 'package:marlix/screens/settings_screen.dart';
-import 'package:marlix/services/reminders.dart';
+import 'package:marlix/features/conversation/presentation/chat_screen.dart';
+import 'package:marlix/features/settings/presentation/settings_screen.dart';
+import 'package:marlix/features/settings/presentation/reminders.dart';
 
 import '../helpers/fake_backend.dart';
 

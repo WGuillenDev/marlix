@@ -1,3 +1,5 @@
+import 'package:marlix/bootstrap/storage_providers.dart';
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -8,14 +10,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:marlix/app.dart';
-import 'package:marlix/models/reminder_config.dart';
-import 'package:marlix/services/auth_service.dart';
-import 'package:marlix/services/dialer.dart';
-import 'package:marlix/services/help_resources.dart';
-import 'package:marlix/services/marlix_api.dart';
-import 'package:marlix/services/microphone_permission.dart';
-import 'package:marlix/services/reminder_scheduler.dart';
-import 'package:marlix/services/reminders.dart';
+import 'package:marlix/features/settings/domain/reminder_config.dart';
+import 'package:marlix/features/account/application/auth_service.dart';
+import 'package:marlix/features/account/presentation/session_state.dart';
+import 'package:marlix/features/safety/application/dialer.dart';
+import 'package:marlix/features/safety/composition/dialer_provider.dart';
+
+import 'package:marlix/shared/infrastructure/http/marlix_api.dart';
+import 'package:marlix/bootstrap/api_providers.dart';
+import 'package:marlix/features/voice/application/microphone_permission.dart';
+import 'package:marlix/features/voice/composition/microphone_provider.dart';
+import 'package:marlix/features/settings/application/reminder_scheduler.dart';
+import 'package:marlix/features/settings/composition/reminder_scheduler_provider.dart';
+import 'package:marlix/features/settings/presentation/reminders.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Relative to now, so the limit logic behaves the same on any date.

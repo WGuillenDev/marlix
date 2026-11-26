@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marlix/config/app_config.dart';
+import 'package:marlix/bootstrap/app_config.dart';
 
 const supabaseUrl = 'https://abcdefghijklmnop.supabase.co';
 const publishableKey = 'sb_publishable_test-key';

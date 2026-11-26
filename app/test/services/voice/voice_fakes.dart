@@ -1,10 +1,10 @@
 import 'dart:async';
 
-import 'package:marlix/models/voice_config.dart';
-import 'package:marlix/services/voice/device_facts.dart';
-import 'package:marlix/services/voice/speech_recognizer.dart';
-import 'package:marlix/services/voice/voice_engine.dart';
-import 'package:marlix/services/voice/voice_model_store.dart';
+import 'package:marlix/features/voice/domain/voice_config.dart';
+import 'package:marlix/features/voice/application/device_facts.dart';
+import 'package:marlix/features/voice/application/speech_recognizer.dart';
+import 'package:marlix/features/voice/application/voice_engine.dart';
+import 'package:marlix/features/voice/application/voice_model.dart';
 
 /// A phone described in a test.
 class FakeFacts implements DeviceFacts {

@@ -1,13 +1,15 @@
+import 'package:marlix/shared/infrastructure/local/preferences.dart';
+import 'package:marlix/features/voice/infrastructure/voice_memory.dart';
+
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marlix/models/voice_config.dart';
-import 'package:marlix/services/voice/device_facts.dart';
-import 'package:marlix/services/voice/voice_engine.dart';
-import 'package:marlix/services/voice/voice_memory.dart';
-import 'package:marlix/services/voice/voice_model_store.dart';
-import 'package:marlix/services/voice/voice_planner.dart';
-import 'package:marlix/services/voice/voice_service.dart';
+import 'package:marlix/features/voice/domain/voice_config.dart';
+import 'package:marlix/features/voice/application/device_facts.dart';
+import 'package:marlix/features/voice/application/voice_engine.dart';
+import 'package:marlix/features/voice/application/voice_model.dart';
+import 'package:marlix/features/voice/application/voice_planner.dart';
+import 'package:marlix/features/voice/application/voice_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'voice_fakes.dart';
@@ -38,14 +40,14 @@ class Rig {
     return Rig._(
       facts ?? FakeFacts(),
       model ?? FakeModel(ready: true),
-      VoiceMemory(preferences),
+      LocalVoiceMemory(LocalPreferences(preferences)),
       config,
     );
   }
 
   final FakeFacts facts;
   final FakeModel model;
-  final VoiceMemory memory;
+  final LocalVoiceMemory memory;
   final VoiceConfig config;
   final statuses = <VoiceStatus>[];
   final native = FakeEngine(VoiceEngineKind.native);

@@ -4,12 +4,13 @@ The Flutter app (Android first). Setup and commands are in the [development guid
 
 | Folder | Contents |
 |---|---|
-| `lib/screens/` | One folder or file per screen, with its Riverpod controller next to it. |
-| `lib/widgets/` | Widgets shared by several screens. |
-| `lib/models/` | Data classes, such as the API's request and response bodies. |
-| `lib/services/` | Communication with the backend (`MarlixApi`, the only code that uses `package:http`), with Supabase Auth (`AuthService`, the only code that uses `supabase_flutter`, for sign-up and sign-in only) and the device (the dialer, `ReminderScheduler`, the only code that uses `flutter_local_notifications`, and `MicrophonePermission`, the only code that uses `permission_handler`). |
-| `lib/config/` | Configuration per environment (`AppConfig`). |
-| `lib/theme/` | Colors and theme from the [style guide](../docs/diagrams/wireframes/README.md). |
+| `lib/features/<feature>/domain/` | Models and pure rules, with no dependency on plugins or Riverpod. |
+| `lib/features/<feature>/application/` | Use cases and ports for the feature. |
+| `lib/features/<feature>/infrastructure/` | Adapters for services and device plugins. |
+| `lib/features/<feature>/presentation/` | Widgets and Riverpod controllers. |
+| `lib/features/<feature>/composition/` | Provider wiring for feature-specific adapters. |
+| `lib/shared/` | The HTTP client, local preferences and theme used across features. |
+| `lib/bootstrap/` | Environment configuration and shared provider wiring. |
 | `config/` | Environment files for `--dart-define-from-file`. |
 | `integration_test/` | Tests that call the real backend from a device or emulator. |
 | `assets/` | The header avatar (S0-5 prototype until S5-2), the SVG layers of the final avatar (S5-1), the time and texts of the daily reminders (`config/reminders.json`) and the fonts. |

@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marlix/screens/auth_screen.dart';
-import 'package:marlix/screens/chat/chat_screen.dart';
-import 'package:marlix/services/auth_service.dart';
+import 'package:marlix/features/account/presentation/auth_screen.dart';
+import 'package:marlix/features/conversation/presentation/chat_screen.dart';
+import 'package:marlix/features/account/application/auth_service.dart';
 
 import '../helpers/fake_backend.dart';
 

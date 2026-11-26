@@ -3,10 +3,10 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marlix/services/api_exception.dart';
-import 'package:marlix/services/voice/audio_capture.dart';
-import 'package:marlix/services/voice/server_speech_recognizer.dart';
-import 'package:marlix/services/voice/speech_recognizer.dart';
+import 'package:marlix/shared/application/api_exception.dart';
+import 'package:marlix/features/voice/infrastructure/audio_capture.dart';
+import 'package:marlix/features/voice/infrastructure/server_speech_recognizer.dart';
+import 'package:marlix/features/voice/application/speech_recognizer.dart';
 
 import 'energy_voice_activity.dart';
 

@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marlix/widgets/message_bubble.dart';
-import 'package:marlix/widgets/typing_indicator.dart';
+import 'package:marlix/features/conversation/presentation/widgets/message_bubble.dart';
+import 'package:marlix/features/conversation/presentation/widgets/typing_indicator.dart';
 
 import '../helpers/fake_backend.dart';
 

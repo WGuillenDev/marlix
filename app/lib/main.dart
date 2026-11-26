@@ -1,28 +1,28 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app.dart';
-import 'config/app_config.dart';
-import 'models/reminder_config.dart';
-import 'services/auth_service.dart';
-import 'services/help_resources.dart';
-import 'services/reminders.dart';
-import 'services/voice/voice_model_store.dart';
-import 'services/voice/voice_providers.dart';
+import 'bootstrap/app_config.dart';
+import 'bootstrap/storage_providers.dart';
+import 'features/account/infrastructure/auth_service.dart';
+import 'features/account/presentation/session_state.dart';
+import 'features/settings/domain/reminder_config.dart';
+import 'features/settings/presentation/reminders.dart';
+import 'features/voice/application/voice_model.dart';
+import 'features/voice/composition/voice_providers.dart';
+import 'features/voice/infrastructure/voice_model_store.dart';
 
 Future<void> main() async {
-  // Fails at startup, not on the first request, when the configuration is wrong.
   final config = AppConfig.fromEnvironment();
   WidgetsFlutterBinding.ensureInitialized();
-  // Loaded before the first frame so the help lines are there offline at once.
+  // Load the offline help cache before the first frame.
   final preferences = await SharedPreferences.getInstance();
-  // Restores the saved session, so a signed-in user opens straight to the chat.
   final auth = await SupabaseAuthService.initialize(config);
   final reminders = ReminderConfig.fromJson(
     jsonDecode(await rootBundle.loadString('assets/config/reminders.json')) as Map<String, Object?>,

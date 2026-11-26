@@ -3,8 +3,10 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:marlix/screens/auth_screen.dart';
-import 'package:marlix/services/auth_service.dart';
+import 'package:marlix/features/account/presentation/birth_date_input_formatter.dart';
+import 'package:marlix/features/account/infrastructure/auth_service.dart';
+import 'package:marlix/features/account/application/auth_service.dart';
+import 'package:marlix/features/account/domain/minimum_age.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 Map<String, Object?> sessionJson() => {

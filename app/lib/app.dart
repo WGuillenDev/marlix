@@ -1,14 +1,14 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/material.dart';
 
-import 'screens/auth_screen.dart';
-import 'screens/onboarding/profile_gate.dart';
-import 'services/auth_service.dart';
-import 'services/reminder_scheduler.dart';
-import 'services/reminders.dart';
-import 'theme/app_theme.dart';
+import 'features/account/presentation/auth_screen.dart';
+import 'features/account/presentation/profile_gate.dart';
+import 'features/account/presentation/session_state.dart';
+import 'features/settings/composition/reminder_scheduler_provider.dart';
+import 'features/settings/presentation/reminders.dart';
+import 'shared/presentation/app_theme.dart';
 
 class MarlixApp extends ConsumerStatefulWidget {
   const MarlixApp({super.key});
@@ -25,8 +25,7 @@ class _MarlixAppState extends ConsumerState<MarlixApp> with WidgetsBindingObserv
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // Tapping a reminder lands on the chat, the root screen, not on whatever
-    // was open.
+    // Open the chat root when a reminder is tapped.
     _reminderTaps = ref.read(reminderSchedulerProvider).taps.listen((_) {
       _navigator.currentState?.popUntil((route) => route.isFirst);
     });
@@ -40,13 +39,11 @@ class _MarlixAppState extends ConsumerState<MarlixApp> with WidgetsBindingObserv
     super.dispose();
   }
 
-  // Coming back to the app counts as opening it.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) _rescheduleReminders();
   }
 
-  /// The reminders only exist while there is a session.
   void _rescheduleReminders() {
     final reminders = ref.read(remindersProvider.notifier);
     unawaited(ref.read(signedInUserProvider) == null ? reminders.cancel() : reminders.reschedule());
@@ -54,8 +51,7 @@ class _MarlixAppState extends ConsumerState<MarlixApp> with WidgetsBindingObserv
 
   @override
   Widget build(BuildContext context) {
-    // When the session starts or ends, screens opened on top (settings, help)
-    // are closed, so none of the previous session stays on screen.
+    // Discard screens opened by a previous session.
     ref.listen(signedInUserProvider, (_, _) {
       _navigator.currentState?.popUntil((route) => route.isFirst);
       _rescheduleReminders();

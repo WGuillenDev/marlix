@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marlix/services/voice/wav.dart';
+import 'package:marlix/features/voice/domain/wav.dart';
 
 void main() {
   test('wraps the PCM in the 16 kHz mono 16-bit header the backend checks', () {

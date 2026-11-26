@@ -1,8 +1,9 @@
+import 'package:marlix/features/voice/domain/voice_frame.dart';
+
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marlix/services/voice/turn_detector.dart';
-import 'package:marlix/services/voice/voice_activity.dart';
+import 'package:marlix/features/voice/domain/turn_detector.dart';
 
 import 'energy_voice_activity.dart';
 

@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marlix/screens/chat/avatar_controller.dart';
-import 'package:marlix/screens/onboarding/profile_controller.dart';
-import 'package:marlix/widgets/avatar_marlix.dart';
+import 'package:marlix/features/avatar/presentation/avatar_controller.dart';
+import 'package:marlix/features/account/presentation/profile_controller.dart';
+import 'package:marlix/features/avatar/presentation/avatar_marlix.dart';
 
 import '../helpers/fake_backend.dart';
 

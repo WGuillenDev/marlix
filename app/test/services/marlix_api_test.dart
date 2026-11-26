@@ -6,9 +6,9 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:marlix/models/chat.dart';
-import 'package:marlix/services/api_exception.dart';
-import 'package:marlix/services/marlix_api.dart';
+import 'package:marlix/features/conversation/domain/chat.dart';
+import 'package:marlix/shared/application/api_exception.dart';
+import 'package:marlix/shared/infrastructure/http/marlix_api.dart';
 
 const token = 'session-access-token';
 final baseUrl = Uri.parse('https://api.test');

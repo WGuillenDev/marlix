@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marlix/models/profile.dart';
-import 'package:marlix/models/voice_config.dart';
+import 'package:marlix/features/account/domain/profile.dart';
+import 'package:marlix/features/voice/domain/voice_config.dart';
 
 Map<String, Object?> voiceJson() => {
   'engine': 'supertonic-3',

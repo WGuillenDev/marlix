@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marlix/screens/chat/reply_reader.dart';
-import 'package:marlix/screens/voice/conversation_controller.dart';
-import 'package:marlix/screens/voice/speech_controller.dart';
+import 'package:marlix/features/conversation/presentation/reply_reader.dart';
+import 'package:marlix/features/voice/presentation/conversation_controller.dart';
+import 'package:marlix/features/voice/presentation/speech_controller.dart';
 
 ConversationPhase _phase({
   ConversationMode mode = ConversationMode.on,

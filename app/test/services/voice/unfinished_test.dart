@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marlix/services/voice/unfinished.dart';
+import 'package:marlix/features/voice/domain/unfinished.dart';
 
 void main() {
   group('endsUnfinished', () {

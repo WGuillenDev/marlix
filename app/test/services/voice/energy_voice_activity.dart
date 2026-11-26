@@ -1,8 +1,10 @@
+import 'package:marlix/features/voice/domain/voice_frame.dart';
+
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
-import 'package:marlix/services/voice/voice_activity.dart';
+import 'package:marlix/features/voice/application/voice_activity.dart';
 
 /// [ms] of constant audio whose loudness is [level] (0 to 1).
 Uint8List pcmOf(int ms, double level) {

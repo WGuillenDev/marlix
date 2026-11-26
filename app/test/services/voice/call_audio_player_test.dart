@@ -2,7 +2,7 @@ import 'dart:typed_data';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marlix/services/voice/call_audio_player.dart';
+import 'package:marlix/features/voice/infrastructure/call_audio_player.dart';
 import 'package:supertonic_flutter/supertonic_flutter.dart';
 
 class _FakePlayer implements AudioPlayer {

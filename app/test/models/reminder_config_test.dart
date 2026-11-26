@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marlix/models/json_reader.dart';
-import 'package:marlix/models/reminder_config.dart';
+import 'package:marlix/shared/json_reader.dart';
+import 'package:marlix/features/settings/domain/reminder_config.dart';
 
 List<String> week(String text) => List.filled(7, text);
 

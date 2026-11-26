@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:marlix/screens/auth_screen.dart';
-import 'package:marlix/screens/memories/memories_screen.dart';
+import 'package:marlix/features/account/presentation/auth_screen.dart';
+import 'package:marlix/features/memory/presentation/memories_screen.dart';
 
 import '../helpers/fake_backend.dart';
 

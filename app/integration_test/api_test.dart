@@ -4,12 +4,13 @@ import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:integration_test/integration_test.dart';
-import 'package:marlix/config/app_config.dart';
-import 'package:marlix/models/chat.dart';
-import 'package:marlix/screens/chat/avatar_controller.dart';
-import 'package:marlix/services/api_exception.dart';
-import 'package:marlix/services/auth_service.dart';
-import 'package:marlix/services/marlix_api.dart';
+import 'package:marlix/bootstrap/app_config.dart';
+import 'package:marlix/features/conversation/domain/chat.dart';
+import 'package:marlix/features/avatar/presentation/avatar_controller.dart';
+import 'package:marlix/shared/application/api_exception.dart';
+import 'package:marlix/features/account/infrastructure/auth_service.dart';
+import 'package:marlix/features/account/application/auth_service.dart';
+import 'package:marlix/shared/infrastructure/http/marlix_api.dart';
 
 /// Calls the real backend from the app on a device or emulator, with the same
 /// configuration file as `flutter run`. It signs up its own throwaway account

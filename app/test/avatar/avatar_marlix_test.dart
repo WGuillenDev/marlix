@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marlix/widgets/avatar_marlix.dart';
+import 'package:marlix/features/avatar/presentation/avatar_marlix.dart';
 
 const _folder = 'assets/avatars/marlix';
 

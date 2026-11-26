@@ -1,8 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marlix/services/voice/native_voice_engine.dart';
-import 'package:marlix/services/voice/supertonic_voice_engine.dart';
+import 'package:marlix/features/voice/infrastructure/native_voice_engine.dart';
+import 'package:marlix/features/voice/infrastructure/supertonic_voice_engine.dart';
 
 void main() {
   group('Supertonic levels', () {

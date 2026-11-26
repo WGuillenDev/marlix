@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marlix/models/voice_config.dart';
-import 'package:marlix/services/voice/voice_engine.dart';
-import 'package:marlix/services/voice/voice_providers.dart';
-import 'package:marlix/widgets/avatar_marlix.dart';
+import 'package:marlix/features/voice/domain/voice_config.dart';
+import 'package:marlix/features/voice/application/voice_engine.dart';
+import 'package:marlix/features/voice/composition/voice_providers.dart';
+import 'package:marlix/features/avatar/presentation/avatar_marlix.dart';
 
 import '../helpers/fake_backend.dart';
 import '../services/voice/voice_fakes.dart';

@@ -6,7 +6,8 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:marlix/services/voice/voice_model_store.dart';
+import 'package:marlix/features/voice/infrastructure/voice_model_store.dart';
+import 'package:marlix/features/voice/application/voice_model.dart';
 
 List<int> bytesOf(String text) => utf8.encode(text);
 

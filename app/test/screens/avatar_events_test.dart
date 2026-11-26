@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:marlix/models/chat.dart';
-import 'package:marlix/screens/chat/avatar_controller.dart';
-import 'package:marlix/screens/chat/chat_screen.dart';
-import 'package:marlix/widgets/avatar_marlix.dart';
+import 'package:marlix/features/conversation/domain/chat.dart';
+import 'package:marlix/features/avatar/presentation/avatar_controller.dart';
+import 'package:marlix/features/conversation/presentation/chat_screen.dart';
+import 'package:marlix/features/avatar/presentation/avatar_marlix.dart';
 
 import '../helpers/fake_backend.dart';
 
