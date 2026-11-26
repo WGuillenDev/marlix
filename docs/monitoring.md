@@ -9,7 +9,7 @@ What watches marlix, what each alert means and what to do. Everything is free an
 | Body | Meaning | What to do |
 |---|---|---|
 | `{"status":"ok"}` | Up, counting replies and with Groq quota left. | Nothing. |
-| `"problems":["usage_counter"]` | The last attempt to count a reply failed (usually a migration not applied). | Run `docs/verify-migrations.sql` in the Supabase SQL Editor; every row must say `ok` ([CONTRIBUTING](../CONTRIBUTING.md#database-migrations)). |
+| `"problems":["usage_counter"]` | The last attempt to count a reply failed (usually a migration not applied). | Run `docs/verify-migrations.sql` in the Supabase SQL Editor; every row must say `ok` ([migration procedure](development.md#database-migrations)). |
 | `"problems":["groq_quota"]` | A Groq model has 20% or less of its daily requests left (it resets about every 24 hours; the body goes back to `ok` by itself). | See [Groq quota](#groq-quota). |
 
 It always answers `200` when degraded, so Render does not restart a healthy process. That is why the monitor must look at the **body**, not only the status code.

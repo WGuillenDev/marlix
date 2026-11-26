@@ -4,7 +4,7 @@
 -- Supabase provides (`auth.users`, `auth.uid()`) and on its `authenticated`
 -- role, so it does not run on plain PostgreSQL.
 --
--- Run it once on a clean project. See docs/erd.md for the diagram and the
+-- Run it once on a clean project. See docs/erd.md for the data model and the
 -- reasoning behind each table.
 --
 -- Access model:

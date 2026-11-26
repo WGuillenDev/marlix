@@ -4,13 +4,13 @@ What marlix does when a message shows a risk signal. This is the project's non-n
 
 > **marlix is not therapy and does not replace professional mental health care.** The protocol does not try to handle a crisis in the chat: it points the person to someone who can help, starting with 9-1-1.
 
-See also the [chat sequence](diagrams/chat-sequence.md), the [architecture](architecture.md#the-crisis-filter-comes-first) and the [API contract](api-contract.md#post-v1chat).
+See the [architecture](architecture.md#the-crisis-filter-comes-first) and the [chat endpoint](api-contract.md#post-v1chat).
 
 ## Where it runs
 
 Every message to `POST /v1/chat`, in text and in voice mode, goes through the filter **before** anything else is done with it. A crisis never reaches the conversation model.
 
-The filter lives in code (`api/src/services/crisis/`), not in the system prompt: a model can be wrong or manipulated, and a rule in code cannot.
+The filter lives in code (`api/src/modules/safety/`), not in the system prompt: a model can be wrong or manipulated, and a rule in code cannot.
 
 ## The three outcomes
 
@@ -38,7 +38,7 @@ Figurative uses of death that are part of everyday speech are removed before com
 
 ## The signals
 
-The lists are in [`api/src/services/crisis/signals.ts`](../api/src/services/crisis/signals.ts). The repository is public, so **the filter does not rely on the signals being secret**: knowing them does not help anyone avoid help, and anyone can propose additions.
+The lists are in [`api/src/modules/safety/domain/signals.ts`](../api/src/modules/safety/domain/signals.ts). The repository is public, so **the filter does not rely on the signals being secret**: knowing them does not help anyone avoid help, and anyone can propose additions.
 
 To change them:
 
@@ -52,7 +52,7 @@ Messages marked `ambiguous` get an isolated classification by an LLM (S2-2), so 
 
 - **Only ambiguous messages.** A clear risk never goes to the classifier, and normal messages skip it.
 - **Only the current message.** The request carries the classification policy and that one message: no history, no memory and no personality prompt. A message that would go to Groq anyway if it were normal is not exposed further.
-- **A fixed answer.** The policy ([`api/src/config/crisis-classifier-prompt.ts`](../api/src/config/crisis-classifier-prompt.ts)) asks for one word, `RISK` or `SAFE`. Only an exact `SAFE` lets the message through.
+- **A fixed answer.** The policy ([`api/src/modules/safety/infrastructure/crisis-classifier-prompt.ts`](../api/src/modules/safety/infrastructure/crisis-classifier-prompt.ts)) asks for one word, `RISK` or `SAFE`. Only an exact `SAFE` lets the message through.
 - **Repeatable.** The classifier is called with temperature 0, so the same message always gets the same answer.
 - **Conservative on failure.** An error, a quota error or a timeout counts as a crisis. The timeout is short (`CRISIS_CLASSIFIER_TIMEOUT_MS`, 5 seconds by default) and there is no retry.
 - **Its own model.** It uses `CRISIS_CLASSIFIER_MODEL` (`openai/gpt-oss-20b` by default), not the chat model, so it does not spend the conversation's quota. Why this model is in [decisions.md](decisions.md).
@@ -118,7 +118,7 @@ Each activation is one JSON line in the server logs:
 
 To count activations for a period, search the Render logs of `marlix-api` for `crisis_activation` and filter by date. A rising `classifier_failure` count means the classifier is failing (quota, timeouts) and every ambiguous message is being treated as risk.
 
-The backend has no database until S4-1, so the record lives in the logs, which Render only keeps for a limited time. The record goes through the `ActivationLog` interface (`api/src/services/crisis/activation-log.ts`), so Sprint 4 can store it in a database table by replacing that one implementation.
+The backend has no database until S4-1, so the record lives in the logs, which Render only keeps for a limited time. The record goes through the `ActivationLog` interface (`api/src/modules/safety/application/activation-log.ts`), so Sprint 4 can store it in a database table by replacing that one implementation.
 
 ## Tests
 

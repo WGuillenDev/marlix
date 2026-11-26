@@ -1,10 +1,10 @@
 # Avatar
 
-The avatar is drawn as SVG layers and animated in Flutter code (`app/lib/widgets/avatar_marlix.dart`). No paid tool is needed to change it.
+The avatar is drawn as SVG layers and animated in Flutter code (`app/lib/features/avatar/presentation/avatar_marlix.dart`). No paid tool is needed to change it.
 
 ## Layer template
 
-An avatar is a folder of SVG files with these fixed names. Every file uses the same `0 0 512 512` canvas and origin, so stacking them in this order, back to front, assembles the character. The marlix avatar follows the validated prototype (`docs/diagrams/wireframes/style-guide/avatar.png`): a round tricolor beagle in a sleeveless coat that reads "marlix".
+An avatar is a folder of SVG files with these fixed names. Every file uses the same `0 0 512 512` canvas and origin, so stacking them in this order, back to front, assembles the character. The current marlix avatar is a round tricolor beagle in a sleeveless coat that reads "marlix".
 
 | Layer | What it is |
 | --- | --- |
@@ -54,7 +54,7 @@ The ring, thought bubbles and hearts are painted by code, so they need no layer.
 
 ## In the chat
 
-The avatar lives in the header of the chat screen, 64 px (48 px while the keyboard is open, to leave room for the messages). `AvatarController` (`app/lib/screens/chat/avatar_controller.dart`) is the only place that decides its state; screens just watch `avatarStateProvider`.
+The avatar lives in the header of the chat screen, 64 px (48 px while the keyboard is open, to leave room for the messages). `AvatarController` (`app/lib/features/avatar/presentation/avatar_controller.dart`) is the only place that decides its state; screens just watch `avatarStateProvider`.
 
 | Moment | State |
 | --- | --- |

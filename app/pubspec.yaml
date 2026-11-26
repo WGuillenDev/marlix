@@ -42,8 +42,7 @@ flutter:
   uses-material-design: true
 
   assets:
-    # Prototype from S0-5 (docs/diagrams/wireframes/style-guide/avatar.png)
-    # until the final artwork (S5-1).
+    # Raster avatar assets.
     - assets/avatar/marlix.png
     - assets/avatar/marlix-happy.png
     # Layers of the final artwork (S5-1), stacked by the avatar widget (S5-2).

@@ -2,8 +2,9 @@
 
 *   **Author:** WGuillenDev
 *   **Status:** Approved (2026-11-20). Public edition, 2026-11-21.
-*   **Public edition:** this file keeps the product scope, the architecture, the launch criteria and the development flow that contributors and reviewers need. Budget figures, account and provider-console details, the release schedule, open questions about accounts and billing, and notes about security work still in progress are kept in the maintainer's private notes, together with every task's full acceptance criteria. Pull requests carry the evidence for each criterion they close.
-*   **Language:** this file is in English because everything in the repository is in English (`CONTRIBUTING.md`, "Language and naming"). Only in-app copy is in Spanish, and it appears here in guillemets or code, for example «Sala de Marlix» and «Recordá esto».
+*   **Superseded in part (2026-11-25):** the [next release execution plan](../plans/next-release-execution-plan.md) replaces this design's sequence and milestones (section 9) and its earlier development flow, which is now maintained separately. The scope, the constraints, the Sala rules and the acceptance criteria of each task stay in force unless the plan lists a change for the owner's decision.
+*   **Public edition:** this file keeps the product scope, architecture and launch criteria. Budget figures, account and provider-console details, the release schedule, open questions about accounts and billing, and notes about security work still in progress are kept in the maintainer's private notes, together with every task's full acceptance criteria.
+*   **Language:** this file is in English because everything in the repository is in English ([engineering rules](../architecture.md#engineering-rules)). Only in-app copy is in Spanish, and it appears here in guillemets or code, for example «Sala de Marlix» and «Recordá esto».
 
 --------------------------------------------------------------------------------
 
@@ -20,13 +21,13 @@ This design defines v0.2: what gets built, what gets tested before it is include
 **Constraints that are not negotiable:**
 
 *   A strict monthly spending cap for the whole operation, enforced in code by the spend governor (section 3.2). Nothing depends on revenue from users.
-*   One person develops and operates everything. In this document that person is **the author** (also called **the owner** when the text is about operating the service). **The assistant** is an AI coding assistant that works under the owner's rules and authorizations ([workflow](../workflow.md#agent-assisted-work)).
+*   One person develops and operates everything. In this document that person is **the author** (also called **the owner** when the text is about operating the service). **The assistant** is an AI coding assistant that works under the owner's rules and authorizations (workflow).
 *   The crisis protocol and the help lines do not depend on any spending cap.
 *   No diagnosis and no treatment. The person tells Marlix how they feel by voice or text; the camera is only used for the avatar and the environment, never to infer symptoms.
 *   Real user data does not go to providers that lack zero data retention (ZDR) or an updated privacy policy.
 *   The Sala is text only and is separate from the private chat with Marlix and from its memory.
 *   The Sala is not opened to everyone while the coexistence and moderation controls are missing.
-*   The rules in `CONTRIBUTING.md` stay in force, except those this design changes explicitly in the section "Marlix v0.2 development flow".
+*   The [engineering rules](../architecture.md#engineering-rules) apply. The execution plan governs the current development flow.
 
 *   Terms for help used in this document: the **help lines** are the 9-1-1 and Línea Aquí Estoy phone lines; the **help button** opens the help screen with those lines; the **help response** is the crisis reply text (`api/config/crisis.json`) together with the help lines.
 *   Identifiers used in this document: **S#-#** is a card of the backlog used before v0.2, whose decisions are recorded in `docs/decisions.md` (for example S7-15, the signed release APK); **C#** and **Q#** are open questions; **V2-NN** is a task of the Detailed Implementation Plan.
@@ -136,7 +137,7 @@ They are two different cases and are treated differently:
 Questions about accounts, billing, prices and the release schedule are tracked in the maintainer's private notes. These remain open in public:
 
 *   **C7. A health professional to review the medical-urgency layer.** Without that review, the layer does not ship. **Task:** V2-27.
-*   **C10. Adopt GitHub Issues and Projects for the v0.2 backlog.** The author approves the proposal in section 10.9 before the board and its backlog issues are created. Until then, use the [interim workflow](../workflow.md#interim-mode-before-c10). **Task:** V2-04.
+*   **C10. Adopt GitHub Issues and Projects for the v0.2 backlog.** The maintainer decides whether to adopt the board and create backlog issues. See the [execution plan](../plans/next-release-execution-plan.md#decisions-that-need-the-owner). **Task:** V2-04.
 *   **Q12. Model for memory extraction and savings mode.** It must differ from the classifier's model. It is chosen with an evaluation of the extractor. **Task:** V2-12a, V2-11.
 *   **Q15. Moderation coverage.** One host does not cover 24 hours. The options are in [Q15. Moderation coverage](#q15-moderation-coverage). **Blocks:** V2-24 and V2-26.
 *   **Q16. What happens in the channel to a message that expresses distress.** The options are in [Q16. A message that expresses distress](#q16-a-message-that-expresses-distress). What the host sees is already decided (consent first, section 3.6). **Blocks:** V2-24 and V2-26.
@@ -212,20 +213,6 @@ Questions about accounts, billing, prices and the release schedule are tracked i
 *   **When**: they choose a palette, pattern and accessories, and tilt, invert and straighten the phone.
 *   **Then**: the avatar updates, wobbles when tilted, falls toward the edge when inverted and recovers when straightened. With reduced motion (the app's own setting or the system's) animations are limited to simple changes. The customized avatar is the one shown in the Sala profile. Closing and reopening the app keeps the look, because it is saved on the phone. Reinstalling the app returns the avatar to its default look.
 
-### CUJ 11: The owner resumes work when opening a session
-
-*   **Given**: the owner opens a new session without remembering the previous state.
-*   **When**: they read the private board (`status.md` is its public summary).
-*   **Then**: in one minute they see the launch progress bar and the separate Sala beta line, the version goal and the current milestone, the active task with its link, the next tasks in order, the blockers with their cause, dependency and the action that unblocks them, the launch criteria still pending (shown apart from the progress bar), and the concrete next step.
-
-### CUJ 12: The owner closes a task from start to finish
-
-This journey describes the flow after C10. Before C10 the same steps apply without the board and the issue, as [Interim mode](../workflow.md#interim-mode-before-c10) and [The cycle before C10](../workflow.md#the-cycle-before-c10) in `docs/workflow.md` describe.
-
-*   **Given**: a task is in the Ready column of the board, and its issue states the expected outcome, the acceptance criteria, how to verify them, what blocks it and its version.
-*   **When**: they take it (it moves to In Progress), work on `wil`, verify the criteria, commit and push, a pull request is opened (In Review) and CI passes.
-*   **Then**: after the merge the task is in Done, the issue is closed, and `status.md` already shows the new progress and the next step, because the pull request carried them.
-
 ### CUJ 13: Publishing v0.2 and updating it afterwards
 
 *   **Given**: the blocking launch criteria are met.
@@ -244,7 +231,7 @@ v0.2 adds to the existing system. It does not replace the backend, the schema or
 
 *   **Every risky change, and every feature that must be on for some people only, ships behind a flag** (the Sala, `photo_skin`, `medical_urgency`). `main` deploys to production by itself once its GitHub checks pass (`render.yaml`, `autoDeployTrigger: checksPass`), so a merge is a release of the backend. A flag turns a merged feature on or off without a deploy. Local presentation changes in the app, such as the avatar animation, need no flag: they are checked before release and respect the reduced-motion setting.
 *   **Migrations only add.** A column, table or function is added; none is dropped or changed in a way that breaks v0.1 clients. The v0.1 APKs keep calling `marlix-api.onrender.com` and must keep working.
-*   **The four rules of `CONTRIBUTING.md` hold:** the app never calls the model, every table has RLS, chat content never goes to logs, and the crisis filter runs before the model. They also apply to the Sala.
+*   **The [engineering rules](../architecture.md#engineering-rules) hold:** the app never calls the model, every table has RLS, chat content never goes to logs, and the crisis filter runs before the model. They also apply to the Sala.
 *   **No provider can switch off the crisis response.** Layer 1 (local patterns) answers first and depends on nothing external.
 *   **Money is a runtime limit, not a plan on paper.** Every model and transcription call goes through the spend governor, which records its cost under a fixed use tag, and the caps are enforced in code.
 *   **The phone can answer a crisis without the backend.** The app carries a copy of the crisis layer 1 patterns and the crisis response (section 3.3).
@@ -288,7 +275,7 @@ v0.2 adds to the existing system. It does not replace the backend, the schema or
 
 Why: a provider's spending limit covers a whole account, has no per-use control and, when reached, blocks every key, including the crisis classifier's. The governor is the per-use control and the first barrier; the provider's limit is a second barrier set above it. The governor is a requirement for launch.
 
-*   **Where:** at the service boundary, as two decorators: `governLlm(provider, { use, … })` wraps an `LlmProvider` and `governTranscriber(transcriber, { … })` wraps the transcriber. `createLlmProvider` (`api/src/services/llm/index.ts`) gains a `governance` option (`{ use, ledger, monitor, prices }`) and builds `withRetry(governLlm(base, governance))`, so the governor sits below the retry and each attempt reserves on its own. `api/src/server.ts` builds five provider instances, each with a fixed tag (`chat`, `classifier_chat`, `classifier_room`, `extractor_auto`, `extractor_remember`), plus the transcriber wrapped with `governTranscriber` under `transcribe`. The private chat's crisis filter uses `classifier_chat`, and the Sala's own `createCrisisFilter(...)` uses `classifier_room` (section 3.6).
+*   **Where:** at the service boundary, as two decorators: `governLlm(provider, { use, … })` wraps an `LlmProvider` and `governTranscriber(transcriber, { … })` wraps the transcriber. `createLlmProvider` (`api/src/shared/infrastructure/ai/index.ts`) gains a `governance` option (`{ use, ledger, monitor, prices }`) and builds `withRetry(governLlm(base, governance))`, so the governor sits below the retry and each attempt reserves on its own. `api/src/server.ts` builds five provider instances, each with a fixed tag (`chat`, `classifier_chat`, `classifier_room`, `extractor_auto`, `extractor_remember`), plus the transcriber wrapped with `governTranscriber` under `transcribe`. The private chat's crisis filter uses `classifier_chat`, and the Sala's own `createCrisisFilter(...)` uses `classifier_room` (section 3.6).
 *   **Ledger:** a table `llm_spend` with one row per call: `at`, `use`, `model`, `input_tokens`, `cached_tokens`, `output_tokens`, `audio_seconds`, `state` (`held`, `settled` or `released`), `held_micros` (the maximum verifiable cost, in millionths of a USD, with tax), `settled_micros` (the real cost, once known) and `reconciled_at`. The ledger stores no message content and no user id, so it cannot become a second copy of conversations.
 *   **Prices and plan as reviewed data:** provider prices live in `api/config/llm-prices.json` and the monthly plan (sub-caps, minimum margin, tax multiplier and fixed charges) in `api/config/spend-plan.json`. Both are reviewed in pull requests, like `api/config/crisis.json`.
 *   **Sub-caps per use:** chat, memory extraction (with a share reserved for «Recordá esto»), the private chat's classifier, the Sala's classifier, voice transcription, and a margin. When chat reaches its sub-cap it switches to savings mode, then lowers the per-person daily limit and explains it in the app. When transcription reaches its sub-cap, `POST /v1/transcribe` answers HTTP 429 `VOICE_BUDGET_EXHAUSTED`; the app hides the voice button and text keeps working.
@@ -343,7 +330,7 @@ Why: a provider's spending limit covers a whole account, has no per-use control 
 1.  Crisis layer 1 and, when its flag is on, the medical-urgency patterns. They are local code and configuration, make no model call and do not touch the ledger.
 2.  The help lines. `GET /v1/help-resources` is public and static, the app keeps an offline copy (added in S3-5), and the help screen and the 9-1-1 button open the phone's dialer with no network.
 3.  The crisis response text, which is configuration (`api/config/crisis.json`) and not model output.
-4.  **Crisis layer 1 on the phone (V2-37).** The build generates an app asset from the signal lists in `api/src/services/crisis/signals.ts` (including the figurative-death exceptions) and the reply text in `api/config/crisis.json`; the Dart check reproduces the matching logic of `normalize.ts` and `filter.ts`. If the call to the API fails, the app runs the check on the device and, on a match, shows the reply text with the help lines it already caches from `GET /v1/help-resources` (`help_resources.dart`, with its fallback emergency line), so there is a single copy of the help lines on the phone. The patterns are already public in the repository, so shipping them in the APK exposes nothing new. The app never calls a model, so `CONTRIBUTING.md` rules 1 and 4 hold.
+4.  **Crisis layer 1 on the phone (V2-37).** The build generates an app asset from the signal lists in `api/src/modules/safety/domain/signals.ts` (including the figurative-death exceptions) and the reply text in `api/config/crisis.json`; the Dart check reproduces the matching logic of `normalize.ts` and `filter.ts`. If the call to the API fails, the app runs the check on the device and, on a match, shows the reply text with the help lines it already caches from `GET /v1/help-resources` (`help_resources.dart`, with its fallback emergency line), so there is a single copy of the help lines on the phone. The patterns are already public in the repository, so shipping them in the APK exposes nothing new. The app never calls a model, and follows the [engineering rules](../architecture.md#engineering-rules).
 5.  The crisis classifier's own protected pools: one for the private chat and a separate one for the Sala. Nothing draws from them, and neither draws from the other. When the private chat's pool is used up it borrows unused chat, memory or Whisper headroom, then at most half of the margin (section 3.2); only if that is gone does its classifier fail closed (the person receives the crisis response with the help lines, never silence). The Sala's pool does not borrow during the beta; when it is used up, the Sala's ambiguous messages are held and their authors receive the help lines in private (section 3.2). Layer 1 still checks every Sala message, and the help button is visible on the Sala screen.
 
 What stops when its sub-cap runs out: chat replies (after savings mode and the step-down of the daily limit), automatic memory extraction, and voice transcription.
@@ -414,7 +401,7 @@ App -- POST /v1/room/messages --> API
 *   **What a report does:** it hides the reported message from the reporter's own view at once and sends it to moderation with a snapshot of its text. Two reports from two different accounts about the same message raise the case's priority: it is shown first in the moderator view. Only an authorized moderator removes a message for the whole room, so two people cannot remove a message from everyone's view by agreeing.
 *   **Moderation is immediate.** A moderator acts as soon as they review a case; nothing delays an action. Each action is recorded in `room_actions`, and the penalized person sees which rule was applied.
 *   **Reporter privacy.** The reported person and the other members never see who reported or when: the penalized person sees the rule, never the time of the report, and the API never returns the report time to anyone but moderators. Moderators see the reporter only in the moderator view, and only the minimum needed to ask a follow-up question. The reporter sees the status of their own report through `GET /v1/room/reports/mine`, and a resolution becomes visible to them only in the next daily batch (`reporter_visible_at`, the next 09:00 Costa Rica time after the resolution), so the timing of the notice does not point to them.
-*   **Help requests and the host.** A clear risk signal never leaves the backend (`CONTRIBUTING.md`, rule 4). The host learns about a person only when that person answers yes, and then sees a help request without the message text. Otherwise the host sees only the anonymous counts of completed days. This holds for every Q16 option.
+*   **Help requests and the host.** A clear risk signal never leaves the backend ([engineering rules](../architecture.md#engineering-rules)). The host learns about a person only when that person answers yes, and then sees a help request without the message text. Otherwise the host sees only the anonymous counts of completed days. This holds for every Q16 option.
 *   **Separation from Marlix:** the Sala tables are not joined to `messages`, `memories` or the extraction job. A test checks that a Sala message never enters the chat history, the prompt or the extractor.
 *   **Costs:** the Sala's classifier calls use the `classifier_room` provider instance and its own crisis filter, so they are charged to the Sala's pool and never to the private chat's pool; the two are separate rows in `spend_counters`. Near the end of the Sala's pool the author is alerted (`/health/spend`).
 *   **Terms and rules:** the app shows the rules and terms and records `rules_version_accepted`. Writing is blocked until the current version is accepted.
@@ -436,7 +423,7 @@ In every option the person receives the private help response and the consent qu
 
 | Option | Mechanism | Trade-off | Fails when |
 |---|---|---|---|
-| A. Published, plus private help | The message appears in the channel. | The conversation is not interrupted and the person is not silenced. A sensitive message is visible to everyone, which does not follow the rule that a clear risk signal never leaves the backend (`CONTRIBUTING.md`, rule 4). | The text includes details others should not read, or people reply without knowing how. |
+| A. Published, plus private help | The message appears in the channel. | The conversation is not interrupted and the person is not silenced. A sensitive message is visible to everyone, which does not follow the rule that a clear risk signal never leaves the backend ([engineering rules](../architecture.md#engineering-rules)). | The text includes details others should not read, or people reply without knowing how. |
 | B. Held, plus private help | A clear-risk message is not published; an ambiguous message that classifies as safe is published. The private reply explains why it did not appear. | Consistent with the existing crisis protocol. The person who reached out sees their message not appear. | A false positive silences someone who only wanted to talk. |
 | C. Visible only to the person and the host | The message is not shown to the channel; the host decides whether to release it. | A human decides, and the channel is protected. The person sees a message as sent that others cannot see, which is a transparency problem, and it depends on the host being present. It also shows the text to the host without consent, so it would need the person's yes first. | The host is absent, so the message never gets handled. |
 
@@ -536,314 +523,6 @@ The dependencies in the [Work order](#work-order) are mandatory; the milestone s
 | M5. Launch | The first publication. | Launch criteria 1 to 11. |
 | M6. Opening decision | The beta runs; the opening criteria are checked. | The Sala opens or stays in beta. |
 
-### 10. Marlix v0.2 development flow
-
-This section extends decision D15 of the brief (one entry point for each session and a visible measure of progress). The goal is a process one person can sustain, where each day starts by reading one file and no context has to be rebuilt. The work follows a Kanban flow: a board shows the state of each task, an issue holds the detail of each task, and `status.md` gives a one-minute summary.
-
-**Two phases.** In [interim mode](../workflow.md#interim-mode-before-c10), `status.md` is the session entry point and records the state of the V2-NN backlog defined in this design. Existing GitHub issues and pull requests keep their own discussion and review. Marlix works from the repository and GitHub. The board, issues for the v0.2 backlog and the rules that need them (10.1, 10.3 and the board columns of 10.6) come into force at C10.
-
-**Where these rules live.** V2-01 moved the rules that run before C10 to [`docs/workflow.md`](../workflow.md), as "What moves where" (10.6) lists them, and each subsection keeps its heading with a link. What depends on C10 (10.3's board, 10.4 as written, 10.9) stays here and moves in V2-04, only if C10 is approved.
-
-#### 10.1 Where each kind of information lives
-
-One rule decides it: each fact lives in one place, and the other places point to it or summarize it. The table describes the flow after C10; before C10, the state of each task lives in `status.md`, its detail lives in this design's task list, and its acceptance evidence lives in the pull request body ([Interim mode](../workflow.md#interim-mode-before-c10)).
-
-| Information | Lives in | Updated when |
-|---|---|---|
-| The state of each task (its column, and whether it is blocked) | The GitHub Projects board (proposed) | Every move. A move is not a commit. |
-| The detail of each task: expected outcome, acceptance criteria, how to verify, blockers, version | A GitHub Issue (template `.github/ISSUE_TEMPLATE/task.md`) | When the task is defined, taken or blocked |
-| A one-minute summary: progress bar, milestone, active task, blockers, next step | `status.md` (repository root) | In the task's pull request and at the end of a session (10.6) |
-| The code change and its review | A pull request with `Closes #N`, plus CI | Per task |
-| Lasting decisions | `docs/decisions.md` | In the pull request that makes the decision |
-| The design | This document, published as `docs/designs/marlix-v0-2.md` | When the design changes |
-| Release history | `CHANGELOG.md` and GitHub Releases | At each release |
-| Local assistant rules | `CLAUDE.md` (local, ignored by git), without state blocks | When the process changes |
-| Records of earlier work | `docs/decisions.md`, `CHANGELOG.md` and closed GitHub issues | When a lasting decision or release is recorded, or an issue closes |
-
-The board is the live truth for the state of a task. `status.md` summarizes the board and never contradicts it: when they differ, the board wins and `status.md` is fixed.
-
-**Documentation layout (author decision, following the structure of the EGM project).** The README stays short and points to the rest. Approved designs live in `docs/designs/`. Operating guides that are in force live in `docs/` (for example `docs/workflow.md`, `docs/development.md`, `docs/backups.md`). Diagrams sit next to the topic they explain. `status.md` holds progress and the next step; `CLAUDE.md` holds only the rules in force. Cleaning up the existing documentation to this layout is reviewed later, as its own task, not in V2-01.
-
-#### 10.2 Rules kept, and rules changed
-
-Kept as they are:
-
-*   The four non-negotiable rules of `CONTRIBUTING.md`, and "no secrets or real user data in the repository".
-*   `main` receives changes only through pull requests, and CI must pass (API, App and Database checks).
-*   Conventional Commits in English, in the imperative and with no trailing period, one change per commit.
-*   No Claude attribution in commits, pull requests or issues.
-*   The Definition of Done, and the migration procedure (run the SQL in the Supabase SQL Editor before merging, then `docs/verify-migrations.sql`).
-*   English in the repository; Spanish only for in-app copy.
-*   Comments only where they explain a reason, a constraint, a safety rule or a link.
-*   A didactic summary at the end of each task (what, how, why), given in chat.
-
-Changed, with the reason. "In force from" says whether the change applies once this design is approved, or only at C10.
-
-| # | Today | Proposed | Why | In force from |
-|---|---|---|---|---|
-| 1 | The issue title begins with the card ID (`S1-5 ...`), from the previous backlog. | The title is a short imperative English sentence. The GitHub issue number is the ID. | The `S#-#` IDs belong to the previous backlog. Two ID systems are two backlogs. | C10 |
-| 2 | The issue is created only when the card is taken (`CLAUDE.md`). | The issue is the backlog entry. It is created when the task is defined, for the milestone `v0.2` and for open bugs, and it sits on the board. | After the transition there is no other place to hold the task. To avoid a long list, ideas for later stay as at most five one-line items in `status.md`, not as issues. | C10 |
-| 3 | Cards are taken in strict ID order. | The next task is the top of Ready: tasks whose dependencies are all completed and verified, ordered by priority, then by number (10.3). | The launch has a critical path. Strict numeric order would make unblocked work wait. | Design approval |
-| 4 | The task template says "A backlog card turned into an issue" and asks for `SX-N`. | The template drops the card ID and gains: **Expected outcome**, **Version**, **Priority**, **Blocker record**, **Launch criterion served**, **Working method** (for UI tasks, section 4) and **Flag** where one applies. | These fields are what the Definition of Ready and `status.md` need. | C10 |
-| 5 | The sprint security audit closes each sprint. | The same audit closes each milestone. | Milestones replace sprints as the unit. | Design approval |
-| 6 | Nothing requires a flag. | A risky change, or a feature that must be on for some people only, ships behind a flag. | `main` deploys to production on its own. | Design approval |
-| 7 | The Definition of Done does not mention cost or the summary. | Added: if the change adds or alters a model call, it is recorded in the spend ledger and the budget table is updated. Added: `status.md` is updated. | The USD 10 cap and the entry point depend on them. | Design approval (the template text changes at C10) |
-| 8 | `CLAUDE.md` keeps long "session state" blocks. | `CLAUDE.md` keeps only rules and points to `status.md` for state. | The state blocks duplicate what `status.md` will hold and grow without limit. | Design approval, for v0.2 work (V2-01) |
-| 9 | A tool outside the repository was the source of truth for the backlog. | Before C10: `status.md` provides the entry point and the V2-NN list holds the v0.2 backlog. Existing GitHub issues keep their own discussion. After C10: GitHub Issues and Projects track the backlog, and `status.md` remains the entry point. | One place for each fact, with links to related work. | Design approval (interim), C10 (final) |
-| 10 | One card in progress at a time. | One main task is active at a time. A second task may stay paused in In Progress only while it is blocked (10.3). | A blocked task would otherwise stop all work. | Design approval |
-| 11 | Each task has its own `<type>/<short-description>` branch, and the owner runs every commit, push and merge. | `wil` is the only shared working branch; pull requests go from `wil` to `main`, one at a time. Within a run the owner authorizes, the assistant commits, pushes, opens the pull request, fixes CI and, if authorized, merges ([Branches](../workflow.md#branches-main-and-wil), [Autonomous runs](../workflow.md#agent-assisted-work)). | Work no longer stops while the owner is away; `main` keeps its protections. | Owner decision, 2026-11-21 |
-| 12 | No sprint cadence. | A weekly sprint: the owner picks a verifiable Sprint Goal and approves its items, a daily async check-in, and a weekly review and retrospective ([Planning and reviews](../workflow.md#planning-and-reviews)). | Plans and reviews against a goal; the board alone tracks state, not purpose. | Owner decision, 2026-11-21 |
-
-#### 10.3 The Kanban board
-
-Before C10: [Definition of Ready](../workflow.md#definition-of-ready), [Blocked tasks and switching](../workflow.md#blocked-tasks-and-switching) and [Post-merge checks](../workflow.md#post-merge-checks) in `docs/workflow.md`. The board below comes into force at C10.
-
-**Columns and what must be true to move between them.** The columns are the starting point and can change after the first two weeks of use.
-
-| Column | The task is here when | It moves on when |
-|---|---|---|
-| **Backlog** | The issue exists in the milestone `v0.2` (or is an open bug) but is not ready: criteria are missing, or a dependency is open. | It meets the Definition of Ready. |
-| **Ready** | It meets the [Definition of Ready](../workflow.md#definition-of-ready). Hard dependencies filter the column: an item whose "Blocked by" is not completed and verified is not Ready. Within Ready the order is priority, then the lowest issue number. | It is the top item, no other main task is active, the issue is assigned, its branch exists, and the owner agrees. |
-| **In Progress** | It is the main task being worked on, or the one paused task that is blocked. | Every acceptance criterion is ticked with evidence, the local checks are green, and the pull request from `wil` to `main` is open with `Closes #N`. |
-| **In Review** | The pull request from `wil` is open, carries the evidence and shows the CI state of its last pushed commit. | CI is green and the owner merges, or the assistant merges when the run authorizes it. If CI fails or the owner asks for changes, the task goes back to In Progress. |
-| **Done** | The pull request is merged, the issue is closed as completed, and the post-merge checks passed: CI of `main` is green, `GET /health` answers `ok` after a backend deploy, and `docs/verify-migrations.sql` returns only `ok` after a migration. | If a post-merge check fails, the issue is reopened and moves back to In Progress. It stops counting as done ([Post-merge checks](../workflow.md#post-merge-checks)). |
-
-**Labels and milestone.**
-
-*   Kept: `backend`, `app`, `data`, `design`, `docs`, `infra`, `security`, `accessibility`, `bug`, `blocker`, `help-resources`.
-*   New: `P0` (blocks the launch or the critical path), `P1` (needed for v0.2), `P2` (useful if there is time), `blocked`, `launch` (serves a launch criterion), `sala` (a Sala-beta task; counted on its own line, not in the launch bar), and `experiment` (behind a flag with an exit criterion; not counted in any bar).
-*   There is no `in-progress` label and no `later` label: the board column holds the state of a task, and ideas for later stay in `status.md`.
-*   Milestone: `v0.2`. Milestones for later versions are created when they are needed.
-*   Dependencies: a "Blocked by #N" line in the issue body. If the account supports GitHub's native "blocked by" relationship, that is used too (to verify).
-
-**Board mechanics (all to verify when the board is created).**
-
-*   The board is a GitHub Project owned by the author, private by default. A private board does not change the visibility of the repository's issues: they stay public, so an issue carries only a title, criteria and evidence that are safe to share ([Visibility after C10](../workflow.md#moving-to-github-issues-and-projects-c10)).
-*   Built-in project workflows move items automatically in some cases (for example, an item whose issue is closed or whose pull request is merged moves to Done). Which workflows exist must be checked in the project settings. Where one is missing, the move is manual.
-*   The assistant moves cards with `gh project item-edit`. That needs the `project` scope on the GitHub CLI token, which the owner grants once with `gh auth refresh -s project`.
-
-#### 10.4 The life of a task
-
-Before C10: [The cycle before C10](../workflow.md#the-cycle-before-c10) in `docs/workflow.md`.
-
-**A** is the assistant and **O** is the owner. This is the flow after C10.
-
-1.  **Start the session (A).** Read the private board, look at the GitHub Projects board, run `git status` and `git log -5`, and check the CI of `main`. If they disagree, the board wins for the state of a task, and `status.md` is fixed. Before C10 there is no board: `status.md` is compared with `git log` and the merged pull requests.
-2.  **Choose (A, O agrees).** Take the top of Ready. If a task is already active or paused, apply [Blocked tasks and switching](../workflow.md#blocked-tasks-and-switching). If Ready is empty, the next step is to bring the top Backlog item to Ready.
-3.  **Take it (A).** Move the card to In Progress, assign the issue and re-read its criteria against reality. If the scope has to change, tell the owner before changing the issue and propose the update. Anything outside the scope becomes a new issue.
-4.  **Prepare `wil` (A).** `wil` matches `origin/main` with no pending commits ([Preparing `wil` after a merge](../workflow.md#preparing-wil-after-a-merge)).
-5.  **Work (A).** Small commits. For a database change, follow the migration procedure. For an endpoint change, update `docs/api-contract.md` in the same pull request. For a lasting decision, add it to `docs/decisions.md`. Put a risky change behind a flag. If the task blocks, apply [Blocked tasks and switching](../workflow.md#blocked-tasks-and-switching).
-6.  **Verify (A).** Run `npm run typecheck`, `npm test` and `npm run build` in `api/`, and `flutter analyze` and `flutter test` in `app/`. Tick each acceptance criterion in the issue and write the evidence beside it: the test name, the command or a screenshot. Check screens on the emulator, and on the Galaxy S24 when a criterion says so (confirm with the owner that the phone is available). Re-read every comment and remove those that restate the code.
-7.  **Prepare the summary (A).** Edit `status.md` as it should read once the pull request is merged: this task counted as done, the new progress bar, the next task as active, the new next step ([`status.md`](../workflow.md#statusmd)).
-8.  **Commit and push (A, within the run authorization).** Check the staged diff and the attribution rule, commit in Conventional Commits and `git push origin wil`. Give the owner the didactic summary.
-9.  **Open the pull request (A).** `gh pr create --base main --head wil` with the template's sections (Work Item & Sprint Goal, Why, What Changed, Acceptance Criteria, Verification, Risks & Follow-ups) and `Closes #N`.
-10. **Watch CI (A).** `gh pr checks <n> --watch`. If a check fails because of the change, fix it on `wil` with a new commit and keep the card in In Progress.
-11. **In Review (A).** When the pull request goes from `wil` to `main`, the diff matches the scope, every ticked criterion has evidence and the CI state of the last commit is known, move the card to In Review. The CodeQL job stays non-required until it has run stably on several pull requests (S8-1).
-12. **Merge (O, or A when the run authorizes it).** Squash merge with the title `type: summary (#PR)`. `Closes #N` closes the issue.
-13. **Close out (A).** Sync `main`, prepare `wil` for the next item, check the [post-merge checks](../workflow.md#post-merge-checks) (CI of `main`, `GET /health` after a backend deploy, `docs/verify-migrations.sql` after a migration), and confirm the card is in Done. If the progress bar in `status.md` differs from the real count, fix it in the next pull request. Then go back to step 2.
-
-#### 10.5 A clear task, with a worked example
-
-The fields every task answers are in [A clear task](../workflow.md#a-clear-task) in `docs/workflow.md`. The example below shows the flow after C10.
-
-**Worked example.** The issue and pull request numbers and the dates are illustrative; the issues do not exist yet.
-
-```markdown
-Title: Make the avatar react to device orientation
-Labels: app, P1, launch
-Milestone: v0.2
-
-## Expected outcome
-When the person tilts the phone, the avatar sways and its ears and tail follow
-a moment later. When they turn the phone upside down, the avatar falls toward
-the lower edge of the screen. When they turn it upright again, it recovers.
-This is what makes Marlix feel alive (goal G3). With reduced motion on, the
-avatar never falls and only eases between poses.
-
-## Acceptance criteria
-- [ ] 1. Tilting the phone up to 45 degrees sways the avatar; ears and tail follow with a short delay.
-- [ ] 2. After gravity stays reversed on the vertical axis for 300 ms, the avatar falls toward the lower edge and settles.
-- [ ] 3. After the phone has been upright again for 300 ms, the avatar recovers its pose within 1 second.
-- [ ] 4. With reduced motion on (the app's setting or the system's), none of these animations run; the pose changes with a 150 ms ease.
-- [ ] 5. If the device has no accelerometer, or the sensor stream fails, the avatar behaves as in v0.1 and no error is shown.
-- [ ] 6. The sensor subscription is cancelled when the screen with the avatar is not visible.
-- [ ] 7. In profile mode, no frame takes longer than 16 ms during a 30-second tilt session, on the Galaxy S24 and on the low-end AVD (docs/development.md).
-
-## How to verify
-1. `flutter analyze` and `flutter test` in app/ (new tests for the physics, with a fake sensor stream).
-2. Emulator, Extended controls, Virtual sensors: tilt, invert and straighten the device.
-3. Galaxy S24 (confirm with the owner that the phone is available): run in profile mode and record the frame times in DevTools.
-4. Turn reduced motion on in the app and in the system settings, and repeat.
-
-## Blocked by
-#232 Add the reduced-motion setting (Done).
-
-## Version, priority and launch criterion
-v0.2 · P1 · serves launch criterion 6 (launch features done).
-
-## Out of scope
-The 3D avatar. The Sala. Haptic feedback.
-
-## Technical details
-New: app/lib/widgets/avatar_physics.dart (spring model and thresholds);
-app/test/widgets/avatar_physics_test.dart. Modified: app/pubspec.yaml (adds
-sensors_plus), app/lib/widgets/avatar_marlix.dart, docs/avatar.md,
-docs/decisions.md (the thresholds and why).
-```
-
-**From Ready to Done:**
-
-| Date | Column | What happens | Who |
-|---|---|---|---|
-| 2026-12-04 | Backlog → Ready | The Definition of Ready is checked: outcome, seven criteria, verification steps, the dependency #232 is Done, P1, milestone `v0.2`, about two sessions. | A proposes, O agrees |
-| 2026-12-07 | Ready → In Progress | #230 is the top of Ready: no `P0` item is unblocked, because #227 is blocked by a provider check. The issue is assigned and `wil` is realigned to `main`. | A |
-| 2026-12-07 | In Progress | Tests first, with a fake sensor stream. Then the physics, then the widget. Commits: `test: cover avatar tilt, fall and recovery`, `feat: add spring physics for the avatar`, `feat: make the avatar react to device orientation`, `docs: record the avatar motion thresholds`. | A |
-| 2026-12-08 | In Progress | Criteria 1 to 6 are ticked with the test names. For criterion 7 the owner connects the Galaxy S24; the assistant records the frame times and ticks it with the numbers. | A, O |
-| 2026-12-08 | In Progress | `status.md` is edited as if the pull request were merged: 9 of 28 tasks, the next task active, a new next step. Within the run authorization, the assistant commits and runs `git push origin wil`. | A |
-| 2026-12-08 | In Progress → In Review | `gh pr create --base main --head wil` opens PR #233 with `Closes #230`. | A |
-| 2026-12-08 | In Review | The API, App, Database and CodeQL checks run. All pass. | A |
-| 2026-12-09 | In Review → Done | The owner squash-merges with the title `feat: make the avatar react to device orientation (#233)`. The issue closes by itself. The card moves to Done. | O |
-| 2026-12-09 | Done | The assistant syncs `main`, prepares `wil` for the next item, sees the CI of `main` green, and confirms that the bar in `status.md` matches the real count (9 of 28). | A |
-
-**Pull request body for the example:**
-
-```markdown
-Closes #230
-
-## Work Item & Sprint Goal
-#230 · serves the Sprint Goal "the avatar feels alive on a real phone" · 3 points
-
-## Why
-The avatar ignored the phone's movement; goal G3 needs it to feel alive.
-
-## What Changed
-- Spring physics for tilt, fall and recovery; reduced motion eases between poses.
-- No accelerometer: the avatar behaves as in v0.1. Out of scope: the 3D avatar.
-
-## Acceptance Criteria
-- [x] 1-6. Tilt, fall, recovery, reduced motion, no sensor, cancelled subscription: `avatar_physics_test.dart`
-- [x] 7. No frame over 16 ms in 30 s on the Galaxy S24 and the low-end AVD (numbers in the issue)
-
-## Verification
-- `flutter analyze` and `flutter test` in app/: pass
-- Emulator, Virtual sensors: tilt, invert, straighten
-- CI on the last commit: API, App, Database and CodeQL passed
-
-## Risks & Follow-ups
-No model call changed. Post-merge: CI of `main` green.
-```
-
-**Variation: the task blocks half way.** If on 2026-12-08 the owner could not lend the Galaxy S24 until the evening, criterion 7 could not be checked. The assistant would write this in the issue and add the `blocked` label:
-
-```markdown
-## Blocker
-Cause: criterion 7 needs the Galaxy S24 and the owner has it away until the evening.
-Depends on: the owner connecting the phone.
-Action to unblock: connect the Galaxy S24 by USB, enable debugging and tell the assistant.
-Who acts: owner.
-Recorded on: 2026-12-08
-```
-
-Because the blocker will not clear in the current session and the work for #231 touches other files, the assistant may take #231 as the main task (rules 1 to 6 of [Blocked tasks and switching](../workflow.md#blocked-tasks-and-switching)). #230 stays paused in In Progress. When the phone is connected, #230 is picked up before the next Ready item of equal or lower priority.
-
-#### 10.6 `status.md`: the public summary
-
-Before C10: [`status.md`](../workflow.md#statusmd) in `docs/workflow.md` holds the rules, the interim mode, the event table, the progress bars, "Automation" and the interim template. What stays here is the record of the move and what waits for C10.
-
-**What moves where.** V2-01 copies into `docs/workflow.md` the rules in force before C10, under these headings:
-
-*   **The cycle before C10:** the "Cycle before C10". Its references to steps of 10.4 become links to section 10.4 of `docs/designs/marlix-v0-2.md`.
-*   **Definition of Ready:** 10.3's Definition of Ready, verbatim.
-*   **Blocked tasks and switching:** from 10.3, "One main task at a time"; "When a task is blocked", from its first sentence to the clearing sentence, with the blocker record verbatim; "When it is right to take another task", with its five conditions and the two paragraphs after them; and "A pull request waiting for review".
-*   **Post-merge checks:** the post-merge checks of 10.3's Done row.
-*   **A clear task:** 10.5's fields. The worked example stays in this design, and this heading links to it.
-*   **`status.md`:** from 10.6, the rules, the interim mode, "The update is written as if the pull request were merged", "Publishing with a protected `main`", the progress bars, "Automation", the interim template and the event table with three columns (Event, Interim before C10, `status.md`). In the interim template, "the template above" becomes a link to the 10.6 template in this design.
-*   **References in all copied text:** "this design" and "the Detailed Implementation Plan" become links to `docs/designs/marlix-v0-2.md`; a reference to moved text (10.3's Definition of Ready, blocker record, switching rules and post-merge checks; the 10.6 rules and table) becomes a link to the matching `docs/workflow.md` heading; any other section reference (10.3's columns, 10.4, 10.9, section 4, the Work order) becomes a link to that section of the design; "above" and "below" are replaced by the link.
-
-The [workflow](../workflow.md#statusmd) defines how the summary shows readiness, active work, reviews, and blockers. This design defines the task priorities and dependencies.
-
-These stay in this design until V2-04 moves them: 10.3's columns, labels and board mechanics; 10.4 as written (with the board); 10.6's template after C10; the board and issue columns of the event table; and 10.9.
-
-**Which event changes what (after C10).** The interim and `status.md` columns are in [Which event changes what](../workflow.md#which-event-changes-what).
-
-| Event | Board (after C10) | Issue (after C10) |
-|---|---|---|
-| A task is defined | A card in Backlog | The issue is created |
-| A task becomes Ready | Moves to Ready | Definition of Ready checked |
-| A task is taken | Moves to In Progress | Assigned |
-| A task blocks | `blocked` label | `## Blocker` section |
-| The pull request opens | Moves to In Review | `Closes #N` |
-| The pull request merges | Moves to Done | Closes |
-| The owner decides something | Nothing | A comment |
-| A session ends | Nothing | Optional comment |
-
-**Template with a complete example (after C10).** The numbers are illustrative until the issues exist. `status.md` is the public summary; blockers, the launch checklist, owner decisions and the run queue live in the maintainer's private board ([workflow](../workflow.md#statusmd)).
-
-```markdown
-# Marlix v0.2
-
-**Release progress** `[██░░░░░░░░]` **28%** · 8 of 28 launch tasks verified
-
-**Requirements for release** 2 of 11 met · **Sala beta** 2 of 6 tasks verified
-
-Scope: 28 tasks; approved on 2026-12-01 at 27. Changes: +#240 greeting by local
-time (2026-12-05), -#237 voice comparison (moved to experiments, 2026-12-06),
-+#241 reminder migration test matrix (2026-12-07).
-
-## Milestones
-
-| Milestone | Status | Done when |
-| --- | --- | --- |
-| Build the technical foundations (M1) | In progress | Launch criteria 3, 4, 5, and 11 pass in staging, and criterion 11 passes in production. |
-
-## In Progress
-
-**Make the avatar react to device orientation (#230).** Criteria 1 to 6 pass;
-the frame-time check on a real phone (criterion 7) is next.
-
-## In Review
-
-No open pull requests.
-
-## Ready
-
-1. Add the palette, pattern, and accessory picker (#231).
-2. Add the «Recordá esto» button and notice (#234).
-3. Add the greeting by local time (#240).
-
-Updated: 2026-12-08 · [Design](docs/designs/marlix-v0-2.md) · [Workflow](docs/workflow.md)
-```
-
-#### 10.7 Release
-
-*   A release is a version bump in `app/pubspec.yaml` (the `versionCode` always grows), an entry in `CHANGELOG.md`, a git tag, and the artifacts: the signed APK on GitHub Releases and the production AAB for Play, both signed with the S7-15 key (the signed release APK card). While the Sala beta runs, the same commit also produces the Sala AAB for the internal track, with a higher versionCode ("Effect on the launch").
-*   The first Play publication goes to production once the launch criteria are met. Later updates roll out at 10%, 50% and 100% and can be paused.
-*   Going back means switching a flag off or publishing a corrected version; Play does not allow a lower version.
-
-#### 10.8 Closing a milestone
-
-At the end of each milestone: the security audit already used at sprint close (secrets in the history, ignored files, RLS and grants, endpoints, dependencies, repository protections), plus the new surfaces of v0.2 (the spend ledger, the Sala tables including `room_help_requests` and, when it exists, `room_bans`, the flags tables, and the crisis asset in the app). Each finding becomes an issue in the next milestone.
-
-#### 10.9 Adopting GitHub Issues and Projects (C10)
-
-**The author approves C10 before starting steps T1 through T8.** Until then, `status.md` and the V2-NN list remain in use under the [interim workflow](../workflow.md#interim-mode-before-c10). Existing GitHub issues and pull requests remain available for their current work.
-
-| Step | What happens | Who |
-|---|---|---|
-| T0. Decision | The author approves this plan. | Owner |
-| T1. Baseline | Confirm the current V2-NN list, scope and completed tasks from the private board, `status.md` and the design. | Owner |
-| T2. Inventory | Map each V2-NN task to an existing GitHub issue or mark it for issue creation. Record the reason for excluding any out-of-scope item. | Assistant prepares, owner decides |
-| T3. Map | Prepare the issue text in English with the fields of 10.5: expected outcome, criteria, how to verify, dependencies, version, priority and labels. The map stays outside the repository until the issues exist. | Assistant |
-| T4. Create the board | Create the GitHub Project (private), with the columns Backlog, Ready, In Progress, In Review and Done. Check which built-in workflows exist. The owner grants the CLI the `project` scope with `gh auth refresh -s project`. Create the labels `P0`, `P1`, `P2`, `blocked`, `launch`, `sala` and `experiment`. | Owner grants access, assistant sets up |
-| T5. Set up the issues | Reuse matching issues and create the remaining issues in batches of at most ten, each batch approved by the owner. Add the `V2-NN` ID to each issue. Items that meet the Definition of Ready go to Ready; the rest go to Backlog. Record tasks completed under the interim bar as issues closed as completed, so the total and done count carry over. | Assistant, owner approves each batch |
-| T6. Verify completeness | (a) *Count:* each in-scope V2-NN task maps to one issue in the milestone `v0.2`. (b) *Metadata:* every issue has a priority and the milestone, and the owner checks each `P0` issue against its design entry. (c) *Bars:* the totals equal the interim totals plus the scope changes recorded since, and the done counts equal the interim counts. | Assistant, owner signs off |
-| T7. Pilot | Run one real task through the cycle in 10.4, including the board moves and the `status.md` edit. If any step is awkward, fix the process before continuing. | Both |
-| T8. Switch | Keep the private board as the session entry point and `status.md` as the public summary, with no link to the private board. Update `CLAUDE.md` after the pilot, and update the issue template, pull request template, `CONTRIBUTING.md` and `docs/workflow.md` in a pull request. | Assistant proposes, owner approves |
-
-*   **Rollback:** If T6 or T7 fails, keep the interim workflow until the gap is fixed.
-
---------------------------------------------------------------------------------
-
 ## Alternatives Considered
 
 The alternatives weighed for product scope, models, hosting, email, the avatar, the Sala and the process are recorded with their reasons in the maintainer's private notes. Lasting technical choices that the code depends on are recorded in [`docs/decisions.md`](../decisions.md).
@@ -857,7 +536,7 @@ The alternatives weighed for product scope, models, hosting, email, the avatar, 
 *   **More than one channel** or channels by topic.
 *   **Age verification** stronger than the self-declared birth date (Q17).
 *   **Automatic reconciliation** with the provider if it offers a per-request usage record or an API.
-*   **A helper that prints the progress bars** and a **CI check on `status.md`** ([Automation](../workflow.md#automation-when-it-would-add-value)), when the thresholds there are reached.
+*   **A helper that prints the progress bars** and a **CI check on `status.md`** (Automation), when the thresholds there are reached.
 *   **A 3D avatar** from a captured object and a **reusable 3D scene** from a room, if their feasibility tests pass.
 *   **Another chat model with real data**, only if its terms offer zero data retention or a data processing agreement.
 
@@ -865,20 +544,20 @@ The alternatives weighed for product scope, models, hosting, email, the avatar, 
 
 ## Detailed Implementation Plan
 
-The work is split into tasks named `V2-NN`. Before C10 this list is the v0.2 backlog and `status.md` summarizes its state ([Interim mode](../workflow.md#interim-mode-before-c10)); at C10 each task becomes an issue. The full acceptance criteria of each task live in the maintainer's private notes until the task becomes a public issue; each pull request states the criteria it closes and their evidence.
+The work is split into tasks named `V2-NN`. Before C10 this list is the v0.2 backlog and `status.md` summarizes its state; at C10 each task becomes an issue. The full acceptance criteria of each task live in the maintainer's private notes until the task becomes a public issue; each pull request states the criteria it closes and their evidence.
 
 **Conventions that apply to every task** (not repeated in each one):
 
-*   **Migrations** follow `CONTRIBUTING.md`: a file `docs/migrations/YYYY-MM-DD-<what-it-does>.sql` that runs once in a transaction, mirrored in `docs/schema.sql`, with its checks added to `docs/verify-migrations.sql` in the same pull request. A privilege or RLS change also adds cases to `docs/schema-test.sql` and updates `docs/erd.md`. The owner runs the migration in the Supabase SQL Editor before the merge, then runs `docs/verify-migrations.sql` (every row must say `ok`).
+*   **Migrations** follow the [development guide](../development.md#database-migrations): a file `docs/migrations/YYYY-MM-DD-<what-it-does>.sql` that runs once in a transaction, mirrored in `docs/schema.sql`, with its checks added to `docs/verify-migrations.sql` in the same pull request. A privilege or RLS change also adds cases to `docs/schema-test.sql` and updates `docs/erd.md`. The owner runs the migration in the Supabase SQL Editor before the merge, then runs `docs/verify-migrations.sql` (every row must say `ok`).
 *   **Endpoints** update `docs/api-contract.md` in the same pull request, and extend `api/test/legacy-clients.test.ts` (V2-07) when a response a v0.1 client reads changes.
 *   **Lasting decisions** are added to `docs/decisions.md` in the pull request that makes them.
 *   **`CHANGELOG.md`** is updated at release (V2-31) and when a milestone closes, not in each task.
 *   **Tests** for the backend are `api/test/*.test.ts` (run by `tsx --test`); tests for the app are under `app/test/`.
 *   **UI tasks** listed in section 4 ("UI and UX method") attach the `ui-ux-pro-max` deliverables to their pull request.
-*   **Every task** ends with the Definition of Done of `.github/pull_request_template.md` and an updated `status.md` ([`status.md`](../workflow.md#statusmd)).
+*   **Every task** ends with the checks and evidence in the [execution plan](../plans/next-release-execution-plan.md#6-phase-tracking).
 *   **Roles:** the owner (the author of this design) and the assistant, as defined in the Overview. The plan uses "owner" throughout.
 *   **Low-end AVD:** the profile in G3, written into `docs/development.md` by V2-05a; a task that measures on it before V2-05a merges uses the profile in G3.
-*   **Not applicable:** a task closed as not applicable is removed from the launch count and counts as met for its dependents ([Interim mode](../workflow.md#interim-mode-before-c10)).
+*   **Not applicable:** a task closed as not applicable is removed from the launch count and counts as met for its dependents.
 *   **Worked examples:** a task may reference the numbered criteria of a worked example instead of repeating them (V2-17).
 
 ### Work order
@@ -887,7 +566,7 @@ The **List** column classifies every task once: **Launch** (blocks the v0.2 laun
 
 | Order | ID | Task | List | Milestone | Priority | Depends on |
 |---|---|---|---|---|---|---|
-| 1 | V2-01 | Create `status.md` and `docs/workflow.md` | Launch | M0 | P0 | The owner's final approval (recorded as `Status: Approved`) |
+| 1 | V2-01 | Set up v0.2 progress tracking | Launch | M0 | P0 | The owner's final approval (recorded as `Status: Approved`) |
 | 2 | V2-02 | Verify the external conditions | Launch | M0 | P0 | none |
 | 3 | V2-05a | Staging environment | Launch | M0 | P0 | none |
 | 4 | V2-05b | Restore drill against staging | Launch | M0 | P0 | V2-05a |

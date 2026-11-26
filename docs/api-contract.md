@@ -2,7 +2,7 @@
 
 Endpoints of the marlix backend for the MVP. The app and the backend are built against this contract, so any change to an endpoint updates this file in the same pull request.
 
-See also the [chat sequence diagram](diagrams/chat-sequence.md), the [architecture](architecture.md) and the [ERD](erd.md).
+See the [architecture](architecture.md) and [data model](erd.md).
 
 ## Conventions
 
@@ -203,7 +203,7 @@ Records the explicit data consent and marks onboarding as done (US-02). Called o
 
 ### `POST /v1/chat`
 
-Sends a message to marlix and returns the reply. It runs the full flow of the [sequence diagram](diagrams/chat-sequence.md): auth, daily limit, crisis filter, prompt with memory, model, reply review and save.
+The backend verifies the session, reads the daily usage and runs the [crisis filter](crisis-protocol.md) before enforcing the limit. For a normal message under the limit, it builds the prompt with memory, calls the model, reviews the reply, saves the exchange and counts the interaction.
 
 **Request**
 
@@ -511,7 +511,7 @@ The app would read `voiceConfig` for the on-device voice (same shape as in [`GET
 
 ## Use cases covered
 
-Every use case from the [use case diagram](use-cases.md) runs with these endpoints, with Supabase Auth, or entirely on the phone or the backend:
+The table maps app behavior to API endpoints, Supabase Auth and local or background work.
 
 | Use case | How |
 |---|---|

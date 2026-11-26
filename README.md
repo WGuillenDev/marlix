@@ -1,226 +1,43 @@
-<p align="center">
-  <img src="docs/images/marlix.svg" alt="marlix, the avatar" width="140">
-</p>
+# marlix
 
-<h1 align="center">marlix</h1>
-
-<p align="center">
-  Open source mobile app for conversational companionship with an AI avatar that listens, speaks and remembers.
-</p>
-
-<p align="center">
-  <a href="https://github.com/WGuillenDev/marlix/actions/workflows/ci.yml"><img src="https://github.com/WGuillenDev/marlix/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
-  <img src="https://img.shields.io/badge/platform-Android-3DDC84" alt="Android">
-  <img src="https://img.shields.io/badge/status-in%20development-orange" alt="In development">
-</p>
-
-<p align="center">
-  <a href="#about">About</a> ·
-  <a href="#features">Features</a> ·
-  <a href="#how-it-works">How it works</a> ·
-  <a href="#tech-stack">Tech stack</a> ·
-  <a href="#getting-started">Getting started</a> ·
-  <a href="#documentation">Documentation</a>
-</p>
+Marlix is an Android companion app with an animated AI mascot. You can talk or write in Spanish, manage what the mascot remembers, and access Costa Rican help resources offline.
 
 > [!IMPORTANT]
-> marlix is not therapy and does not replace professional mental health care. If you are in danger, call **9-1-1**.
+> Marlix does not replace professional mental health care. If you are in danger in Costa Rica, call **9-1-1**.
 
-## About
+**Next release:** See the [execution plan](docs/plans/next-release-execution-plan.md) for the scope, phase status and verification evidence.
 
-marlix keeps people company through conversation. It is designed for people facing social isolation who need accessible emotional support, and it encourages them to connect with the people in their lives instead of depending on the app. The person writes or simply talks, and marlix answers with its own voice through an animated avatar.
+## Run locally
 
-Safety comes before the model: every message passes a crisis filter before it reaches the LLM, a person at risk gets a fixed reply with 9-1-1, and every reply is reviewed before it is shown.
-
-**Goal of v1:** personal and family use, free, with one avatar and zero operating cost, built to scale (more avatars, a paid plan) without rewriting code.
-
-## Features
-
-| | |
-| --- | --- |
-| 💬 **Chat** | Conversation with a saved history and context of the open conversation. |
-| 🎙️ **Voice mode** | Hands-free: marlix knows when the person stops talking, answers sentence by sentence and can be interrupted. |
-| 🔊 **Its own voice** | Generated on the phone, with natural pauses and the avatar's mouth following the sound. |
-| 🧠 **Distilled memory** | Lasting facts about the person that they can see, edit and delete. |
-| 🛟 **Crisis filter** | Two layers before the model; a crisis never reaches the LLM. |
-| ☎️ **Help screen** | 9-1-1 and the Línea Aquí Estoy one tap away, with their service and hours, also offline. |
-| 🐶 **Animated avatar** | Five states that follow the conversation. |
-| 🔐 **Privacy by design** | Adults only, explicit consent, messages deleted after 90 days and full account deletion. |
-
-## How it works
-
-```mermaid
-flowchart LR
-    P[Person] -- text --> A[Flutter app]
-    P -- voice --> V[Voice detector<br/>on the phone]
-    V --> A
-    A -- sign in --> SA[Supabase Auth]
-    A == HTTPS + session ==> B[Backend]
-    B -- audio --> W[Whisper on Groq]
-    B --> C{Crisis filter}
-    C -- risk --> F[Fixed reply<br/>with 9-1-1]
-    C -- normal --> L[LLM on Groq]
-    L --> R[Reply review]
-    R -- sentence by sentence --> A
-    A --> T[Supertonic 3<br/>on the phone]
-    T -- voice --> P
-    B --- DB[(PostgreSQL<br/>RLS)]
-```
-
-<details>
-<summary><b>Full architecture diagram</b></summary>
-<br>
-
-```mermaid
-flowchart TB
-    user(["👤 User"])
-
-    subgraph phone["📱 Phone (Android)"]
-        mic["Microphone<br/>echo cancellation<br/>voice and turn detector"]
-        app["Flutter app<br/>chat · avatar · help screen"]
-        tts["Avatar voice<br/>Supertonic 3<br/>fallback: flutter_tts"]
-        notif["Local reminders<br/>flutter_local_notifications"]
-    end
-
-    subgraph render["☁️ Backend on Render · Node.js + TypeScript + Express"]
-        secrets[("🔑 Environment variables<br/>GROQ_API_KEY<br/>SUPABASE_SECRET_KEY")]
-        auth["1 · Verify session"]
-        limit["2 · Daily limit"]
-        crisis{"3 · Crisis filter"}
-        fixed["Fixed 9-1-1 reply<br/>nothing leaves the backend"]
-        prompt["4 · Build prompt<br/>+ distilled memory"]
-        review["5 · Review reply<br/>sentence by sentence"]
-        auth --> limit --> crisis
-        crisis -- "clear risk" --> fixed
-        crisis -- "normal" --> prompt --> review
-    end
-
-    subgraph supabase["🗄️ Supabase"]
-        sbauth["Auth"]
-        db[("PostgreSQL<br/>RLS on every table")]
-    end
-
-    groq["🧠 Groq<br/>LLM · Whisper"]
-    monitor["⏱️ Uptime monitor"]
-    actions["⚙️ GitHub Actions<br/>encrypted backup"]
-
-    user -- "voice" --> mic --> app
-    user -- "text" --> app
-    app -- "reply text" --> tts -- "speech" --> user
-    notif -. "daily, at the chosen time" .-> user
-
-    app -- "sign up / sign in<br/>publishable key" --> sbauth
-    app == "HTTPS + session token" ==> auth
-
-    crisis -. "ambiguous: isolated<br/>classification, no history" .-> groq
-    prompt == "conversation" ==> groq
-    render -. "turn audio · memory extraction" .-> groq
-    render -- "service_role" --> db
-    monitor -. "GET /health every 5 min" .-> render
-    actions -. "pg_dump every day" .-> db
-
-    app -. "❌ never" .-x groq
-```
-
-Thick arrows are the path of a normal chat message, dotted arrows are background or conditional traffic, and the crossed arrow marks a call that must never exist. Details in [docs/architecture.md](docs/architecture.md).
-
-</details>
-
-## Tech stack
-
-| Layer | Technology |
-| --- | --- |
-| **Mobile app** | Flutter, Riverpod |
-| **Backend** | Node.js 24, Express 5, TypeScript, zod |
-| **Database and auth** | [Supabase](https://supabase.com/) (PostgreSQL with RLS) |
-| **AI** | [Groq](https://groq.com/): chat model, crisis classifier, memory extractor and Whisper, with Zero Data Retention |
-| **Voice on the phone** | [Supertonic 3](https://huggingface.co/Supertone/supertonic-3) for speech, Silero VAD for turn detection |
-| **Hosting and CI** | [Render](https://render.com/), GitHub Actions |
-
-## Install on Android
-
-1. On your phone (Android 7.0 or later), open the [latest release](https://github.com/WGuillenDev/marlix/releases/latest) and download the `.apk`.
-2. Open the file. Android asks you to allow installing apps from that source (your browser or file manager); allow it just for this install.
-3. Open marlix, create an account (you must be 18 or older) and confirm your email with the code you receive.
-
-To update, install the new `.apk` over the old one: your account and data stay. Every release is signed with the same key; its SHA-256 certificate fingerprint is `3ee151e5216b23a73e8de40331d72d732710c42280fcde2b099435ebbae86226`, which you can check with `apksigner verify --print-certs`. If it differs, do not install it.
-
-## Getting started
-
-**Requirements:** [Flutter](https://docs.flutter.dev/get-started/install) 3.47+ with an Android emulator or phone, and [Node.js](https://nodejs.org/) 24+ for the backend.
+Use Flutter with an Android device or emulator, and Node.js 24 or later for the API. See the [development guide](docs/development.md) for environment configuration, Docker Compose, the local API and staging.
 
 ```bash
-# App, against the production backend
-cd app
-flutter pub get
-flutter run --dart-define-from-file=config/production.json
-```
-
-```bash
-# Your own backend
 cd api
-npm install
-cp .env.example .env   # fill in GROQ_API_KEY and the Supabase variables
+npm ci
+# Copy .env.example to .env and configure it as described in the development guide.
 npm run dev
 ```
 
-### Commands
+```bash
+cd app
+flutter pub get
+# Copy config/local.example.json to config/local.json and fill in its values.
+flutter run --dart-define-from-file=config/local.json
+```
 
-| Where | Command | What it does |
-| --- | --- | --- |
-| `api/` | `npm run dev` | Starts the backend and restarts it on every change. |
-| `api/` | `npm run typecheck` | Checks the types in strict mode. |
-| `api/` | `npm test` | Runs the backend tests. |
-| `api/` | `npm run build` and `npm start` | Compiles to `dist/` and runs the compiled server. |
-| `app/` | `flutter analyze` | Checks the code with the project's lint rules. |
-| `app/` | `flutter test` | Runs the app tests. |
-| `app/` | `flutter build apk --release --dart-define-from-file=config/production.json` | Builds the release APK against production. |
+## Install on Android
 
-The CI runs the same checks on every pull request. Environment variables, integration tests, deployment and the local database are in the [development guide](docs/development.md).
+Download the APK from [GitHub Releases](https://github.com/WGuillenDev/marlix/releases/latest). Access requires permission to view the repository while it is private. Install updates over the existing app to keep local settings. Registration is for adults and requires email confirmation.
 
-## Project status
+Verify the APK signer with `apksigner verify --print-certs <file.apk>`. The release signing certificate's SHA-256 fingerprint is `3ee151e5216b23a73e8de40331d72d732710c42280fcde2b099435ebbae86226`.
 
-**v0.2 · In development**
+## Project references
 
-### What’s ahead
-
-- **Make your beagle your own.** Mix colors, patterns, and accessories. See new expressions and watch your beagle move when you tilt your phone.
-- **Explore a redesigned app.** Chat, activities, and customization get their own tabs, with better screen reader support, larger text, and a reduced-motion option.
-- **Preview a voice before you pick it.** Listen to samples of all ten voices.
-- **Save what matters.** Tap “Remember this” to save something from a conversation and undo it right away if you change your mind.
-- **Greetings and reminders.** Get a greeting that matches your time of day when you open Marlix, plus updated daily reminders.
-- **Take a breather or play.** Follow a breathing exercise with your beagle or play a new spot-the-change game.
-- **Find crisis guidance offline.** The app will be able to show guidance and help numbers even when the connection drops.
-- **Meet people in Marlix Room.** A new group text chat with conversation starters, planned as an invitation-only beta.
-- **Try photo-inspired avatars.** Planned experiments will explore using photos of objects to personalize the beagle or create a 3D avatar.
-
-## Documentation
-
-| Document | Contents |
-| --- | --- |
-| [Development guide](docs/development.md) | Setup, environment variables, commands and deployment. |
-| [Database backups](docs/backups.md) | The daily encrypted backup, how to download and restore it. |
-| [Monitoring](docs/monitoring.md) | The uptime monitor, the Groq quota alert and what each `/health` answer means. |
-| [Architecture](docs/architecture.md) | How every piece fits together and where the keys live. |
-| [API contract](docs/api-contract.md) | Every v1 endpoint with its request, response and errors. |
-| [Data model](docs/erd.md) | Entities, access rules and RLS. |
-| [Crisis protocol](docs/crisis-protocol.md) | How each message is classified before the model. |
-| [Distilled memory](docs/memory.md) | What marlix remembers, what it never saves and for how long. |
-| [Wireframes and visual style](docs/diagrams/wireframes/README.md) | Screens, palette, typography and the avatar. |
-| [Technical decisions](docs/decisions.md) | Each choice, the options discarded and why. |
-| [Project status](status.md) | Progress, the active task and the next step. |
-| [Workflow](docs/workflow.md) | How a task goes from start to merge. |
-
-## Contributing
-
-Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first, and report vulnerabilities as described in [SECURITY.md](SECURITY.md).
+- [Execution plan](docs/plans/next-release-execution-plan.md)
+- [Development, staging and deployment](docs/development.md)
+- [Architecture](docs/architecture.md), [API contract](docs/api-contract.md) and [data access rules](docs/erd.md)
+- [Technical decisions](docs/decisions.md) and [security reporting](SECURITY.md)
 
 ## License
 
-Released under the [MIT License](LICENSE). marlix's voice model, [Supertonic 3](https://huggingface.co/Supertone/supertonic-3) by Supertone Inc., is under the [OpenRAIL-M License](https://huggingface.co/Supertone/supertonic-3/blob/main/LICENSE); it is downloaded on first use and is not part of this repository.
-
-## Author
-
-**[WGuillenDev](https://github.com/WGuillenDev)**<br>
-Junior Software Engineer · Costa Rica
+Marlix is released under the [MIT License](LICENSE). The [Supertonic 3 voice model](https://huggingface.co/Supertone/supertonic-3), downloaded on first use, has its own [OpenRAIL-M license](https://huggingface.co/Supertone/supertonic-3/blob/main/LICENSE).

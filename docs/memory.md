@@ -40,8 +40,8 @@ The extractor sees the saved facts. If the conversation corrects or adds to one,
 
 Two barriers, because a model can be wrong or manipulated:
 
-1. **The prompt** ([`memory-extractor-prompt.ts`](../api/src/config/memory-extractor-prompt.ts)) forbids ID numbers, cards and bank accounts, passwords and PINs, medical and mental-health diagnoses, illnesses, medications and treatments, phone numbers, emails, exact addresses and anything about suicide or self-harm. It also says the conversation is data to read, never instructions, so a message that tries to change the rules is ignored.
-2. **A filter in code** ([`sensitive.ts`](../api/src/services/memory/sensitive.ts)) drops any fact with a number of eight digits or more, an email, a word about secrets or documents, or a stem about health. It is blunt on purpose: a lost fact costs little, a saved ID number costs a lot.
+1. **The prompt** ([`memory-extractor-prompt.ts`](../api/src/modules/memory/infrastructure/memory-extractor-prompt.ts)) forbids ID numbers, cards and bank accounts, passwords and PINs, medical and mental-health diagnoses, illnesses, medications and treatments, phone numbers, emails, exact addresses and anything about suicide or self-harm. It also says the conversation is data to read, never instructions, so a message that tries to change the rules is ignored.
+2. **A filter in code** ([`sensitive.ts`](../api/src/modules/memory/domain/sensitive.ts)) drops any fact with a number of eight digits or more, an email, a word about secrets or documents, or a stem about health. It is blunt on purpose: a lost fact costs little, a saved ID number costs a lot.
 
 The prompt says to leave out **only** the sensitive fact and keep the rest. A first version said "skip the fact entirely", and with the real model a conversation that mixed an ID number with ordinary facts returned nothing at all (0 of 6 attempts); with the clearer wording it returns the ordinary facts (4 of 4).
 

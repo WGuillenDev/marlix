@@ -1,6 +1,6 @@
 # System prompt — marlix personality
 
-The system prompt defines who marlix is and how it talks. It lives in [`api/src/config/system-prompt.ts`](../api/src/config/system-prompt.ts) and the backend sends it on every call to the model (step 4 of the [chat sequence](diagrams/chat-sequence.md)).
+The system prompt defines who marlix is and how it talks. It lives in [`api/src/modules/conversation/application/system-prompt.ts`](../api/src/modules/conversation/application/system-prompt.ts) and the backend sends it on every call to the model.
 
 The prompt text is in Spanish, because it is what the model reads and imitates. Code and comments around it are in English.
 
@@ -51,7 +51,7 @@ In the test run, up to 1,536 of about 1,620 prompt tokens were served from the c
 
 ## Voice mode
 
-The mode goes at the end of the prompt, after the cached part, so it does not break the cache. In `voice` the instruction asks for one to three short sentences in spoken language. Asking is not enough, because a model can still write a list or an emoji, and the phone's voice would read it badly. So, in voice mode only, `toSpokenText` (`api/src/services/speech/spoken-text.ts`) cleans the reply right after the model answers and before the reply review:
+The mode goes at the end of the prompt, after the cached part, so it does not break the cache. In `voice` the instruction asks for one to three short sentences in spoken language. Asking is not enough, because a model can still write a list or an emoji, and the phone's voice would read it badly. So, in voice mode only, `toSpokenText` (`api/src/modules/conversation/domain/spoken-text.ts`) cleans the reply right after the model answers and before the reply review:
 
 - Emojis go, with their joiners, skin tones and flags.
 - Markdown goes and its words stay: bold, italic, strike, code, headings and quotes. A link keeps its text and loses its address, and an image keeps its description.

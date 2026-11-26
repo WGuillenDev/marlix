@@ -1,97 +1,8 @@
-# Entity-relationship diagram — v1
+# Data model and access rules
 
-Data model for the marlix MVP, derived from the [user stories](user-stories.md). The SQL that creates it is in [`schema.sql`](schema.sql).
+[`schema.sql`](schema.sql) defines the application tables and policies.
 
 The database is Supabase (PostgreSQL). Sign-up and sign-in are handled by Supabase Auth, which owns the `auth.users` table; every other table lives in the `public` schema.
-
-## Diagram
-
-```mermaid
-erDiagram
-    auth_users ||--|| users : "has profile"
-    plan_limits ||--o{ users : "caps"
-    avatars ||--o{ users : "is assigned to"
-    auth_users ||--o{ conversations : "has"
-    avatars ||--o{ conversations : "speaks in"
-    conversations ||--o{ messages : "contains"
-    auth_users ||--o{ messages : "owns"
-    auth_users ||--o{ memories : "is remembered by"
-    conversations |o--o{ memories : "is source of"
-    auth_users ||--o{ daily_usage : "consumes"
-
-    auth_users {
-        uuid id PK "managed by Supabase Auth"
-    }
-
-    users {
-        uuid id PK, FK "auth.users.id"
-        text plan FK "default personal"
-        uuid avatar_id FK
-        date birth_date "18 or older at sign-up"
-        timestamptz data_consent_at "nullable"
-        timestamptz onboarding_completed_at "nullable"
-        boolean reminders_enabled "default false"
-        timestamptz created_at
-        timestamptz updated_at
-    }
-
-    plan_limits {
-        text plan PK
-        integer daily_interactions
-        timestamptz created_at
-        timestamptz updated_at
-    }
-
-    avatars {
-        uuid id PK
-        text slug UK
-        text name
-        jsonb voice_config "engine, voice, language, steps, rate, fallback"
-        text layers_path
-        boolean is_default "at most one true"
-        timestamptz created_at
-        timestamptz updated_at
-    }
-
-    conversations {
-        uuid id PK
-        uuid user_id FK
-        uuid avatar_id FK
-        timestamptz started_at
-        timestamptz ended_at "nullable"
-        timestamptz memory_extracted_at "nullable"
-    }
-
-    messages {
-        uuid id PK
-        uuid user_id FK
-        uuid conversation_id FK
-        text role "user or assistant"
-        text content
-        boolean interrupted
-        boolean crisis "never sent to the model"
-        timestamptz created_at
-    }
-
-    memories {
-        uuid id PK
-        uuid user_id FK
-        text fact
-        text category "nullable"
-        uuid source_conversation_id FK "nullable"
-        timestamptz created_at
-        timestamptz updated_at
-    }
-
-    daily_usage {
-        uuid user_id PK, FK
-        date usage_date PK "Costa Rica time"
-        integer interactions
-        timestamptz updated_at
-    }
-```
-
-`auth_users` in the diagram is Supabase's `auth.users` table (Mermaid does not allow dots in entity names).
 
 ## Relationships and cardinalities
 
@@ -194,7 +105,7 @@ RLS decides **which rows** a user reaches; table privileges decide **which opera
 - **Two users.** Ana and Beto each get a profile, a conversation, messages, a memory and usage, written as the backend would. Acting as Ana the way Supabase does for a request with her token (`request.jwt.claim.sub` and the `authenticated` role), she sees only her rows, her changes on Beto's rows affect nothing, and she cannot insert, truncate or change her plan. `anon` reaches nothing. Deleting Beto removes all his data.
 - **Guards on the catalog**, so a later migration cannot slip through: every table in `public` has RLS; every table with user data (a `user_id` column, or `users`) has at least one policy and every one of its policies depends on `auth.uid()`; no policy is open to `anon`. The test also creates a table without RLS to show the guard catches it.
 
-It runs on every pull request in the CI's Database job, against Supabase's Postgres image. To run it against the Supabase project, open the **SQL Editor**, paste the file without its two `psql` lines (`\o /dev/null` and the `\echo`), and run it: it ends in `rollback`, so an error names the failed check and success changes nothing.
+It runs in the CI's Database job on pushes to `main` and on pull requests, against Supabase's Postgres image. To run it against the Supabase project, open the **SQL Editor**, paste the file without its two `psql` lines (`\o /dev/null` and the `\echo`), and run it: it ends in `rollback`, so an error names the failed check and success changes nothing.
 
 ## Out of scope
 

@@ -78,7 +78,7 @@ with checks (migration, what, ok) as (
       not has_column_privilege('authenticated', 'public.users', 'reminders_enabled', 'update'))
 ),
 -- Not created by a migration, but a table without RLS is never acceptable
--- (CONTRIBUTING.md, rule 2), and a migration that adds a table can forget it.
+-- (docs/architecture.md, Engineering rules), and a migration that adds a table can forget it.
 rls as (
   select
     'row level security' as migration,

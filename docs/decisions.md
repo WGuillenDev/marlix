@@ -4,18 +4,9 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
-## 2026-11-21 — v0.2 work runs on the `wil` branch with authorized autonomous runs
+## 2026-11-25 — Track the next release in one plan
 
-**Decision:** `main` stays protected and receives changes only through squash-merged pull requests. `wil` is the only shared working branch between the assistant and the owner; every pull request of the workflow goes from `wil` to `main`, one at a time. The owner approves a weekly Sprint Goal and its items (Scrum), `status.md` tracks the states Backlog, Ready, In Progress, In Review and Done (Kanban) until C10, and the assistant executes with pstack. Within a run the owner authorizes, the assistant commits and pushes to `wil`, opens and updates the pull request and fixes CI failures caused by the change; it merges only when that run authorizes merging. Commits and pull requests carry no automatic AI attribution. Rules: [workflow](workflow.md#branches-main-and-wil).
-
-**Why:** the owner ran every commit, push and merge by hand, so work stopped whenever the owner was away. Work approved in advance can continue while the owner is away and end in pull requests ready for review, while the protections of `main` and the owner's approvals stay in place.
-
-| Option | Verdict |
-|---|---|
-| One permanent branch `wil`, realigned to `main` after each squash merge | **Chosen.** One place to look, one pull request at a time, and no branch clutter. Realigning rewrites `wil`, so it needs the owner's authorization. |
-| A new topic branch per task (the previous flow) | Discarded for maintainer work. It stays for outside contributors. |
-| The owner keeps running every commit and push | Discarded. It is the bottleneck this change removes. |
-| A bot that commits directly to `main` | Discarded. It would need a bypass in "Protect main". |
+The [execution plan](plans/next-release-execution-plan.md) records the phases, completion criteria and verification evidence for the next release.
 
 ---
 
@@ -127,7 +118,7 @@ The stack was set in the Sprint 0 plan and the Sprint 1 and Sprint 3 cards (S1-1
 
 ### Audio size and rejection
 
-`api/src/routes/transcribe.ts` uses `express.raw`, not multer or multipart uploads. Its numeric limit is **1,024,044 bytes** (`44 + 32 × 16,000 × 2`): the app's 44-byte WAV header and 32 seconds of mono, 16-bit PCM at 16 kHz. The app records at most 30 seconds (960,044 bytes). The separate global JSON parser only reads JSON and does not impose its 16 KiB limit on WAV uploads. Session verification runs before the audio parser; the user burst and daily checks run after parsing and before transcription.
+`api/src/modules/conversation/presentation/transcribe.ts` uses `express.raw`, not multer or multipart uploads. Its numeric limit is **1,024,044 bytes** (`44 + 32 × 16,000 × 2`): the app's 44-byte WAV header and 32 seconds of mono, 16-bit PCM at 16 kHz. The app records at most 30 seconds (960,044 bytes). The separate global JSON parser only reads JSON and does not impose its 16 KiB limit on WAV uploads. Session verification runs before the audio parser; the user burst and daily checks run after parsing and before transcription.
 
 The parser raises `entity.too.large`; the central error handler maps it to `400 VALIDATION_ERROR` with the fixed message `The request body is too large.` A parser's usual `413` is therefore not this API's response. The limit applies to streamed bytes when `Content-Length` is absent and to the expanded bytes of compressed bodies. See the [Express body-parser documentation](https://expressjs.com/en/resources/middleware/body-parser/).
 
@@ -261,7 +252,7 @@ References: [email templates](https://supabase.com/docs/guides/auth/auth-email-t
 
 ## 2026-10-29 — Migrations are checked by a query, and a failed counter shows in /health (S6-16)
 
-**Decision:** [`docs/verify-migrations.sql`](verify-migrations.sql) lists, for every file in `docs/migrations/`, what it creates (columns, functions, execute grants, constraints, column privileges) and shows `ok` or `MISSING`. It also checks that every table in `public` has RLS. It is run in the SQL Editor after a migration, and by the CI against `schema.sql`, so the query itself cannot drift from the schema. The steps are in [CONTRIBUTING.md](../CONTRIBUTING.md#database-migrations). `GET /health` answers `"status": "degraded"` with `"problems": ["usage_counter"]` after a failed count, until one succeeds.
+**Decision:** [`docs/verify-migrations.sql`](verify-migrations.sql) lists, for every file in `docs/migrations/`, what it creates (columns, functions, execute grants, constraints, column privileges) and shows `ok` or `MISSING`. It also checks that every table in `public` has RLS. It is run in the SQL Editor after a migration, and by the CI against `schema.sql`, so the query itself cannot drift from the schema. The steps are in [development guide](development.md#database-migrations). `GET /health` answers `"status": "degraded"` with `"problems": ["usage_counter"]` after a failed count, until one succeeds.
 
 **Why:** `record_interaction` (S4-13) was missing in production. Every count failed with `PGRST202`, the backend logged only the error code and kept answering, so the daily cap was not enforced and nobody noticed.
 
@@ -364,7 +355,7 @@ References: [email templates](https://supabase.com/docs/guides/auth/auth-email-t
 
 ## 2026-10-27 — Speech recognition: the phone's recognizer behind one interface (S6-8)
 
-**Decision:** the person speaks to marlix with the recognizer of the phone (`speech_to_text`), in Spanish, behind `SpeechRecognizer` (`lib/services/voice/speech_recognizer.dart`: `listen`, `stop`, `cancel`, with partial and final results). Screens go through `SpeechController`; no screen imports the package (a rule in `architecture_test.dart`). What is understood goes through `ChatController.send`, the same path as typed text, so `POST /chat` and its crisis filter apply equally. No endpoint changes.
+**Decision:** the person speaks to marlix with the recognizer of the phone (`speech_to_text`), in Spanish, behind `SpeechRecognizer` (`lib/features/voice/application/speech_recognizer.dart`: `listen`, `stop`, `cancel`, with partial and final results). Screens go through `SpeechController`; no screen imports the package (a rule in `architecture_test.dart`). What is understood goes through `ChatController.send`, the same path as typed text, so `POST /chat` and its crisis filter apply equally. No endpoint changes.
 
 | Question | Decision |
 | --- | --- |
@@ -475,7 +466,7 @@ References: [email templates](https://supabase.com/docs/guides/auth/auth-email-t
 
 ## 2026-10-21 — The voice layer: one interface, the phone decides, the app owns the download (S6-2)
 
-**Decision:** the app speaks through `VoiceController` (`lib/screens/voice/`), which wraps `VoiceService` (`lib/services/voice/`). The service chooses between two engines that implement the same `VoiceEngine` interface (`speak`, `stop`, and the events started, progress and finished): `SupertonicVoiceEngine` and `NativeVoiceEngine` (`flutter_tts`). It applies the rules of [the S6-1 decision](#2026-10-21--voice-supertonic-3-on-the-phone-voice-f4-s6-1), and the avatar's `voice_config` in the database says which voice, so a new avatar brings its own without a release. No screen names an engine: `architecture_test.dart` fails if one imports an engine, the model store or a voice package.
+**Decision:** the app speaks through `VoiceController` (`lib/features/voice/presentation/`), which wraps `VoiceService` (`lib/features/voice/application/`). The service chooses between two engines that implement the same `VoiceEngine` interface (`speak`, `stop`, and the events started, progress and finished): `SupertonicVoiceEngine` and `NativeVoiceEngine` (`flutter_tts`). It applies the rules of [the S6-1 decision](#2026-10-21--voice-supertonic-3-on-the-phone-voice-f4-s6-1), and the avatar's `voice_config` in the database says which voice, so a new avatar brings its own without a release. No screen names an engine: `architecture_test.dart` fails if one imports an engine, the model store or a voice package.
 
 **One common signal.** Supertonic makes audio, so it knows how long it lasts; the native voice reports the word it is on. Both are turned into the same progress, a fraction from 0 to 1, so the avatar's mouth (S6-5) does not care which engine speaks.
 
@@ -624,7 +615,7 @@ The voice keeps the **5 steps** that the listeners voted for: 3 steps is faster 
 
 **One controller.** `AvatarController` listens to the chat state and is the only code that sets the avatar's state: `thinking` while marlix replies, a 3 s `happy` after a reply to a positive message, `idle` otherwise. Screens only watch it, so voice mode (Sprint 6) adds `listening` and `speaking` there without touching the widget. The avatar sits in the chat header (64 px, 48 px with the keyboard open, because at 64 px a 320x568 phone with the keyboard open overflowed by 20 px), as in wireframe 03a but bigger and animated.
 
-**`tone` in `POST /v1/chat`.** The backend returns `tone` (`positive` or `neutral`), computed in `api/src/services/tone/message-tone.ts` with rules over words and emojis, without calling the model. It is conservative on purpose: `positive` only for a short message (at most 200 characters) with a clear happy phrase and no negation or doubt ("no me siento bien", "estoy bien pero cansado" are `neutral`), because celebrating next to someone who is struggling is worse than staying calm. A crisis is always `neutral`. The app reads anything but an explicit `"positive"` as neutral, so it still works against a backend that does not send the field.
+**`tone` in `POST /v1/chat`.** The backend returns `tone` (`positive` or `neutral`), computed in `api/src/modules/conversation/domain/message-tone.ts` with rules over words and emojis, without calling the model. It is conservative on purpose: `positive` only for a short message (at most 200 characters) with a clear happy phrase and no negation or doubt ("no me siento bien", "estoy bien pero cansado" are `neutral`), because celebrating next to someone who is struggling is worse than staying calm. A crisis is always `neutral`. The app reads anything but an explicit `"positive"` as neutral, so it still works against a backend that does not send the field.
 
 | Alternative | Why not |
 | --- | --- |
@@ -674,7 +665,7 @@ The voice keeps the **5 steps** that the listeners voted for: 3 steps is faster 
 | Animating with `AnimatedSwitcher` between states | A state change would cut instead of ease: the card asks for no jumps. |
 | Baking effects (waves, hearts, cloud) as SVG layers | They would break the fixed layer template and every new avatar would have to redraw them. |
 
-**Artwork redrawn against the prototype (found in S5-2).** The first layers of S5-1 were drawn from the card alone and did not look like the validated prototype (`docs/diagrams/wireframes/style-guide/avatar.png`): they lacked the white eye rings, the "marlix" coat, arms, tail and feet. The layers were redrawn measuring over the prototype and the template grew to 19 layers (`cola`, `pies`, `brazo_izq`, `brazo_der`, `cabeza`, `pupilas` and `boca_pensando` are new; `panza` is the coat). The open mouths have the flat top of the prototype, so Speaking visibly opens the mouth even at low volume, and the doubtful mouth of Thinking is its own layer instead of sharing `boca_1`. `pupilas` is apart from `ojos_abiertos` so the pupils can look up inside their rings. The lettering is outlined from the bundled Baloo 2 because `flutter_svg` does not draw text. Lesson: check the artwork against the validated reference before delivering, not only against the card.
+**Artwork redrawn against the prototype (found in S5-2).** The first layers of S5-1 were drawn from the card alone and did not look like the validated prototype: they lacked the white eye rings, the "marlix" coat, arms, tail and feet. The layers were redrawn measuring over the prototype and the template grew to 19 layers (`cola`, `pies`, `brazo_izq`, `brazo_der`, `cabeza`, `pupilas` and `boca_pensando` are new; `panza` is the coat). The open mouths have the flat top of the prototype, so Speaking visibly opens the mouth even at low volume, and the doubtful mouth of Thinking is its own layer instead of sharing `boca_1`. `pupilas` is apart from `ojos_abiertos` so the pupils can look up inside their rings. The lettering is outlined from the bundled Baloo 2 because `flutter_svg` does not draw text. Lesson: check the artwork against the validated reference before delivering, not only against the card.
 
 **Debug-only test screen.** "Probar el avatar" is shown in Settings only when `kDebugMode`, so release builds do not carry a developer row.
 
@@ -956,7 +947,7 @@ The message list is reversed, so it stays anchored to the newest message when th
 
 ## 2026-10-15 — App API service: `package:http`, typed errors, development token from an ignored file (S3-2)
 
-**Decision:** `lib/services/marlix_api.dart` is the only code that talks to the backend, on `package:http`. It covers the endpoints the backend has today (`/health`, `/v1/help-resources`, `/v1/chat`, `/v1/usage`); each endpoint built in Sprint 4 adds its method in its own card (decided by the user on 2026-10-15).
+**Decision:** `lib/shared/infrastructure/http/marlix_api.dart` is the only code that talks to the backend, on `package:http`. It covers the endpoints the backend has today (`/health`, `/v1/help-resources`, `/v1/chat`, `/v1/usage`); each endpoint built in Sprint 4 adds its method in its own card (decided by the user on 2026-10-15).
 
 | Option | Result |
 |---|---|
@@ -966,7 +957,7 @@ The message list is reversed, so it stays anchored to the newest message when th
 - **Typed errors:** every failure is an `ApiException` subtype (`NetworkException`, `ApiTimeoutException`, `InvalidResponseException`, or one per contract error code, such as `DailyLimitReachedException` with `resetsAt` and `RateLimitedException` with `Retry-After`). A crisis is a `CrisisReply`, not an error, as in the contract.
 - **Timeout of 75 seconds:** the free Render plan takes up to a minute to wake up.
 - **Development token:** until S4-3, `/v1/chat` and `/v1/usage` need `DEV_ACCESS_TOKEN`. The app reads it from `config/dev-token.json`, ignored by Git and passed with a second `--dart-define-from-file`, so it never enters the repository (decided by the user on 2026-10-15). It is removed with the real accounts. Since S4-12 a release build never reads the token's value, so it is not compiled into the APK, and it refuses to start if the file was passed.
-- A test fails if any file outside `lib/services/` imports `package:http`, or if the app's code or config contains something that looks like an API key.
+- A test fails if any file outside infrastructure or composition imports `package:http`, or if the app's code or config contains something that looks like an API key.
 
 ---
 
@@ -1001,7 +992,7 @@ ECR Public rejected the anonymous pulls of GitHub's shared runners (`toomanyrequ
 
 ## 2026-10-14 — HTTP security headers: a small middleware of our own, not helmet (S2-9)
 
-**Decision:** the security headers come from a middleware of a few lines (`api/src/middleware/security-headers.ts`), not from `helmet`.
+**Decision:** the security headers come from a middleware of a few lines (`api/src/shared/presentation/security-headers.ts`), not from `helmet`.
 
 | Header | Value | Where |
 |---|---|---|
@@ -1184,4 +1175,4 @@ Alternatives, in order: another Groq model, a paid provider such as DeepSeek, or
 
 - *Discarded:* not saving them. It is slightly more private, but the user would come back to a chat without what they wrote or the help they got.
 
-Full flow: [chat sequence diagram](diagrams/chat-sequence.md).
+Full flow: [chat endpoint](api-contract.md#post-v1chat).

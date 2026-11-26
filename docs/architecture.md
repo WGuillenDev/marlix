@@ -1,61 +1,35 @@
-# Architecture — v1
+# Architecture
 
-How the pieces of marlix fit together. For the data model see the [ERD](erd.md); for the rules every change must respect see [CONTRIBUTING.md](../CONTRIBUTING.md#non-negotiable-rules).
+How the pieces of marlix fit together. See the [data model](erd.md) for database access and policies.
 
-## Diagram
+## Engineering rules
 
-```mermaid
-flowchart TB
-    user(["👤 User"])
+- Only the backend calls the language model and holds its key.
+- Every application table has row-level security and the policies its access requires.
+- Chat content stays out of logs. Keep secrets and real user data out of the repository.
+- Run the [crisis filter](crisis-protocol.md) before the conversation model, including when the daily limit is reached. Clear risk stays on the backend. For an ambiguous message, send only that message to the isolated classifier. Trigger the crisis protocol if the classifier cannot clear it.
 
-    subgraph phone["📱 Phone (Android)"]
-        mic["Microphone<br/>echo cancellation<br/>voice and turn detector"]
-        app["Flutter app<br/>chat · avatar · help screen"]
-        tts["Avatar voice<br/>Supertonic 3<br/>fallback: flutter_tts"]
-        notif["Local reminders<br/>flutter_local_notifications"]
-    end
+Repository documentation, code and commit messages are in English. User-facing app copy is in Spanish.
 
-    subgraph render["☁️ Backend on Render · Node.js + TypeScript + Express"]
-        secrets[("🔑 Environment variables<br/>GROQ_API_KEY<br/>SUPABASE_SECRET_KEY")]
-        auth["1 · Verify session"]
-        limit["2 · Daily limit"]
-        crisis{"3 · Crisis filter"}
-        fixed["Fixed 9-1-1 reply<br/>nothing leaves the backend"]
-        prompt["4 · Build prompt<br/>+ distilled memory"]
-        review["5 · Review reply<br/>sentence by sentence"]
-        auth --> limit --> crisis
-        crisis -- "clear risk" --> fixed
-        crisis -- "normal" --> prompt --> review
-    end
+## Code organization
 
-    subgraph supabase["🗄️ Supabase"]
-        sbauth["Auth"]
-        db[("PostgreSQL<br/>RLS on every table")]
-    end
+Marlix uses Clean Architecture and domain-driven design across the API and mobile app. Code is organized by business capability.
 
-    groq["🧠 Groq<br/>LLM · Whisper"]
-    monitor["⏱️ Uptime monitor"]
-    actions["⚙️ GitHub Actions<br/>encrypted backup"]
+| Backend module | Responsibilities |
+| --- | --- |
+| Conversation | Chat turns, history, retention and transcription. |
+| Safety | Crisis detection and escalation, reply review and help resources. |
+| Memory | Distilled facts, extraction policy, prompt selection and personal memory management. |
+| Identity | Sessions, account deletion, profiles and onboarding. |
+| Usage | Burst limits, daily accounting and reset time. |
 
-    user -- "voice" --> mic --> app
-    user -- "text" --> app
-    app -- "reply text" --> tts -- "speech" --> user
-    notif -. "daily, at the chosen time" .-> user
+Backend modules live under `api/src/modules/`. Their `domain/` contains models and policies. The `application/` layer orchestrates workflows through ports. `presentation/` adapts HTTP and `infrastructure/` adapts Supabase, model providers and configuration. `server.ts` creates production adapters and `app.ts` wires up the HTTP application.
 
-    app -- "sign up / sign in<br/>publishable key" --> sbauth
-    app == "HTTPS + session token" ==> auth
+The app follows the same feature-first layout under `app/lib/features/` for account, conversation, safety, memory, settings, avatar and voice. Riverpod and widgets live in presentation and wiring. The conversation, memory and account controllers use feature gateways backed by the shared HTTP adapter. Voice uses ports for speech detection, recognition, playback, model storage and device facts. Shared preferences, the dialer and notifications are device adapters.
 
-    crisis -. "ambiguous: isolated<br/>classification, no history" .-> groq
-    prompt == "conversation" ==> groq
-    render -. "turn audio · memory extraction" .-> groq
-    render -- "service_role" --> db
-    monitor -. "GET /health every 5 min" .-> render
-    actions -. "pg_dump every day" .-> db
+Domain and application dependencies point inward. Presentation consumes the typed ports and cases exposed by application, with adapters supplied through the composition code. API and Flutter architecture tests enforce the import boundaries and SDK isolation. The `/v1` HTTP contract continues to connect the two applications.
 
-    app -. "❌ never" .-x groq
-```
-
-Thick arrows are the path of a normal chat message. Dotted arrows are background or conditional traffic. The crossed arrow marks a call that must never exist.
+To follow a chat turn, start at the [HTTP route](../api/src/modules/conversation/presentation/chat.ts) and read the [chat use case](../api/src/modules/conversation/application/chat-service.ts). In Flutter, the [chat controller](../app/lib/features/conversation/presentation/chat_controller.dart) uses the conversation gateway. The [HTTP transport](../app/lib/shared/infrastructure/http/http_transport.dart) handles requests and the [chat event reader](../app/lib/features/conversation/infrastructure/chat_event_stream.dart) handles sentence streaming.
 
 ## Components
 
@@ -90,20 +64,20 @@ Voice mode reuses the same backend path as text chat. The phone records each tur
 
 ## The crisis filter comes first
 
-The crisis filter runs inside the backend, **after** the session and limit checks and **before** any call to the LLM:
+The crisis filter runs inside the backend, after session verification and before sending anything to the conversation model:
 
 - **Clear risk:** the message never leaves the backend. The reply is a fixed text that points to 9-1-1.
 - **Ambiguous:** only that message is sent to Groq for an isolated classification, with no history or memory. If it says risk, fails or times out, the crisis protocol is triggered.
 - **Normal:** the message continues to the conversation with the model.
 
-It lives in code, not in the system prompt, because a model can be wrong or manipulated and a rule in code cannot. The detailed order of every step is in the [chat sequence diagram](diagrams/chat-sequence.md), and how messages are classified is in the [crisis protocol](crisis-protocol.md).
+The backend always runs the filter before enforcing an exhausted daily limit. See the [chat endpoint](api-contract.md#post-v1chat) for request behavior and the [crisis protocol](crisis-protocol.md) for classification.
 
 ## The reply is reviewed before it is shown
 
-The personality prompt forbids clinical advice, diagnoses and the rest of marlix's limits, but a model can still break them. So every reply goes through a review in code (S2-4, `api/src/services/review/`) before it reaches the person:
+The personality prompt forbids clinical advice, diagnoses and the rest of marlix's limits, but a model can still break them. So every reply goes through a review in code (S2-4, `api/src/modules/safety/domain/`) before it reaches the person:
 
 - The reply is split into sentences and **each sentence is reviewed on its own**. The voice mode sends the reply sentence by sentence while the model writes it (S6-10) and reuses the same check on each one.
-- Rules, checked most serious first: harmful information (lethal doses, methods), clinical advice (medication, doses), diagnoses, claiming to be a professional, discouraging professional help and encouraging dependence. The phrases are in [`rules.ts`](../api/src/services/review/rules.ts) and are normalized like the crisis signals; a phrase right after "no" does not count, so "no soy tu terapeuta" passes.
+- Rules, checked most serious first: harmful information (lethal doses, methods), clinical advice (medication, doses), diagnoses, claiming to be a professional, discouraging professional help and encouraging dependence. The phrases are in [`rules.ts`](../api/src/modules/safety/domain/rules.ts) and are normalized like the crisis signals; a phrase right after "no" does not count, so "no soy tu terapeuta" passes.
 - If a sentence fails, **the reply is replaced** by a safe text that gives no advice and invites the person to keep talking. In the text chat the whole reply is replaced; in the voice stream the sentences already approved stay and the safe text follows them. The log only says which rule fired, never the reply.
 - It is a few regular expressions per sentence: no second model call and no noticeable delay (well under 5 ms per reply).
 
@@ -113,7 +87,7 @@ The backend talks to the LLM through its own abstraction layer (S1-3), and voice
 
 ### The LLM layer
 
-Everything about the LLM lives in `api/src/services/llm/`. The rest of the backend imports only from `services/llm/index.ts` and never from a provider SDK; a test (`api/test/llm-boundary.test.ts`) fails if any file outside the folder imports one.
+The model port and its errors live in `api/src/shared/application/ai/`. Provider implementations and their factory live in `api/src/shared/infrastructure/ai/`. The [architecture test](../api/test/llm-boundary.test.ts) confines provider SDKs to that adapter directory.
 
 | File | What it holds |
 |---|---|
@@ -129,9 +103,9 @@ The provider is chosen with the `LLM_PROVIDER` environment variable, and each pr
 
 ### Adding an LLM provider
 
-1. Add the provider name to `LLM_PROVIDER` and its variables (key, model) to the schema in `api/src/config/env.ts`, to `api/.env.example` and to the README table.
-2. Create `api/src/services/llm/<provider>-provider.ts` with a class that implements `LlmProvider`. Its SDK is imported only there. Translate every error into an `LlmError` of the right kind; a quota error must carry the wait time the provider asks for.
-3. Register it in the provider factory in `api/src/services/llm/index.ts`, under its `LLM_PROVIDER` name.
+1. Add the provider name to `LLM_PROVIDER` and its variables (key, model) to the schema in `api/src/shared/infrastructure/config/env.ts`, to `api/.env.example` and to the README table.
+2. Create `api/src/shared/infrastructure/ai/<provider>-provider.ts` with a class that implements `LlmProvider`. Its SDK is imported only there. Translate every error into an `LlmError` of the right kind; a quota error must carry the wait time the provider asks for.
+3. Register it in the provider factory in `api/src/shared/infrastructure/ai/index.ts`, under its `LLM_PROVIDER` name.
 4. Review the provider's data policy before sending it real conversations, and record the decision in [decisions.md](decisions.md), as was done for Groq.
 
 Providers compatible with the OpenAI API (Groq, DeepSeek and others) can reuse the OpenAI SDK with a different base URL.

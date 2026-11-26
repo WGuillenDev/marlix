@@ -30,7 +30,7 @@ The app opens on the sign-in screen. Create an account there (you must be 18 or 
 | Command (in `app/`) | What it does |
 |---|---|
 | `flutter analyze` | Checks the code with the project's lint rules. |
-| `flutter test` | Runs the automated tests. The [CI](../.github/workflows/ci.yml) also runs them, with the format check and `flutter analyze`, on every pull request. |
+| `flutter test` | Runs the automated tests. [CI](../.github/workflows/ci.yml) also runs the format check and `flutter analyze`. |
 | `node tool/verify-integration.mjs local` or `node tool/verify-integration.mjs staging` | Runs the emulator integration suite against an isolated environment. See [Integration tests](#integration-tests). |
 | `flutter build apk --release --dart-define-from-file=config/production.json` | Builds the release APK against production. Test voice mode on a release build too: R8 shrinks it and the debug build does not. |
 | `dart format lib test integration_test` | Formats the code (100 columns). |
@@ -42,7 +42,7 @@ With Node.js 24 available, run `flutter pub get` in `app/` and start the Android
 - **Local API:** Copy `config/local.example.json` to `config/integration.local.json`. Use the local API URL from the emulator and the isolated project's Supabase URL and publishable key. Run `node tool/verify-integration.mjs local` from `app/`.
 - **Staging API:** Copy `config/staging.example.json` to `config/staging.json` and use with the staging HTTPS API URL and that project's Supabase URL and publishable key. Run `node tool/verify-integration.mjs staging` from `app/`.
 
-Add `--check` to either command to validate the configuration before contacting a service or starting Flutter. The runner rejects the production API host, Supabase host and publishable key from `config/production.json`. The integration suite checks autoconfirm before creating its test account. Record the command and result in the pull request; keep environment files and test credentials local.
+Add `--check` to either command to validate the configuration before contacting a service or starting Flutter. The runner rejects the production API host, Supabase host and publishable key from `config/production.json`. The integration suite checks autoconfirm before creating its test account. Record the command and result with the [phase evidence](plans/next-release-execution-plan.md#6-phase-tracking). Keep environment files and test credentials local.
 
 ### Signing the release
 
@@ -109,7 +109,7 @@ The rest are optional and have safe defaults: timeouts, the crisis classifier an
 |---|---|
 | `npm run dev` | Starts the server and restarts it on every change. |
 | `npm run typecheck` | Checks the types in strict mode without emitting files. |
-| `npm test` | Runs the automated tests. The [CI](../.github/workflows/ci.yml) also runs them, with the type check and the build, on every pull request. |
+| `npm test` | Runs the automated tests. [CI](../.github/workflows/ci.yml) also runs the type check and build. |
 | `npm run llm:smoke` | Sends one real message to the configured LLM and prints the reply. `-- --burst 6` sends several at once to check that a quota error (429) is handled. Spends real quota. |
 | `npm run crisis:eval` | Runs the crisis test cases through the real filter, classifier included, and reports false negatives and false positives. Spends real quota. |
 | `npm run build` | Compiles TypeScript to `dist/`. |
@@ -156,9 +156,15 @@ Every performance check uses this Android Virtual Device. Define it here and now
 
 Create it with Android Studio's Device Manager, or with `avdmanager create avd -n marlix-lowend -k "system-images;android-31;google_apis;x86_64"` and then set `hw.ramSize=2048`, `hw.cpu.ncore=2` and `hw.gpu.mode=swiftshader_indirect` in its `config.ini`.
 
+## Database migrations
+
+1. Put each change to an existing database in a dated, transactional file in [`migrations/`](migrations/). Mirror the final state in [`schema.sql`](schema.sql) for new databases.
+2. Update [`verify-migrations.sql`](verify-migrations.sql) and cover any access changes in [`schema-test.sql`](schema-test.sql). Rehearse the migration in staging.
+3. The maintainer applies the migration in the production Supabase **SQL Editor** and runs `verify-migrations.sql`. Every row must return `ok` before deployment of dependent backend code. After deployment, check `GET /health`. Render does not apply database migrations.
+
 ## Supabase project
 
-Production data and accounts live in the Supabase project. Changes to the schema after it was created are in [`docs/migrations/`](migrations/): run each file once, in order, in the **SQL Editor**. [`docs/schema.sql`](schema.sql) already includes them for a new database.
+Production data and accounts live in the Supabase project.
 
 Sign-up uses email and password, with these settings in **Authentication → Sign In / Providers → Email** ([decision](decisions.md)):
 
