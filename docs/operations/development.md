@@ -1,6 +1,6 @@
 # Development guide
 
-How to run, test and deploy marlix: the app, the backend, the Supabase project and the local database. The overview is in the [README](../README.md).
+How to run, test and deploy marlix: the app, the backend, the Supabase project and the local database. The overview is in the [README](../../README.md).
 
 ## App
 
@@ -30,7 +30,7 @@ The app opens on the sign-in screen. Create an account there (you must be 18 or 
 | Command (in `app/`) | What it does |
 |---|---|
 | `flutter analyze` | Checks the code with the project's lint rules. |
-| `flutter test` | Runs the automated tests. [CI](../.github/workflows/ci.yml) also runs the format check and `flutter analyze`. |
+| `flutter test` | Runs the automated tests. [CI](../../.github/workflows/ci.yml) also runs the format check and `flutter analyze`. |
 | `node tool/verify-integration.mjs local` or `node tool/verify-integration.mjs staging` | Runs the emulator integration suite against an isolated environment. See [Integration tests](#integration-tests). |
 | `flutter build apk --release --dart-define-from-file=config/production.json` | Builds the release APK against production. Test voice mode on a release build too: R8 shrinks it and the debug build does not. |
 | `dart format lib test integration_test` | Formats the code (100 columns). |
@@ -42,7 +42,7 @@ With Node.js 24 available, run `flutter pub get` in `app/` and start the Android
 - **Local API:** Copy `config/local.example.json` to `config/integration.local.json`. Use the local API URL from the emulator and the isolated project's Supabase URL and publishable key. Run `node tool/verify-integration.mjs local` from `app/`.
 - **Staging API:** Copy `config/staging.example.json` to `config/staging.json` and use with the staging HTTPS API URL and that project's Supabase URL and publishable key. Run `node tool/verify-integration.mjs staging` from `app/`.
 
-Add `--check` to either command to validate the configuration before contacting a service or starting Flutter. The runner rejects the production API host, Supabase host and publishable key from `config/production.json`. The integration suite checks autoconfirm before creating its test account. Record the command and result with the [phase evidence](plans/next-release-execution-plan.md#6-phase-tracking). Keep environment files and test credentials local.
+Add `--check` to either command to validate the configuration before contacting a service or starting Flutter. The runner rejects the production API host, Supabase host and publishable key from `config/production.json`. The integration suite checks autoconfirm before creating its test account. Record the command and result with the [phase evidence](../plans/execution-plan.md#phase-status). Keep environment files and test credentials local.
 
 ### Signing the release
 
@@ -92,7 +92,7 @@ Requirements: [Node.js](https://nodejs.org/) 24 or later.
      -H "Authorization: Bearer <access_token>" \
      -d '{"message": "Hola, hoy tuve un buen día"}'
    ~~~
-   The response follows the [API contract](api-contract.md#post-v1chat).
+   The response follows the [API contract](../design/api-contract.md#post-v1chat).
 
 The server validates its variables when it starts: if a required one is missing or invalid, it does not start and prints the name of the variable (never its value). These four are required:
 
@@ -103,13 +103,13 @@ The server validates its variables when it starts: if a required one is missing 
 | `SUPABASE_URL` | The project URL, `https://<project-ref>.supabase.co`, without `/rest/v1`. |
 | `SUPABASE_SECRET_KEY` | Secret key starting with `sb_secret_`. It bypasses RLS: only the backend holds it, never share it. |
 
-The rest are optional and have safe defaults: timeouts, the crisis classifier and memory models, the chat context, the message retention and the transcription model. Each one is explained in [`api/.env.example`](../api/.env.example).
+The rest are optional and have safe defaults: timeouts, the crisis classifier and memory models, the chat context, the message retention and the transcription model. Each one is explained in [`api/.env.example`](../../api/.env.example).
 
 | Command | What it does |
 |---|---|
 | `npm run dev` | Starts the server and restarts it on every change. |
 | `npm run typecheck` | Checks the types in strict mode without emitting files. |
-| `npm test` | Runs the automated tests. [CI](../.github/workflows/ci.yml) also runs the type check and build. |
+| `npm test` | Runs the automated tests. [CI](../../.github/workflows/ci.yml) also runs the type check and build. |
 | `npm run llm:smoke` | Sends one real message to the configured LLM and prints the reply. `-- --burst 6` sends several at once to check that a quota error (429) is handled. Spends real quota. |
 | `npm run crisis:eval` | Runs the crisis test cases through the real filter, classifier included, and reports false negatives and false positives. Spends real quota. |
 | `npm run build` | Compiles TypeScript to `dist/`. |
@@ -117,9 +117,9 @@ The rest are optional and have safe defaults: timeouts, the crisis classifier an
 
 ## Deployment
 
-The backend runs on [Render](https://render.com) (free plan), defined in [`render.yaml`](../render.yaml). Every push to `main` that changes `api/` deploys automatically, once the [CI](../.github/workflows/ci.yml) checks of that commit pass; a commit with a failed check is never deployed.
+The backend runs on [Render](https://render.com) (free plan), defined in [`render.yaml`](../../render.yaml). Every push to `main` that changes `api/` deploys automatically, once the [CI](../../.github/workflows/ci.yml) checks of that commit pass; a commit with a failed check is never deployed.
 
-Usage limits: 100 replies a day per person, resetting at midnight Costa Rica time, and 5 messages per minute. The daily count and cap live in the database (`daily_usage` and `plan_limits`), so a restart does not reset them and the cap changes without a deploy; the per-minute limit is in [`api/config/plans.json`](../api/config/plans.json). Reaching one answers `429`, as described in the [API contract](api-contract.md#errors).
+Usage limits: 100 replies a day per person, resetting at midnight Costa Rica time, and 5 messages per minute. The daily count and cap live in the database (`daily_usage` and `plan_limits`), so a restart does not reset them and the cap changes without a deploy; the per-minute limit is in [`api/config/plans.json`](../../api/config/plans.json). Reaching one answers `429`, as described in the [API contract](../design/api-contract.md#errors).
 
 **Production URL:** https://marlix-api.onrender.com
 
@@ -135,12 +135,12 @@ To create the service the first time: in the Render dashboard, **New → Bluepri
 
 ## Staging
 
-Staging is a second Render service, `marlix-api-staging` in [`render.yaml`](../render.yaml), backed by its own Supabase project. It shares no key with production. Use it for the email acceptance test, the restore drill, migration rehearsals and the Sala rehearsal.
+Staging is a second Render service, `marlix-api-staging` in [`render.yaml`](../../render.yaml), backed by its own Supabase project. It shares no key with production. Use it for the email acceptance test, the restore drill, migration rehearsals and the Sala rehearsal.
 
 - **No automatic deploys.** `autoDeployTrigger` is `off`: deploy a branch or commit by hand (**marlix-api-staging → Manual Deploy → Deploy a specific commit**) before merging it. Production keeps deploying from `main`.
 - **It sleeps.** The free plan allows 750 instance hours a month per workspace, so only production stays awake. The first request after a pause can take up to a minute.
-- **Create it once.** (1) Create a second Supabase project. In its SQL Editor run [`schema.sql`](schema.sql), then [`verify-migrations.sql`](verify-migrations.sql): every row must say `ok`. Apply the Auth settings of the [production table](#supabase-project), plus `Confirm email` off while the integration suite runs. (2) In Render, create the service from the Blueprint and set `SUPABASE_URL`, `SUPABASE_SECRET_KEY` and `GROQ_API_KEY` to staging values. (3) Add the repository secret `STAGING_DATABASE_URL`, the project's connection string.
-- **Keepalive.** [`staging-keepalive.yml`](../.github/workflows/staging-keepalive.yml) runs `select 1` on Mondays and Thursdays so the free project does not pause. Run it once by hand from the Actions tab to check the secret.
+- **Create it once.** (1) Create a second Supabase project. In its SQL Editor run [`schema.sql`](../schema.sql), then [`verify-migrations.sql`](../verify-migrations.sql): every row must say `ok`. Apply the Auth settings of the [production table](#supabase-project), plus `Confirm email` off while the integration suite runs. (2) In Render, create the service from the Blueprint and set `SUPABASE_URL`, `SUPABASE_SECRET_KEY` and `GROQ_API_KEY` to staging values. (3) Add the repository secret `STAGING_DATABASE_URL`, the project's connection string.
+- **Keepalive.** [`staging-keepalive.yml`](../../.github/workflows/staging-keepalive.yml) runs `select 1` on Mondays and Thursdays so the free project does not pause. Run it once by hand from the Actions tab to check the secret.
 - **App.** `config/staging.json` (not committed) points the app at staging; see [Integration tests](#integration-tests).
 
 ### Low-end AVD
@@ -158,15 +158,15 @@ Create it with Android Studio's Device Manager, or with `avdmanager create avd -
 
 ## Database migrations
 
-1. Put each change to an existing database in a dated, transactional file in [`migrations/`](migrations/). Mirror the final state in [`schema.sql`](schema.sql) for new databases.
-2. Update [`verify-migrations.sql`](verify-migrations.sql) and cover any access changes in [`schema-test.sql`](schema-test.sql). Rehearse the migration in staging.
+1. Put each change to an existing database in a dated, transactional file in [`migrations/`](../migrations/). Mirror the final state in [`schema.sql`](../schema.sql) for new databases.
+2. Update [`verify-migrations.sql`](../verify-migrations.sql) and cover any access changes in [`schema-test.sql`](../schema-test.sql). Rehearse the migration in staging.
 3. The maintainer applies the migration in the production Supabase **SQL Editor** and runs `verify-migrations.sql`. Every row must return `ok` before deployment of dependent backend code. After deployment, check `GET /health`. Render does not apply database migrations.
 
 ## Supabase project
 
 Production data and accounts live in the Supabase project.
 
-Sign-up uses email and password, with these settings in **Authentication → Sign In / Providers → Email** ([decision](decisions.md)):
+Sign-up uses email and password, with these settings in **Authentication → Sign In / Providers → Email** ([decision](../adr/decisions.md)):
 
 | Setting | Value | Why |
 |---|---|---|
@@ -177,11 +177,11 @@ Sign-up uses email and password, with these settings in **Authentication → Sig
 
 The minimum age is enforced in the database: the sign-up trigger in the schema refuses anyone under 18, whatever client calls Supabase Auth.
 
-S7-9 enables confirmation and recovery with codes typed in the app. Production uses custom SMTP, `Confirm email` on, six-digit email OTPs, and the confirmation and recovery templates in `infra/auth/`, which use `{{ .Token }}` without links. On 2026-11-04, real-mailbox tests in the Pixel_8 emulator verified sign-up confirmation, recovery, a new password and subsequent sign-in. Existing users remain confirmed. Older app versions cannot handle a sign-up without a session; new installations need the updated app. The app requests a fresh code after expiry and waits 60 seconds before resend; Supabase enforces the actual rate limits. Recovery sessions exist only in memory, outside the normal persisted session, and finish with password sign-in. See the [S7-9 decision](decisions.md#2026-11-04--email-confirmation-and-password-recovery-use-codes-inside-the-app-s7-9).
+S7-9 enables confirmation and recovery with codes typed in the app. Production uses custom SMTP, `Confirm email` on, six-digit email OTPs, and the confirmation and recovery templates in `infra/auth/`, which use `{{ .Token }}` without links. On 2026-11-04, real-mailbox tests in the Pixel_8 emulator verified sign-up confirmation, recovery, a new password and subsequent sign-in. Existing users remain confirmed. Older app versions cannot handle a sign-up without a session; new installations need the updated app. The app requests a fresh code after expiry and waits 60 seconds before resend; Supabase enforces the actual rate limits. Recovery sessions exist only in memory, outside the normal persisted session, and finish with password sign-in. See the [S7-9 decision](../adr/decisions.md#2026-11-04--email-confirmation-and-password-recovery-use-codes-inside-the-app-s7-9).
 
 ## Local database
 
-The database runs locally in Docker with the same Postgres image Supabase uses in production, so [`docs/schema.sql`](schema.sql) behaves the same as in the cloud. Production runs on Supabase cloud; Docker is only for development.
+The database runs locally in Docker with the same Postgres image Supabase uses in production, so [`docs/schema.sql`](../schema.sql) behaves the same as in the cloud. Production runs on Supabase cloud; Docker is only for development.
 
 Requirements: [Docker Desktop](https://www.docker.com/products/docker-desktop/) running.
 

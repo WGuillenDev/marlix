@@ -4,7 +4,7 @@
 # with the public age key in BACKUP_AGE_RECIPIENT and keeps it as a workflow
 # artifact for 90 days. The repository is public and so are its artifacts: only
 # the encrypted file is ever written, and only the owner holds the private key.
-# How to set it up, download a backup and restore it: docs/backups.md.
+# How to set it up, download a backup and restore it: docs/operations/backups.md.
 
 name: Database backup
 

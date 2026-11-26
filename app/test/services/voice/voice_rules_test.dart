@@ -30,7 +30,7 @@ VoicePlan plan({
 Matcher native(NativeReason reason) => isA<PlanNative>().having((p) => p.reason, 'reason', reason);
 
 void main() {
-  group('VoicePlanner, the rules of docs/decisions.md', () {
+  group('VoicePlanner, the rules of docs/adr/decisions.md', () {
     test('a capable phone with the model uses Supertonic', () {
       expect(plan(), isA<PlanSupertonic>().having((p) => p.needsDownload, 'download', isFalse));
     });

@@ -17,7 +17,7 @@ class ConsentStep extends StatelessWidget {
   final VoidCallback onContinue;
   final VoidCallback onDecline;
 
-  // Keep this notice in sync with docs/memory.md and MESSAGE_RETENTION_DAYS.
+  // Keep this notice in sync with docs/design/memory.md and MESSAGE_RETENTION_DAYS.
   static const _data = [
     'Guardo tus mensajes 90 días para seguir la conversación.',
     'Guardo datos clave que me cuentes para conocerte. Puedes verlos, editarlos y borrarlos.',

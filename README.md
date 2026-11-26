@@ -5,11 +5,11 @@ Marlix is an Android companion app with an animated AI mascot. You can talk or w
 > [!IMPORTANT]
 > Marlix does not replace professional mental health care. If you are in danger in Costa Rica, call **9-1-1**.
 
-**Next release:** See the [execution plan](docs/plans/next-release-execution-plan.md) for the scope, phase status and verification evidence.
+The [v0.2 Execution Plan](docs/plans/execution-plan.md) is the source of truth for release scope, phase status, exit gates and where to resume.
 
 ## Run locally
 
-Use Flutter with an Android device or emulator, and Node.js 24 or later for the API. See the [development guide](docs/development.md) for environment configuration, Docker Compose, the local API and staging.
+Use Flutter with an Android device or emulator, and Node.js 24 or later for the API. See the [development guide](docs/operations/development.md) for environment configuration, Docker Compose, the local API and staging.
 
 ```bash
 cd api
@@ -33,10 +33,11 @@ Verify the APK signer with `apksigner verify --print-certs <file.apk>`. The rele
 
 ## Project references
 
-- [Execution plan](docs/plans/next-release-execution-plan.md)
-- [Development, staging and deployment](docs/development.md)
-- [Architecture](docs/architecture.md), [API contract](docs/api-contract.md) and [data access rules](docs/erd.md)
-- [Technical decisions](docs/decisions.md) and [security reporting](SECURITY.md)
+- [Development context and documentation map](docs/CLAUDE.md)
+- [v0.2 Execution Plan](docs/plans/execution-plan.md)
+- [Development, staging and deployment](docs/operations/development.md)
+- [Architecture](docs/design/architecture.md), [API contract](docs/design/api-contract.md) and [data access rules](docs/design/erd.md)
+- [Technical decisions](docs/adr/decisions.md) and [security reporting](SECURITY.md)
 
 ## License
 

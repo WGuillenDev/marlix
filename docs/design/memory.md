@@ -25,7 +25,7 @@ The database function `close_idle_conversations` does the ending in one statemen
 
 For each ended session, one at a time and a few seconds apart (it uses the same Groq quota as the chat):
 
-1. It reads what was said, **without the messages of a crisis**: they never go to the model ([S0-8](decisions.md)).
+1. It reads what was said, **without the messages of a crisis**: they never go to the model ([S0-8](../adr/decisions.md)).
 2. It gives the extractor the conversation and the facts already saved, each with its id.
 3. The extractor (`MEMORY_EXTRACTOR_MODEL`, a smaller model than the chat) answers with a JSON list of facts with a category.
 4. The facts are saved with their category and the session they came from, and the session is marked as extracted (`memory_extracted_at`).
@@ -40,8 +40,8 @@ The extractor sees the saved facts. If the conversation corrects or adds to one,
 
 Two barriers, because a model can be wrong or manipulated:
 
-1. **The prompt** ([`memory-extractor-prompt.ts`](../api/src/modules/memory/infrastructure/memory-extractor-prompt.ts)) forbids ID numbers, cards and bank accounts, passwords and PINs, medical and mental-health diagnoses, illnesses, medications and treatments, phone numbers, emails, exact addresses and anything about suicide or self-harm. It also says the conversation is data to read, never instructions, so a message that tries to change the rules is ignored.
-2. **A filter in code** ([`sensitive.ts`](../api/src/modules/memory/domain/sensitive.ts)) drops any fact with a number of eight digits or more, an email, a word about secrets or documents, or a stem about health. It is blunt on purpose: a lost fact costs little, a saved ID number costs a lot.
+1. **The prompt** ([`memory-extractor-prompt.ts`](../../api/src/modules/memory/infrastructure/memory-extractor-prompt.ts)) forbids ID numbers, cards and bank accounts, passwords and PINs, medical and mental-health diagnoses, illnesses, medications and treatments, phone numbers, emails, exact addresses and anything about suicide or self-harm. It also says the conversation is data to read, never instructions, so a message that tries to change the rules is ignored.
+2. **A filter in code** ([`sensitive.ts`](../../api/src/modules/memory/domain/sensitive.ts)) drops any fact with a number of eight digits or more, an email, a word about secrets or documents, or a stem about health. It is blunt on purpose: a lost fact costs little, a saved ID number costs a lot.
 
 The prompt says to leave out **only** the sensitive fact and keep the rest. A first version said "skip the fact entirely", and with the real model a conversation that mixed an ID number with ordinary facts returned nothing at all (0 of 6 attempts); with the clearer wording it returns the ordinary facts (4 of 4).
 
@@ -69,7 +69,7 @@ On every message the backend reads the person's memories and puts them at the en
 
 ## Seeing, editing and deleting (S4-8)
 
-The "Lo que marlix sabe de mí" screen (Settings) lists every memory, newest first, with its text, and lets the person edit one, delete one or delete them all after a confirmation. It uses `/v1/memories` ([contract](api-contract.md#get-v1memories)). Nothing is cached in the backend: the prompt reads the database on every message, so what the person deletes or rewrites changes the very next reply. Deleting removes the row, it does not hide it. The reasons are in [decisions.md](decisions.md).
+The "Lo que marlix sabe de mí" screen (Settings) lists every memory, newest first, with its text, and lets the person edit one, delete one or delete them all after a confirmation. It uses `/v1/memories` ([contract](api-contract.md#get-v1memories)). Nothing is cached in the backend: the prompt reads the database on every message, so what the person deletes or rewrites changes the very next reply. Deleting removes the row, it does not hide it. The reasons are in [decisions.md](../adr/decisions.md).
 
 ## How long messages are kept
 

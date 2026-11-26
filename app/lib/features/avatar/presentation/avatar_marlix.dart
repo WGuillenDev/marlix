@@ -16,7 +16,7 @@ int mouthForVolume(double volume) {
   return 3;
 }
 
-/// Assemble the avatar from interchangeable SVG layers. See docs/avatar.md.
+/// Assemble the avatar from interchangeable SVG layers. See docs/design/avatar.md.
 class AvatarMarlix extends StatefulWidget {
   const AvatarMarlix({super.key, required this.state, required this.folder, this.volume = 0});
 

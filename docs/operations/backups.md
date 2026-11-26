@@ -1,12 +1,12 @@
 # Database backups
 
-The free Supabase plan has no backups, and it pauses a project after a week without activity. marlix keeps its own: a GitHub Actions job ([`db-backup.yml`](../.github/workflows/db-backup.yml)) dumps the data every day, encrypts it and keeps it for 90 days. The reasoning is in [decisions.md](decisions.md#2026-11-03--database-backups-are-an-encrypted-daily-dump-in-github-artifacts-s7-5).
+The free Supabase plan has no backups, and it pauses a project after a week without activity. marlix keeps its own: a GitHub Actions job ([`db-backup.yml`](../../.github/workflows/db-backup.yml)) dumps the data every day, encrypts it and keeps it for 90 days. The reasoning is in [decisions.md](../adr/decisions.md#2026-11-03--database-backups-are-an-encrypted-daily-dump-in-github-artifacts-s7-5).
 
 ## What is saved
 
 - Every row of the `public` tables: profiles, conversations, messages, memories, daily usage, plans and avatars.
 - `auth.users` and `auth.identities`, because every `public` table points to `auth.users`. Passwords are in `auth.users` (hashed): this is why the file is never stored unencrypted.
-- Not the structure. [`schema.sql`](schema.sql) is the reviewed source of the structure, so a restore starts from it.
+- Not the structure. [`schema.sql`](../schema.sql) is the reviewed source of the structure, so a restore starts from it.
 
 ## One-time setup
 
@@ -37,7 +37,7 @@ The file is `backups/db-backup-<run id>/marlix-<date>.sql.age`. Artifacts expire
 
 ## Restore
 
-Restore into a database where only [`schema.sql`](schema.sql) has run, so the tables exist and are empty. The script loads everything in one transaction: it restores all or nothing.
+Restore into a database where only [`schema.sql`](../schema.sql) has run, so the tables exist and are empty. The script loads everything in one transaction: it restores all or nothing.
 
 To restore into a new Supabase project, run `schema.sql` in its SQL Editor, then use that project's session pooler URI:
 

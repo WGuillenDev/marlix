@@ -9,8 +9,8 @@ marlix is ready to be handed over: tested end to end, backed up and watched ever
 ### Added
 
 - Tests for the daily cap shared by text and voice, and for a memory job that never stores sensitive data ([#179](https://github.com/WGuillenDev/marlix/pull/179)).
-- A daily encrypted backup of the database in GitHub Actions, with the restore steps in `docs/backups.md` ([#193](https://github.com/WGuillenDev/marlix/pull/193)).
-- `groq_quota` in `GET /health` when a Groq model has 20% or less of its daily requests, and the uptime monitor guide in `docs/monitoring.md` ([#195](https://github.com/WGuillenDev/marlix/pull/195)).
+- A daily encrypted backup of the database in GitHub Actions, with the restore steps in `docs/operations/backups.md` ([#193](https://github.com/WGuillenDev/marlix/pull/193)).
+- `groq_quota` in `GET /health` when a Groq model has 20% or less of its daily requests, and the uptime monitor guide in `docs/operations/monitoring.md` ([#195](https://github.com/WGuillenDev/marlix/pull/195)).
 - A quarterly issue that reminds to verify the crisis help lines ([#198](https://github.com/WGuillenDev/marlix/pull/198)).
 - Email confirmation and password recovery with six-digit codes typed in the app ([#201](https://github.com/WGuillenDev/marlix/pull/201)).
 - A release APK signed with its own key, installation steps in the README and updates through GitHub Releases ([#209](https://github.com/WGuillenDev/marlix/pull/209)).
@@ -19,9 +19,9 @@ marlix is ready to be handed over: tested end to end, backed up and watched ever
 
 - The help screen and the crisis reply show only 9-1-1 and the Línea Aquí Estoy, each with its service and hours, and the chat reads replies aloud through the speaker instead of the earpiece ([#183](https://github.com/WGuillenDev/marlix/pull/183)).
 - The help docs are in English and 9-1-1 is described without a country ([#185](https://github.com/WGuillenDev/marlix/pull/185)).
-- A shorter README; the full setup guide moved to `docs/development.md` ([#177](https://github.com/WGuillenDev/marlix/pull/177)).
+- A shorter README; the full setup guide moved to `docs/operations/development.md` ([#177](https://github.com/WGuillenDev/marlix/pull/177)).
 - Compatible Flutter dependencies updated; `permission_handler` stays on 12.x because 13 needs `compileSdk` 37 ([#203](https://github.com/WGuillenDev/marlix/pull/203)).
-- The documentation matches the code: the API contract lists only implemented endpoints, the diagrams show Whisper, the backup and the 5-minute monitor, and `docs/decisions.md` is ordered newest first ([#207](https://github.com/WGuillenDev/marlix/pull/207)).
+- The documentation matches the code: the API contract lists only implemented endpoints, the diagrams show Whisper, the backup and the 5-minute monitor, and `docs/adr/decisions.md` is ordered newest first ([#207](https://github.com/WGuillenDev/marlix/pull/207)).
 
 ### Fixed
 

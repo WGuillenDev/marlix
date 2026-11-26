@@ -1,6 +1,6 @@
 # Data model and access rules
 
-[`schema.sql`](schema.sql) defines the application tables and policies.
+[`schema.sql`](../schema.sql) defines the application tables and policies.
 
 The database is Supabase (PostgreSQL). Sign-up and sign-in are handled by Supabase Auth, which owns the `auth.users` table; every other table lives in the `public` schema.
 
@@ -51,7 +51,7 @@ New users get the avatar marked `is_default`, so adding avatars does not change 
 
 ### Birth date and minimum age (S4-3)
 
-The app sends the birth date with the sign-up as user metadata (`birth_date`, `YYYY-MM-DD`). The sign-up trigger copies it to `users.birth_date` and cancels the sign-up, so no account is created, when it is missing, malformed or the person is under 18 on the Costa Rica calendar. Storing the date instead of the age lets the minimum age change later without reworking the model ([decision](decisions.md)). Existing databases get the column from [`migrations/2026-10-15-users-birth-date.sql`](migrations/2026-10-15-users-birth-date.sql).
+The app sends the birth date with the sign-up as user metadata (`birth_date`, `YYYY-MM-DD`). The sign-up trigger copies it to `users.birth_date` and cancels the sign-up, so no account is created, when it is missing, malformed or the person is under 18 on the Costa Rica calendar. Storing the date instead of the age lets the minimum age change later without reworking the model ([decision](../adr/decisions.md)). Existing databases get the column from [`migrations/2026-10-15-users-birth-date.sql`](../migrations/2026-10-15-users-birth-date.sql).
 
 ### Account deletion in cascade
 
@@ -98,7 +98,7 @@ RLS decides **which rows** a user reaches; table privileges decide **which opera
 
 ### Isolation tests (S4-2)
 
-[`schema-test.sql`](schema-test.sql) proves the rules above. It runs in a transaction that is rolled back, so it changes nothing, and it checks these things:
+[`schema-test.sql`](../schema-test.sql) proves the rules above. It runs in a transaction that is rolled back, so it changes nothing, and it checks these things:
 
 - **Sign-up (S4-3).** A sign-up without a birth date, with another format, with a date that does not exist, or of someone who turns 18 tomorrow is refused and leaves no account behind; someone who turns 18 today can sign up. A user cannot change their birth date.
 
@@ -115,9 +115,9 @@ It runs in the CI's Database job on pushes to `main` and on pull requests, again
 
 ## How to test
 
-Start the local database with Docker (see [Local database](development.md#local-database) in the development guide). On the first start it applies [`schema.sql`](schema.sql) to a clean database; check the seven tables exist.
+Start the local database with Docker (see [Local database](../operations/development.md#local-database) in the development guide). On the first start it applies [`schema.sql`](../schema.sql) to a clean database; check the seven tables exist.
 
-Then run the privilege and RLS tests in [`schema-test.sql`](schema-test.sql):
+Then run the privilege and RLS tests in [`schema-test.sql`](../schema-test.sql):
 
 ~~~bash
 docker compose exec -T db psql -U postgres -d postgres -v ON_ERROR_STOP=1 -f - < docs/schema-test.sql

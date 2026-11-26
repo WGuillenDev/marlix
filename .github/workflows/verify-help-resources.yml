@@ -2,7 +2,7 @@
 #
 # It verifies nothing by itself: it opens an issue with the checklist, because
 # an outdated number in a crisis reply is worse than none. The procedure is in
-# docs/crisis-protocol.md ("Verifying the help resources").
+# docs/design/crisis-protocol.md ("Verifying the help resources").
 
 name: Verify help resources
 
@@ -36,11 +36,11 @@ jobs:
             --title "Verify the crisis help resources ($(date -u +%Y-%m-%d))" \
             --label help-resources,security \
             --body "$(cat <<'EOF'
-          The help numbers in `api/config/crisis.json` must be checked every 3 months. Procedure: `docs/crisis-protocol.md`, section "Verifying the help resources".
+          The help numbers in `api/config/crisis.json` must be checked every 3 months. Procedure: `docs/design/crisis-protocol.md`, section "Verifying the help resources".
 
           - [ ] 9-1-1 is still the national emergency number in Costa Rica
           - [ ] Línea Aquí Estoy: number, hours and wording match https://aquiestoy.cr/
-          - [ ] Fix anything that changed in `api/config/crisis.json` and in the table of `docs/crisis-protocol.md`
+          - [ ] Fix anything that changed in `api/config/crisis.json` and in the table of `docs/design/crisis-protocol.md`
           - [ ] Set `updatedAt` in `api/config/crisis.json` to the verification date
           - [ ] Close this issue
           EOF

@@ -4,15 +4,21 @@ Every time the project picks between two technical options, the decision is reco
 
 ---
 
+## 2026-11-26 — Keep application startup in dedicated composition roots
+
+The API is organized by business capability and the Flutter app by feature. Both assemble their adapters in `bootstrap/`, so domain and application code use explicit ports independently of startup. Marlix keeps the API, mobile app and support site in `api/`, `app/` and `site/`. See the [architecture guide](../design/architecture.md#code-organization).
+
+---
+
 ## 2026-11-25 — Track the next release in one plan
 
-The [execution plan](plans/next-release-execution-plan.md) records the phases, completion criteria and verification evidence for the next release.
+The [execution plan](../plans/execution-plan.md) records the phases, completion criteria and verification evidence for the next release.
 
 ---
 
 ## 2026-11-05 — The app icon and launch screen are generated from the avatar, without a plugin (S8-3)
 
-**Decision:** the Android launcher icon is an adaptive icon: the avatar from `docs/images/marlix.svg` as the foreground on the app's light tan (`#F6D9B8`), plus a monochrome silhouette for themed icons on Android 13+. Phones before Android 8 get a square and a round PNG. The launch screen is the app's cream (`#FFF8EE`) with the avatar, both in the old `launch_background` and in the Android 12+ splash screen (`values-v31`, `values-night-v31`). The version moves to `0.1.2+3`.
+**Decision:** the Android launcher icon is an adaptive icon: the avatar from `docs/design/images/marlix.svg` as the foreground on the app's light tan (`#F6D9B8`), plus a monochrome silhouette for themed icons on Android 13+. Phones before Android 8 get a square and a round PNG. The launch screen is the app's cream (`#FFF8EE`) with the avatar, both in the old `launch_background` and in the Android 12+ splash screen (`values-v31`, `values-night-v31`). The version moves to `0.1.2+3`.
 
 **Why:** the app shipped Flutter's template icon and a white launch screen, so the phone showed the Flutter logo while the store listing shows the beagle. It had to be fixed before the first AAB reaches Google Play.
 
@@ -28,7 +34,7 @@ The [execution plan](plans/next-release-execution-plan.md) records the phases, c
 
 ## 2026-11-05 — Google Play: privacy pages on GitHub Pages, the S7-15 key as upload key (S8-2)
 
-**Decision:** the privacy policy and the account deletion page that Google Play requires are static HTML in `site/`, published with GitHub Pages by `.github/workflows/pages.yml` at `https://wguillendev.github.io/marlix/`. The AAB is signed with the S7-15 key, which becomes the Play **upload key** (Play App Signing keeps the real signing key). The store text and graphics live in [`play-store/listing.md`](play-store/listing.md). The version moves to `0.1.1+2`, so its `versionCode` is above the one in `v0.1.0`.
+**Decision:** the privacy policy and the account deletion page that Google Play requires are static HTML in `site/`, published with GitHub Pages by `.github/workflows/pages.yml` at `https://wguillendev.github.io/marlix/`. The AAB is signed with the S7-15 key, which becomes the Play **upload key** (Play App Signing keeps the real signing key). The store text and graphics live in [`play-store/listing.md`](../design/play-store/listing.md). The version moves to `0.1.1+2`, so its `versionCode` is above the one in `v0.1.0`.
 
 **Why:**
 - Play needs two public URLs. Pages is free, needs no new service, and the policy is reviewed in pull requests and has a public history, which matters for a document about personal data.
@@ -86,7 +92,7 @@ The [execution plan](plans/next-release-execution-plan.md) records the phases, c
 
 ## 2026-11-04 — The contract lists only implemented endpoints, and the history holds no secrets (S7-14)
 
-**Decision:** `docs/api-contract.md` documents only the routes the backend serves. `PATCH /v1/settings` and `GET /v1/avatars`, designed in Sprint 0 and never built, move to a **Planned endpoints** section instead of the v1 table.
+**Decision:** `docs/design/api-contract.md` documents only the routes the backend serves. `PATCH /v1/settings` and `GET /v1/avatars`, designed in Sprint 0 and never built, move to a **Planned endpoints** section instead of the v1 table.
 
 **Why:** the contract is what the app and any contributor build against. Both routes answered `404` while the table listed them as v1. Building them now would add code without a user: the reminders live on the phone since S5-3 (the backend only stores the onboarding answer), and the avatar arrives in `GET /v1/me` since S5-7. Deleting them would lose a shape already agreed for v2, so they stay, clearly marked.
 
@@ -100,7 +106,7 @@ The [execution plan](plans/next-release-execution-plan.md) records the phases, c
 Checked on every commit of every branch (`git log --all -p`, 108 commits):
 
 - **Files.** No `.env`, key, keystore, certificate, age key or test account file was ever added; only the `.example` files. `.gitignore` covers `.env`, `.env.*`, `app/config/local.json`, `app/config/test-account.json`, keystores, `key.properties` and the backup key.
-- **Content.** The full patch history was searched for the token formats of every provider the project uses: Groq (`gsk_`), Supabase secret keys (`sb_secret_`), JWTs, connection strings with a password, age secret keys, private key blocks, and GitHub, AWS, Google and Slack tokens. The only real value is the Supabase **publishable** key in `app/config/production.json`, which is public by design: it only allows sign-in and what RLS permits ([architecture](architecture.md#where-the-keys-live)). Every other match is a test fixture.
+- **Content.** The full patch history was searched for the token formats of every provider the project uses: Groq (`gsk_`), Supabase secret keys (`sb_secret_`), JWTs, connection strings with a password, age secret keys, private key blocks, and GitHub, AWS, Google and Slack tokens. The only real value is the Supabase **publishable** key in `app/config/production.json`, which is public by design: it only allows sign-in and what RLS permits ([architecture](../design/architecture.md#where-the-keys-live)). Every other match is a test fixture.
 - **Personal data.** Emails in the history are `example.com` or `marlix.test` fixtures; phone numbers are the public help lines or fixtures such as `8888-1234`; the four screenshots that were once in `docs/screenshots/` show no account or conversation data. The commit metadata carries the owner's public commit email, which is the owner's choice.
 - **GitHub.** Secret scanning and push protection are enabled, with no alerts.
 
@@ -176,7 +182,7 @@ References: [email templates](https://supabase.com/docs/guides/auth/auth-email-t
 
 ## 2026-11-03 — The help lines are verified every quarter by a person, reminded by an issue (S7-7)
 
-**Decision:** `.github/workflows/verify-help-resources.yml` opens an issue labelled `help-resources` on the 3rd of February, May, August and November, unless one is already open. The issue holds the checklist; a person checks each line against its official source and updates `api/config/crisis.json`, whose `updatedAt` records the date of the last verification ([procedure](crisis-protocol.md#verifying-the-help-resources)).
+**Decision:** `.github/workflows/verify-help-resources.yml` opens an issue labelled `help-resources` on the 3rd of February, May, August and November, unless one is already open. The issue holds the checklist; a person checks each line against its official source and updates `api/config/crisis.json`, whose `updatedAt` records the date of the last verification ([procedure](../design/crisis-protocol.md#verifying-the-help-resources)).
 
 | Alternative | Why not |
 | --- | --- |
@@ -187,7 +193,7 @@ References: [email templates](https://supabase.com/docs/guides/auth/auth-email-t
 
 ## 2026-11-03 — Monitoring: UptimeRobot on `/health`, and the Groq quota read from its headers (S7-6)
 
-**Decision:** an external UptimeRobot keyword monitor calls `GET /health` and emails an alert when `"status":"ok"` is not in the body. `/health` now also says `degraded` with `groq_quota` when any Groq model has 20% or less of its daily requests left. The setup, the checks and what each alert means are in [monitoring.md](monitoring.md).
+**Decision:** an external UptimeRobot keyword monitor calls `GET /health` and emails an alert when `"status":"ok"` is not in the body. `/health` now also says `degraded` with `groq_quota` when any Groq model has 20% or less of its daily requests left. The setup, the checks and what each alert means are in [monitoring.md](../operations/monitoring.md).
 
 **Why:** Render's free service sleeps after about 15 minutes without traffic, and Groq's free plan answers 429 once the day's requests are gone, which a person sees as a broken app. Both have to reach the owner before they reach a family member.
 
@@ -208,7 +214,7 @@ References: [email templates](https://supabase.com/docs/guides/auth/auth-email-t
 
 ## 2026-11-03 — Database backups are an encrypted daily dump in GitHub artifacts (S7-5)
 
-**Decision:** a scheduled GitHub Actions job runs `pg_dump` against the production database every day, encrypts the stream with [age](https://github.com/FiloSottile/age) and keeps it as a workflow artifact for 90 days. The owner holds the private key outside the repository. The steps to set it up, download and restore are in [backups.md](backups.md).
+**Decision:** a scheduled GitHub Actions job runs `pg_dump` against the production database every day, encrypts the stream with [age](https://github.com/FiloSottile/age) and keeps it as a workflow artifact for 90 days. The owner holds the private key outside the repository. The steps to set it up, download and restore are in [backups.md](../operations/backups.md).
 
 **Why:** the free Supabase plan has no backups and pauses a project after a week without activity, and the conversations are personal. A person who loses their memories loses the reason to use marlix.
 
@@ -252,7 +258,7 @@ References: [email templates](https://supabase.com/docs/guides/auth/auth-email-t
 
 ## 2026-10-29 — Migrations are checked by a query, and a failed counter shows in /health (S6-16)
 
-**Decision:** [`docs/verify-migrations.sql`](verify-migrations.sql) lists, for every file in `docs/migrations/`, what it creates (columns, functions, execute grants, constraints, column privileges) and shows `ok` or `MISSING`. It also checks that every table in `public` has RLS. It is run in the SQL Editor after a migration, and by the CI against `schema.sql`, so the query itself cannot drift from the schema. The steps are in [development guide](development.md#database-migrations). `GET /health` answers `"status": "degraded"` with `"problems": ["usage_counter"]` after a failed count, until one succeeds.
+**Decision:** [`docs/verify-migrations.sql`](../verify-migrations.sql) lists, for every file in `docs/migrations/`, what it creates (columns, functions, execute grants, constraints, column privileges) and shows `ok` or `MISSING`. It also checks that every table in `public` has RLS. It is run in the SQL Editor after a migration, and by the CI against `schema.sql`, so the query itself cannot drift from the schema. The steps are in [development guide](../operations/development.md#database-migrations). `GET /health` answers `"status": "degraded"` with `"problems": ["usage_counter"]` after a failed count, until one succeeds.
 
 **Why:** `record_interaction` (S4-13) was missing in production. Every count failed with `PGRST202`, the backend logged only the error code and kept answering, so the daily cap was not enforced and nobody noticed.
 
@@ -311,7 +317,7 @@ References: [email templates](https://supabase.com/docs/guides/auth/auth-email-t
 
 ## 2026-10-29 — The reply reaches the voice sentence by sentence (S6-10)
 
-**Decision:** in voice mode `POST /v1/chat` can answer as a stream of Server-Sent Events (`Accept: text/event-stream`). The backend cuts the model's reply into sentences while it is written, cleans (S6-3) and reviews (S2-4) each one, and sends it; the app speaks each sentence as it arrives instead of waiting for the whole reply. The contract is in [`api-contract.md`](api-contract.md#post-v1chat).
+**Decision:** in voice mode `POST /v1/chat` can answer as a stream of Server-Sent Events (`Accept: text/event-stream`). The backend cuts the model's reply into sentences while it is written, cleans (S6-3) and reviews (S2-4) each one, and sends it; the app speaks each sentence as it arrives instead of waiting for the whole reply. The contract is in [`api-contract.md`](../design/api-contract.md#post-v1chat).
 
 | Question | Decision |
 | --- | --- |
@@ -330,7 +336,7 @@ References: [email templates](https://supabase.com/docs/guides/auth/auth-email-t
 
 ## 2026-10-28 — Talking without buttons: Whisper in Groq and a detector of turns (S6-9)
 
-**Decision:** the person talks to marlix without buttons: the microphone opens by itself, the turn ends when they stop speaking, and talking over marlix cuts it. The audio of each turn is recorded on the phone with echo cancellation, a voice detector (`SileroVoiceActivity`) scores every 32 ms frame and a detector of turns (`TurnDetector`) decides where the turn starts and ends, and the WAV goes to the new `POST /v1/transcribe` ([contract](api-contract.md#post-v1transcribe)), which uses Whisper (`whisper-large-v3-turbo`) in Groq. The text then goes through `ChatController.send`, so the crisis filter of `POST /v1/chat` applies equally. `ServerSpeechRecognizer` implements the same `SpeechRecognizer` interface as S6-8, so screens did not change their imports.
+**Decision:** the person talks to marlix without buttons: the microphone opens by itself, the turn ends when they stop speaking, and talking over marlix cuts it. The audio of each turn is recorded on the phone with echo cancellation, a voice detector (`SileroVoiceActivity`) scores every 32 ms frame and a detector of turns (`TurnDetector`) decides where the turn starts and ends, and the WAV goes to the new `POST /v1/transcribe` ([contract](../design/api-contract.md#post-v1transcribe)), which uses Whisper (`whisper-large-v3-turbo`) in Groq. The text then goes through `ChatController.send`, so the crisis filter of `POST /v1/chat` applies equally. `ServerSpeechRecognizer` implements the same `SpeechRecognizer` interface as S6-8, so screens did not change their imports.
 
 | Question | Decision |
 | --- | --- |
@@ -492,7 +498,7 @@ References: [email templates](https://supabase.com/docs/guides/auth/auth-email-t
 
 **Commas get a pause of their own.** Supertonic reads through commas without stopping (the package only cuts text at the end of a sentence, and leaves the commas to the model, which at speed 1.05 hardly pauses). The engine splits each sentence at its commas, semicolons and colons, makes each clause and joins them with 200 ms of silence after a comma and 300 ms after a semicolon or colon. The punctuation stays in the text so the voice still raises its tone for a sentence that goes on. It costs little: the first sentence of a phrase with commas started in 1.1 s instead of 0.8 s on the S24 Ultra. A comma inside a number does not split.
 
-**The shape of `voice_config`.** `{"engine", "voice", "language", "steps", "rate", "fallback": {"voice", "pitch", "rate"}}`, with the database refusing any other shape ([migration](migrations/2026-10-21-voice-config.sql), run in the SQL Editor before the backend that sends it is deployed). The app does not trust it: a `voiceConfig` it does not understand, or none from an older backend, gives the S6-1 voice, so neither an old app nor an old backend breaks.
+**The shape of `voice_config`.** `{"engine", "voice", "language", "steps", "rate", "fallback": {"voice", "pitch", "rate"}}`, with the database refusing any other shape ([migration](../migrations/2026-10-21-voice-config.sql), run in the SQL Editor before the backend that sends it is deployed). The app does not trust it: a `voiceConfig` it does not understand, or none from an older backend, gives the S6-1 voice, so neither an old app nor an old backend breaks.
 
 **Traps found.**
 - A test caught that the speed measure was never read back: it was saved with `|` as separator and its own key contains `|`. It is saved as JSON now.
@@ -504,7 +510,7 @@ References: [email templates](https://supabase.com/docs/guides/auth/auth-email-t
 
 ## 2026-10-21 — Voice: Supertonic 3 on the phone, voice F4 (S6-1)
 
-**Decision:** marlix speaks with [Supertonic 3](https://huggingface.co/Supertone/supertonic-3), a neural text-to-speech model that runs on the phone with ONNX Runtime, in Spanish (`es`) and with the **F4** voice, using the package's default settings (5 denoising steps, speed 1.05). The phone's native voice (`flutter_tts`) stays behind the voice layer of S6-2 only for when Supertonic cannot run: no space for the model, a failed download or a model that does not load. It is not a fallback for slow phones, because the point of the decision is a voice that sounds human. The Costa Rican flavor comes from the text, which the [system prompt](system-prompt.md) defines: no free voice has a Costa Rican accent.
+**Decision:** marlix speaks with [Supertonic 3](https://huggingface.co/Supertone/supertonic-3), a neural text-to-speech model that runs on the phone with ONNX Runtime, in Spanish (`es`) and with the **F4** voice, using the package's default settings (5 denoising steps, speed 1.05). The phone's native voice (`flutter_tts`) stays behind the voice layer of S6-2 only for when Supertonic cannot run: no space for the model, a failed download or a model that does not load. It is not a fallback for slow phones, because the point of the decision is a voice that sounds human. The Costa Rican flavor comes from the text, which the [system prompt](../design/system-prompt.md) defines: no free voice has a Costa Rican accent.
 
 | Alternative | Why not |
 | --- | --- |
@@ -599,7 +605,7 @@ The voice keeps the **5 steps** that the listeners voted for: 3 steps is faster 
 | Alternative | Why not |
 | --- | --- |
 | The flag in `SharedPreferences` | The consent would not be on record in the database, and the onboarding would repeat after a reinstall. It contradicts US-02 and the ERD. |
-| Letting the app write the columns through Supabase | The app never reads or writes the database directly (docs/architecture.md); the backend does it with its own key. |
+| Letting the app write the columns through Supabase | The app never reads or writes the database directly (docs/design/architecture.md); the backend does it with its own key. |
 
 **The chat stays closed while the profile loads or fails.** Without the consent the app must not be used, so a failed `GET /v1/me` shows a retry (plus sign-out and help), never the chat, and there are no automatic retries. The profile is not read without a session: a request at sign-out would come back 401 and make a voluntary sign-out look like an expired session. Accounts created before this card (their `onboarding_completed_at` is null) see the onboarding the next time they sign in.
 
@@ -637,7 +643,7 @@ The voice keeps the **5 steps** that the listeners voted for: 3 steps is faster 
 
 **Configuration:** the default time and the bank of at least seven texts live in `app/assets/config/reminders.json`, validated at startup (`ReminderConfig`). A test checks that no shipped text has digits, guilt, a sad avatar, streaks, "it has been a while" or user data.
 
-**Opt-in on the phone.** The switch and the time (`RemindersController`, keys `reminders_enabled` and `reminders_time` in `SharedPreferences`) are off by default; they turn on only after the system permission (`POST_NOTIFICATIONS` on Android 13+), and `enable()` is the function onboarding (S5-5) calls. If the user revokes the permission in the phone's settings, the next opening turns the switch off instead of pretending they are active. Signing out cancels them and signing in schedules them again. `docs/api-contract.md` and `docs/erd.md` already describe `remindersEnabled` / `users.reminders_enabled` on the server, but no endpoint stores it yet; syncing it is left to the onboarding and settings work.
+**Opt-in on the phone.** The switch and the time (`RemindersController`, keys `reminders_enabled` and `reminders_time` in `SharedPreferences`) are off by default; they turn on only after the system permission (`POST_NOTIFICATIONS` on Android 13+), and `enable()` is the function onboarding (S5-5) calls. If the user revokes the permission in the phone's settings, the next opening turns the switch off instead of pretending they are active. Signing out cancels them and signing in schedules them again. `docs/design/api-contract.md` and `docs/design/erd.md` already describe `remindersEnabled` / `users.reminders_enabled` on the server, but no endpoint stores it yet; syncing it is left to the onboarding and settings work.
 
 | Alternative | Why not |
 | --- | --- |
@@ -653,9 +659,9 @@ The voice keeps the **5 steps** that the listeners voted for: 3 steps is faster 
 
 ## 2026-10-19 — Avatar widget: English names, folder as parameter, drawn effects (S5-2)
 
-**English names in the code.** `AvatarMarlix(state, volume, folder)`, `AvatarState { idle, listening, thinking, speaking, happy }` and `mouthForVolume`, instead of the Spanish names first written on the card. The layer file names stay as the template fixes them (`oreja_izq`, `boca_0`...), because they are the public contract of every avatar (`docs/avatar.md`).
+**English names in the code.** `AvatarMarlix(state, volume, folder)`, `AvatarState { idle, listening, thinking, speaking, happy }` and `mouthForVolume`, instead of the Spanish names first written on the card. The layer file names stay as the template fixes them (`oreja_izq`, `boca_0`...), because they are the public contract of every avatar (`docs/design/avatar.md`).
 
-**The folder is a parameter.** The widget works with any folder that follows the template. Reading `avatars.layers_path` needs a backend endpoint, since the app never queries the database directly (`docs/architecture.md`); it is the new card S5-7.
+**The folder is a parameter.** The widget works with any folder that follows the template. Reading `avatars.layers_path` needs a backend endpoint, since the app never queries the database directly (`docs/design/architecture.md`); it is the new card S5-7.
 
 **Animation in code, no Rive.** Rive's free plan cannot export for the app, and an open source project cannot require a paid tool to edit the avatar. A single `AnimationController` of 12 s drives the periodic movements and a `TweenAnimationBuilder` eases between poses.
 
@@ -697,14 +703,14 @@ The voice keeps the **5 steps** that the listeners voted for: 3 steps is faster 
 - **A count that cannot be read stops the message** (`500`, before the model): letting it through would give the cap away. **A count that cannot be saved does not stop the reply**: the person already has it, and failing would only make them resend it. The cost is one uncounted reply, logged by its error code.
 - **A crisis ignores the database.** It is answered even if the count cannot be read; its response just has no `usage`.
 - **The per-minute limit stays in memory.** It is a window of seconds: a restart only gives more room.
-- **Order of deploy.** The function is created by [a migration](migrations/2026-10-17-record-interaction.sql) that runs in the SQL Editor **before** the backend that calls it is deployed.
+- **Order of deploy.** The function is created by [a migration](../migrations/2026-10-17-record-interaction.sql) that runs in the SQL Editor **before** the backend that calls it is deployed.
 - **The cascade already covers it.** `daily_usage` references `auth.users` with `on delete cascade`, so deleting an account (S4-9) removes its counters.
 
 ---
 
 ## 2026-10-17 — Message retention: an hourly delete inside the backend, 90 days by default (S4-10)
 
-**Decision:** a job inside the backend deletes every message older than `MESSAGE_RETENTION_DAYS` (90 by default) when the server starts and then every hour. It deletes only rows of `messages`: conversations and memories stay, so the distilled memory lasts as long as the account. The policy is in [docs/memory.md](memory.md#how-long-messages-are-kept) and, for the person, at the bottom of the Settings screen.
+**Decision:** a job inside the backend deletes every message older than `MESSAGE_RETENTION_DAYS` (90 by default) when the server starts and then every hour. It deletes only rows of `messages`: conversations and memories stay, so the distilled memory lasts as long as the account. The policy is in [docs/design/memory.md](../design/memory.md#how-long-messages-are-kept) and, for the person, at the bottom of the Settings screen.
 
 | Option | Verdict |
 |---|---|
@@ -721,7 +727,7 @@ The voice keeps the **5 steps** that the listeners voted for: 3 steps is faster 
 
 ## 2026-10-17 — Account deletion: the database cascades, and a recent sign-in is read from `amr`, not `iat` (S4-9)
 
-**Decision:** `DELETE /v1/account` deletes the user in Supabase Auth with the secret key (a hard delete), and `on delete cascade` removes the profile, conversations, messages, memories and usage. Before that it requires a sign-in from the last 5 minutes. The contract is [here](api-contract.md#delete-v1account).
+**Decision:** `DELETE /v1/account` deletes the user in Supabase Auth with the secret key (a hard delete), and `on delete cascade` removes the profile, conversations, messages, memories and usage. Before that it requires a sign-in from the last 5 minutes. The contract is [here](../design/api-contract.md#delete-v1account).
 
 | Option for deleting the data | Verdict |
 |---|---|
@@ -738,7 +744,7 @@ The voice keeps the **5 steps** that the listeners voted for: 3 steps is faster 
 
 ## 2026-10-17 — Managing memories: through the backend, deleting for real, and editing only the text (S4-8)
 
-**Decision:** the app lists, edits and deletes memories with `GET`, `PATCH` and `DELETE` on `/v1/memories` ([contract](api-contract.md#get-v1memories)), and the backend does it with the secret key, always filtering by the signed-in user. Deleting removes the row; editing changes only `fact`.
+**Decision:** the app lists, edits and deletes memories with `GET`, `PATCH` and `DELETE` on `/v1/memories` ([contract](../design/api-contract.md#get-v1memories)), and the backend does it with the secret key, always filtering by the signed-in user. Deleting removes the row; editing changes only `fact`.
 
 | Option | Verdict |
 |---|---|
@@ -755,7 +761,7 @@ The voice keeps the **5 steps** that the listeners voted for: 3 steps is faster 
 
 ## 2026-10-17 — Memory in the prompt: the most recently updated, in a stable order, one line each (S4-7)
 
-**Decision:** on every message, the backend adds the person's memories at the end of the system prompt. At most 30 (`CHAT_MEMORY_FACTS`); if there are more, the most recently updated ones. How it works: [docs/memory.md](memory.md#what-goes-into-the-prompt).
+**Decision:** on every message, the backend adds the person's memories at the end of the system prompt. At most 30 (`CHAT_MEMORY_FACTS`); if there are more, the most recently updated ones. How it works: [docs/design/memory.md](../design/memory.md#what-goes-into-the-prompt).
 
 | Option for "the most relevant ones" | Verdict |
 |---|---|
@@ -773,7 +779,7 @@ The voice keeps the **5 steps** that the listeners voted for: 3 steps is faster 
 
 ## 2026-10-17 — Memory extraction: a job inside the backend that ends idle conversations, with two barriers against sensitive data (S4-6)
 
-**Decision:** when a conversation has no messages for 30 minutes (`CONVERSATION_IDLE_MINUTES`) it ends, and a background job inside the backend extracts its facts with a small model (`MEMORY_EXTRACTOR_MODEL`, `openai/gpt-oss-20b` by default). How it works, its limits and what is never saved: [docs/memory.md](memory.md).
+**Decision:** when a conversation has no messages for 30 minutes (`CONVERSATION_IDLE_MINUTES`) it ends, and a background job inside the backend extracts its facts with a small model (`MEMORY_EXTRACTOR_MODEL`, `openai/gpt-oss-20b` by default). How it works, its limits and what is never saved: [docs/design/memory.md](../design/memory.md).
 
 | Option | Verdict |
 |---|---|
@@ -818,7 +824,7 @@ The voice keeps the **5 steps** that the listeners voted for: 3 steps is faster 
 |---|---|
 | `@supabase/supabase-js` with the secret key | **Chosen.** No connection string or pool to manage, nothing new to configure in Render (the secret key is already there), and it works from a free instance that sleeps. Because that key bypasses RLS, every query filters by `user_id` itself, and the tests check it. |
 | `pg` with the database connection string | Discarded for now. It would need another secret and a connection pool; Supabase's pooler adds its own rules. |
-| The app writes its own messages (RLS) | Discarded. The backend must be the only writer so the crisis filter and the daily cap cannot be skipped ([schema](schema.sql)). |
+| The app writes its own messages (RLS) | Discarded. The backend must be the only writer so the crisis filter and the daily cap cannot be skipped ([schema](../schema.sql)). |
 
 - **One insert per turn.** Both messages go in the same statement, so a turn is saved whole or not at all. The reply gets a later `created_at` than the message, so they never tie.
 - **Cursor, not offset.** Pages are ordered by `(created_at, id)` descending and the cursor holds the position of the page's oldest message. A new message cannot shift a page that is being read, and the cursor is checked (timestamp and UUID format) before it goes into the query filter. It is opaque for the app.
@@ -1025,7 +1031,7 @@ The public endpoints are unchanged: `GET /health` and `GET /v1/help-resources`.
 
 > **Replaced by [S4-13](#2026-10-17--usage-in-the-database-an-atomic-function-and-a-cap-read-every-minute-s4-13):** the daily count and cap are now in the database. What follows is the original decision.
 
-**Decision:** the caps per plan live in [`api/config/plans.json`](../api/config/plans.json) and the counters in memory. In Sprint 4, when the backend uses the database, they move to the `plan_limits` and `daily_usage` tables of the [schema](schema.sql).
+**Decision:** the caps per plan live in [`api/config/plans.json`](../../api/config/plans.json) and the counters in memory. In Sprint 4, when the backend uses the database, they move to the `plan_limits` and `daily_usage` tables of the [schema](../schema.sql).
 
 | Limit | `personal` plan | Answer when reached |
 |---|---|---|
@@ -1078,7 +1084,7 @@ Any answer other than an exact `SAFE`, an error or a timeout counts as a crisis.
 
 ## 2026-09-30 — Local database: Docker Compose with Supabase's Postgres image (S0-13)
 
-**Decision:** the local database runs with `docker compose` from [`docker-compose.yml`](../docker-compose.yml): the `supabase/postgres` image (from ECR Public until S2-11, now from Docker Hub) plus pgAdmin. On the first start it applies `docs/schema.sql` automatically.
+**Decision:** the local database runs with `docker compose` from [`docker-compose.yml`](../../docker-compose.yml): the `supabase/postgres` image (from ECR Public until S2-11, now from Docker Hub) plus pgAdmin. On the first start it applies `docs/schema.sql` automatically.
 
 Supabase's own Postgres image already includes the `auth` schema (`auth.users`, `auth.uid()`) and the `anon`, `authenticated` and `service_role` roles, so the schema runs as it does in production. Production stays on Supabase cloud.
 
@@ -1144,7 +1150,7 @@ Groq retires models from time to time. Because the model is an environment varia
 
 ### Account and test call
 
-The project's Groq account and a development API key were created on 2026-09-30. The key lives only in `api/.env`, which Git ignores; [`api/.env.example`](../api/.env.example) lists the variables without values. Production gets its own key on Render (Sprint 1).
+The project's Groq account and a development API key were created on 2026-09-30. The key lives only in `api/.env`, which Git ignores; [`api/.env.example`](../../api/.env.example) lists the variables without values. Production gets its own key on Render (Sprint 1).
 
 Test call from the terminal (Git Bash), reading the key and model from `api/.env`:
 
@@ -1175,4 +1181,4 @@ Alternatives, in order: another Groq model, a paid provider such as DeepSeek, or
 
 - *Discarded:* not saving them. It is slightly more private, but the user would come back to a chat without what they wrote or the help they got.
 
-Full flow: [chat endpoint](api-contract.md#post-v1chat).
+Full flow: [chat endpoint](../design/api-contract.md#post-v1chat).

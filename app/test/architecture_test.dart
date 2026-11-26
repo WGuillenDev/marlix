@@ -35,7 +35,7 @@ void main() {
     expect(offenders, isEmpty, reason: 'Screens go through AuthService');
 
     // The app reads and writes data through the backend, never the database
-    // directly (docs/architecture.md).
+    // directly (docs/design/architecture.md).
     final queries = RegExp(r'\.(from|rpc|storage|functions|channel)\(');
     final directAccess = [
       for (final file in sources)

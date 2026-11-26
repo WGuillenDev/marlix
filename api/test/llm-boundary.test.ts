@@ -53,15 +53,17 @@ it('keeps module dependencies pointing inward', () => {
     const source = relative(srcDir, file).split(sep);
     if (source[0] !== 'modules' && source[0] !== 'shared') continue;
     const layer = source[source[0] === 'modules' ? 2 : 1];
-    if (layer !== 'domain' && layer !== 'application' && layer !== 'presentation') continue;
 
     for (const [, reference] of readFileSync(file, 'utf8').matchAll(imports)) {
       if (!reference) continue;
       const target = reference.startsWith('.')
         ? relative(srcDir, resolve(dirname(file), reference)).split(sep)
         : undefined;
-      const targetLayer = target?.[target[0] === 'modules' ? 2 : 1];
-      const outer = targetLayer === 'infrastructure' ||
+      const targetLayer = target?.[0] === 'modules'
+        ? target[2]
+        : target?.[0] === 'shared' ? target[1] : undefined;
+      const outer =
+        (layer !== 'infrastructure' && targetLayer === 'infrastructure') ||
         (layer !== 'presentation' && targetLayer === 'presentation');
       const invalid =
         (target === undefined && layer === 'domain') ||

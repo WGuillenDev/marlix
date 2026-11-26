@@ -14,11 +14,11 @@ See the [architecture](architecture.md) and [data model](erd.md).
 | Auth | `Authorization: Bearer <access token>`, the Supabase Auth session token the app gets on sign-in. The backend checks it on every request against the project's public signing keys: signature, expiry, issuer, audience `authenticated` and role `authenticated`. Sign-up and sign-in happen against Supabase Auth, not this API; sign-up must send the birth date as user metadata (`data.birth_date`, `YYYY-MM-DD`), and the database refuses it when it is missing or the person is under 18. |
 | Ownership | Every authenticated endpoint only reads or changes the caller's own data. Another user's ID returns `404`, never `403`, so the API does not reveal what exists. |
 | Privacy | Request and response bodies are never logged. Responses under `/v1` carry `Cache-Control: no-store`, so no cache keeps them. |
-| Security headers | Every response carries HSTS, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` and a CSP that blocks everything ([decision](decisions.md)). |
+| Security headers | Every response carries HSTS, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` and a CSP that blocks everything ([decision](../adr/decisions.md)). |
 
 Endpoints marked **Public** do not need a token.
 
-`GET /health` and `GET /v1/help-resources` have no application-level per-IP rate limit: both read only in-memory state, and help must remain accessible before sign-in. This does not guarantee unlimited availability; see the [S7-12 assessment](decisions.md#2026-11-04--audio-upload-size-and-public-endpoint-limits-s7-12).
+`GET /health` and `GET /v1/help-resources` have no application-level per-IP rate limit: both read only in-memory state, and help must remain accessible before sign-in. This does not guarantee unlimited availability; see the [S7-12 assessment](../adr/decisions.md#2026-11-04--audio-upload-size-and-public-endpoint-limits-s7-12).
 
 ## Errors
 
@@ -102,13 +102,13 @@ When the last attempt to count a reply failed (S6-16), it still answers `200`, s
 { "status": "degraded", "problems": ["usage_counter"] }
 ~~~
 
-When any Groq model has 20% or less of its daily requests left (S7-6), it also answers `200`, with `"problems": ["groq_quota"]`. The backend reads the quota from the headers of the answers it already gets, so it is only known after the first reply since a deploy, and it clears by itself when Groq resets the day. Both problems can appear together. What to do for each is in [monitoring.md](monitoring.md).
+When any Groq model has 20% or less of its daily requests left (S7-6), it also answers `200`, with `"problems": ["groq_quota"]`. The backend reads the quota from the headers of the answers it already gets, so it is only known after the first reply since a deploy, and it clears by itself when Groq resets the day. Both problems can appear together. What to do for each is in [monitoring.md](../operations/monitoring.md).
 
 ---
 
 ### `GET /v1/help-resources`
 
-**Public**, so the help screen works before sign-in. Returns the Costa Rican help resources from configuration ([`api/config/crisis.json`](../api/config/crisis.json)), not from code, so changing a number never requires a new app build. The crisis reply of `POST /v1/chat` returns the same list. The app caches the last response so the help screen also works offline (US-15); `updatedAt` changes whenever the list does and records the date of the last quarterly verification ([protocol](crisis-protocol.md#verifying-the-help-resources)).
+**Public**, so the help screen works before sign-in. Returns the Costa Rican help resources from configuration ([`api/config/crisis.json`](../../api/config/crisis.json)), not from code, so changing a number never requires a new app build. The crisis reply of `POST /v1/chat` returns the same list. The app caches the last response so the help screen also works offline (US-15); `updatedAt` changes whenever the list does and records the date of the last quarterly verification ([protocol](crisis-protocol.md#verifying-the-help-resources)).
 
 **Response `200`**
 
@@ -174,7 +174,7 @@ Returns the signed-in user's profile. The app calls it after sign-in to decide w
 
 `settings.remindersEnabled` is the answer given in onboarding. After that, the reminders are turned on and off in the app's Settings and kept only on the phone, so this value is not updated when the person changes them there.
 
-`avatar.voiceConfig` says how the avatar speaks (S6-2). `engine` is `supertonic-3` (the neural voice that runs on the phone) or `native` (the phone's own voice); `voice` is the Supertonic voice, `language` its language, `steps` its denoising steps and `rate` its speed. `fallback` is for the phone's native voice, which the app uses when the phone cannot run Supertonic. The app ignores a `voiceConfig` it does not understand and falls back to its built-in defaults, so an older app keeps working and a newer one does not break against an older backend. The choice of engine on each phone is made by the app ([decision](decisions.md#2026-10-21--voice-supertonic-3-on-the-phone-voice-f4-s6-1)).
+`avatar.voiceConfig` says how the avatar speaks (S6-2). `engine` is `supertonic-3` (the neural voice that runs on the phone) or `native` (the phone's own voice); `voice` is the Supertonic voice, `language` its language, `steps` its denoising steps and `rate` its speed. `fallback` is for the phone's native voice, which the app uses when the phone cannot run Supertonic. The app ignores a `voiceConfig` it does not understand and falls back to its built-in defaults, so an older app keeps working and a newer one does not break against an older backend. The choice of engine on each phone is made by the app ([decision](../adr/decisions.md#2026-10-21--voice-supertonic-3-on-the-phone-voice-f4-s6-1)).
 
 **Errors:** `401 UNAUTHORIZED`; `404 NOT_FOUND` when the account has no profile (for example, it was just deleted).
 
@@ -304,7 +304,7 @@ A sentence that fails the review is never sent. The safe reply is sent as the ne
 
 Both messages of a turn are saved before the reply is returned, and `userMessage.id` and `reply.id` are the ids the history gives them. A reply that cannot be saved is not returned: the answer is `500 INTERNAL_ERROR`, and nothing is counted. The one exception is a crisis, which is always answered with its fixed reply even if saving fails; in that case it is missing from the history. `interruptedMessageId` must be the id of one of the caller's own assistant messages, otherwise `404 NOT_FOUND`; that message is then marked `interrupted` in the history. A crisis ignores it.
 
-**What the model sees.** The system prompt, then the last messages of the user's open conversation (16 by default, `CHAT_CONTEXT_MESSAGES`), then the new message. The rest of the history is only for the app to show. The messages of a crisis, the user's and the fixed reply, are never part of it ([decision](decisions.md)). If the context cannot be read, the answer is `500 INTERNAL_ERROR` before the model is called.
+**What the model sees.** The system prompt, then the last messages of the user's open conversation (16 by default, `CHAT_CONTEXT_MESSAGES`), then the new message. The rest of the history is only for the app to show. The messages of a crisis, the user's and the fixed reply, are never part of it ([decision](../adr/decisions.md)). If the context cannot be read, the answer is `500 INTERNAL_ERROR` before the model is called.
 
 **Errors:** `400 VALIDATION_ERROR`, `401 UNAUTHORIZED`, `404 NOT_FOUND` (unknown `interruptedMessageId`), `500 INTERNAL_ERROR`, `429 DAILY_LIMIT_REACHED`, `429 RATE_LIMITED`, `503 LLM_UNAVAILABLE`. A `503` caused by Groq's quota comes with a `Retry-After` header in seconds.
 
@@ -312,7 +312,7 @@ Both messages of a turn are saved before the reply is returned, and `userMessage
 
 ### `POST /v1/transcribe`
 
-Turns what the person said in the voice mode into text (S6-9). The app records each turn on the phone, with echo cancellation, and sends it here; the text then goes through `POST /v1/chat` like typed text, so the crisis filter applies equally. The model is Whisper in Groq (`GROQ_TRANSCRIPTION_MODEL`), in Spanish, with a prompt that spells Costa Rican words such as "mae" and "tuanis". The stretches that Whisper itself doubts are speech (a fan, the street) are dropped, so `text` can come back empty ([decision](decisions.md#2026-10-28--talking-without-buttons-whisper-in-groq-and-a-detector-of-turns-s6-9)).
+Turns what the person said in the voice mode into text (S6-9). The app records each turn on the phone, with echo cancellation, and sends it here; the text then goes through `POST /v1/chat` like typed text, so the crisis filter applies equally. The model is Whisper in Groq (`GROQ_TRANSCRIPTION_MODEL`), in Spanish, with a prompt that spells Costa Rican words such as "mae" and "tuanis". The stretches that Whisper itself doubts are speech (a fan, the street) are dropped, so `text` can come back empty ([decision](../adr/decisions.md#2026-10-28--talking-without-buttons-whisper-in-groq-and-a-detector-of-turns-s6-9)).
 
 **Request.** The body is the audio itself, not JSON or multipart: `Content-Type: audio/wav` (`audio/x-wav` is also accepted), WAV 16 kHz, mono, 16-bit PCM, between 0.25 and 32 seconds (the app sends 30 s at most). The maximum body is **1,024,044 bytes**: a 44-byte WAV header plus `32 × 16,000 × 2` bytes of PCM. A body that is not that format, is empty, is too short or exceeds that byte limit answers `400 VALIDATION_ERROR`.
 
@@ -387,7 +387,7 @@ Returns today's usage, so the app can show the interactions left (US-10).
 
 `resetsAt` is the next midnight in Costa Rica time, expressed in UTC.
 
-The count is the `daily_usage` row of the user for the Costa Rica day and the cap is the `daily_interactions` of their plan in `plan_limits` ([decision](decisions.md#2026-10-17--usage-in-the-database-an-atomic-function-and-a-cap-read-every-minute-s4-13)). A restart or a deploy does not reset it, and a cap changed in `plan_limits` applies within a minute, with no deploy. If the database cannot be read the answer is `500 INTERNAL_ERROR`.
+The count is the `daily_usage` row of the user for the Costa Rica day and the cap is the `daily_interactions` of their plan in `plan_limits` ([decision](../adr/decisions.md#2026-10-17--usage-in-the-database-an-atomic-function-and-a-cap-read-every-minute-s4-13)). A restart or a deploy does not reset it, and a cap changed in `plan_limits` applies within a minute, with no deploy. If the database cannot be read the answer is `500 INTERNAL_ERROR`.
 
 ---
 
@@ -455,7 +455,7 @@ Deletes all of the user's memories. The app asks for confirmation before calling
 
 Deletes the account and all its data in cascade: profile, conversations, messages, memories and usage (US-09). It runs on the backend because it needs the service key. The app asks for confirmation before calling it and signs out after the response.
 
-**Requires a recent sign-in.** Deleting everything cannot be undone, so a stolen or forgotten-open session must not be enough. The backend checks when the person last entered their credentials: the newest `timestamp` of the access token's `amr` claim. If it is more than **5 minutes** old, or the token has none, it answers `401 REAUTHENTICATION_REQUIRED` and deletes nothing. The app then asks for the password again (a new Supabase sign-in, which puts a fresh time in the token) and retries the call. The `iat` claim is not used: Supabase renews it with every token refresh, so a refresh token would be enough to look like a recent sign-in ([decision](decisions.md#2026-10-17--account-deletion-the-database-cascades-and-a-recent-sign-in-is-read-from-amr-not-iat-s4-9)).
+**Requires a recent sign-in.** Deleting everything cannot be undone, so a stolen or forgotten-open session must not be enough. The backend checks when the person last entered their credentials: the newest `timestamp` of the access token's `amr` claim. If it is more than **5 minutes** old, or the token has none, it answers `401 REAUTHENTICATION_REQUIRED` and deletes nothing. The app then asks for the password again (a new Supabase sign-in, which puts a fresh time in the token) and retries the call. The `iat` claim is not used: Supabase renews it with every token refresh, so a refresh token would be enough to look like a recent sign-in ([decision](../adr/decisions.md#2026-10-17--account-deletion-the-database-cascades-and-a-recent-sign-in-is-read-from-amr-not-iat-s4-9)).
 
 **Response `204`**, no body. After it, the user cannot sign in with that account. Calling it again with a token that is still valid also answers `204`. Such a token keeps passing the session check until it expires (up to an hour), but there is nothing left to read, and anything it tries to write is refused by the database because the user no longer exists.
 
@@ -463,11 +463,11 @@ Deletes the account and all its data in cascade: profile, conversations, message
 
 ## Planned endpoints
 
-Designed in Sprint 0 and **not implemented**: with a valid token, the backend answers `404 NOT_FOUND` to both. They are kept here as the agreed shape for when they are built ([decision](decisions.md#2026-11-04--the-contract-lists-only-implemented-endpoints-and-the-history-holds-no-secrets-s7-14)).
+Designed in Sprint 0 and **not implemented**: with a valid token, the backend answers `404 NOT_FOUND` to both. They are kept here as the agreed shape for when they are built ([decision](../adr/decisions.md#2026-11-04--the-contract-lists-only-implemented-endpoints-and-the-history-holds-no-secrets-s7-14)).
 
 ### `PATCH /v1/settings` (planned)
 
-Would change the user's settings, only the fields sent. Not needed in v1: the reminders are scheduled, turned on and off and stored on the phone (S5-3), and the backend only records the answer given in onboarding. When it is built, it writes through the backend with the service key, because users have no `UPDATE` on `users` ([decision](decisions.md#2026-10-29--only-the-backend-writes-the-consent-and-the-onboarding-s6-11)).
+Would change the user's settings, only the fields sent. Not needed in v1: the reminders are scheduled, turned on and off and stored on the phone (S5-3), and the backend only records the answer given in onboarding. When it is built, it writes through the backend with the service key, because users have no `UPDATE` on `users` ([decision](../adr/decisions.md#2026-10-29--only-the-backend-writes-the-consent-and-the-onboarding-s6-11)).
 
 ~~~json
 { "remindersEnabled": false }
@@ -481,7 +481,7 @@ Would change the user's settings, only the fields sent. Not needed in v1: the re
 
 ### `GET /v1/avatars` (planned)
 
-Would list the available avatars, for the avatar selection screen of v2. In v1 there is one, and the user's avatar already arrives in [`GET /v1/me`](#get-v1me) ([decision](decisions.md#2026-10-20--the-avatar-folder-travels-in-get-v1me-s5-7)).
+Would list the available avatars, for the avatar selection screen of v2. In v1 there is one, and the user's avatar already arrives in [`GET /v1/me`](#get-v1me) ([decision](../adr/decisions.md#2026-10-20--the-avatar-folder-travels-in-get-v1me-s5-7)).
 
 **Response `200`**
 

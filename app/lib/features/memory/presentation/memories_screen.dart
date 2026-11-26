@@ -219,7 +219,7 @@ class _EditSheet extends StatefulWidget {
 }
 
 class _EditSheetState extends State<_EditSheet> {
-  /// The backend's limit (docs/api-contract.md#patch-v1memoriesid).
+  /// The backend's limit (docs/design/api-contract.md#patch-v1memoriesid).
   static const maxLength = 500;
 
   late final _text = TextEditingController(text: widget.memory.fact);

@@ -2,9 +2,9 @@
 
 *   **Author:** WGuillenDev
 *   **Status:** Approved (2026-11-20). Public edition, 2026-11-21.
-*   **Superseded in part (2026-11-25):** the [next release execution plan](../plans/next-release-execution-plan.md) replaces this design's sequence and milestones (section 9) and its earlier development flow, which is now maintained separately. The scope, the constraints, the Sala rules and the acceptance criteria of each task stay in force unless the plan lists a change for the owner's decision.
+*   **Superseded in part (2026-11-25):** the [next release execution plan](../plans/execution-plan.md) replaces this design's sequence and milestones (section 9) and its earlier development flow, which is now maintained separately. The scope, the constraints, the Sala rules and the acceptance criteria of each task stay in force unless the plan lists a change for the owner's decision.
 *   **Public edition:** this file keeps the product scope, architecture and launch criteria. Budget figures, account and provider-console details, the release schedule, open questions about accounts and billing, and notes about security work still in progress are kept in the maintainer's private notes, together with every task's full acceptance criteria.
-*   **Language:** this file is in English because everything in the repository is in English ([engineering rules](../architecture.md#engineering-rules)). Only in-app copy is in Spanish, and it appears here in guillemets or code, for example «Sala de Marlix» and «Recordá esto».
+*   **Language:** this file is in English because everything in the repository is in English ([engineering rules](architecture.md#engineering-rules)). Only in-app copy is in Spanish, and it appears here in guillemets or code, for example «Sala de Marlix» and «Recordá esto».
 
 --------------------------------------------------------------------------------
 
@@ -27,10 +27,10 @@ This design defines v0.2: what gets built, what gets tested before it is include
 *   Real user data does not go to providers that lack zero data retention (ZDR) or an updated privacy policy.
 *   The Sala is text only and is separate from the private chat with Marlix and from its memory.
 *   The Sala is not opened to everyone while the coexistence and moderation controls are missing.
-*   The [engineering rules](../architecture.md#engineering-rules) apply. The execution plan governs the current development flow.
+*   The [engineering rules](architecture.md#engineering-rules) apply. The execution plan governs the current development flow.
 
 *   Terms for help used in this document: the **help lines** are the 9-1-1 and Línea Aquí Estoy phone lines; the **help button** opens the help screen with those lines; the **help response** is the crisis reply text (`api/config/crisis.json`) together with the help lines.
-*   Identifiers used in this document: **S#-#** is a card of the backlog used before v0.2, whose decisions are recorded in `docs/decisions.md` (for example S7-15, the signed release APK); **C#** and **Q#** are open questions; **V2-NN** is a task of the Detailed Implementation Plan.
+*   Identifiers used in this document: **S#-#** is a card of the backlog used before v0.2, whose decisions are recorded in `docs/adr/decisions.md` (for example S7-15, the signed release APK); **C#** and **Q#** are open questions; **V2-NN** is a task of the Detailed Implementation Plan.
 
 ## The Problem
 
@@ -48,7 +48,7 @@ Each goal can be checked. The full launch criteria are in the section "Launch cr
 
 *   **G1. Publish on Google Play.** The first version is published when the launch criteria are met, after any testing that Google Play requires. Later updates roll out in stages.
 *   **G2. Stay within the budget.** A strict monthly cap holds in every month, including months with a fixed charge or a paid test (section 6). A persistent spend governor with sub-caps per use enforces it.
-*   **G3. A living avatar.** New expressions when listening, thinking, speaking and reacting; a wobble when the phone is tilted, a fall when it is turned upside down and a recovery when it is righted; reduced motion. 60 fps on the Galaxy S24 and on the low-end AVD (defined in `docs/development.md`: an Android Virtual Device with API 31, 2 GB of RAM, 2 cores and the software GPU, SwiftShader), and 4 out of 5 testers who answer yes to «¿Sentís que Marlix está vivo?».
+*   **G3. A living avatar.** New expressions when listening, thinking, speaking and reacting; a wobble when the phone is tilted, a fall when it is turned upside down and a recovery when it is righted; reduced motion. 60 fps on the Galaxy S24 and on the low-end AVD (defined in `docs/operations/development.md`: an Android Virtual Device with API 31, 2 GB of RAM, 2 cores and the software GPU, SwiftShader), and 4 out of 5 testers who answer yes to «¿Sentís que Marlix está vivo?».
 *   **G4. Customization.** A palette, pattern and SVG accessory picker, with no photo upload. The choices are saved on the phone and are still there after the app is closed and opened again. This goal is the one place that defines where the look is saved; the Sala profile publishes a copy of the choice IDs only (section 3.6).
 *   **G5. Companionship by voice, with control.** Ten voices with samples, the system voice as a fallback, a microphone permission requested in context, and an app that stays usable with text if the permission is denied.
 *   **G6. Fast, visible memories.** «Recordá esto» with the notice «Marlix recordó: … · Deshacer»; automatic extraction when a conversation ends after 10 minutes without messages; viewing, editing and deleting are kept.
@@ -137,7 +137,7 @@ They are two different cases and are treated differently:
 Questions about accounts, billing, prices and the release schedule are tracked in the maintainer's private notes. These remain open in public:
 
 *   **C7. A health professional to review the medical-urgency layer.** Without that review, the layer does not ship. **Task:** V2-27.
-*   **C10. Adopt GitHub Issues and Projects for the v0.2 backlog.** The maintainer decides whether to adopt the board and create backlog issues. See the [execution plan](../plans/next-release-execution-plan.md#decisions-that-need-the-owner). **Task:** V2-04.
+*   **C10. Adopt GitHub Issues and Projects for the v0.2 backlog.** The maintainer decides whether to adopt the board and create backlog issues. See the [execution plan](../plans/execution-plan.md#9-decisions-that-need-the-owner). **Task:** V2-04.
 *   **Q12. Model for memory extraction and savings mode.** It must differ from the classifier's model. It is chosen with an evaluation of the extractor. **Task:** V2-12a, V2-11.
 *   **Q15. Moderation coverage.** One host does not cover 24 hours. The options are in [Q15. Moderation coverage](#q15-moderation-coverage). **Blocks:** V2-24 and V2-26.
 *   **Q16. What happens in the channel to a message that expresses distress.** The options are in [Q16. A message that expresses distress](#q16-a-message-that-expresses-distress). What the host sees is already decided (consent first, section 3.6). **Blocks:** V2-24 and V2-26.
@@ -231,7 +231,7 @@ v0.2 adds to the existing system. It does not replace the backend, the schema or
 
 *   **Every risky change, and every feature that must be on for some people only, ships behind a flag** (the Sala, `photo_skin`, `medical_urgency`). `main` deploys to production by itself once its GitHub checks pass (`render.yaml`, `autoDeployTrigger: checksPass`), so a merge is a release of the backend. A flag turns a merged feature on or off without a deploy. Local presentation changes in the app, such as the avatar animation, need no flag: they are checked before release and respect the reduced-motion setting.
 *   **Migrations only add.** A column, table or function is added; none is dropped or changed in a way that breaks v0.1 clients. The v0.1 APKs keep calling `marlix-api.onrender.com` and must keep working.
-*   **The [engineering rules](../architecture.md#engineering-rules) hold:** the app never calls the model, every table has RLS, chat content never goes to logs, and the crisis filter runs before the model. They also apply to the Sala.
+*   **The [engineering rules](architecture.md#engineering-rules) hold:** the app never calls the model, every table has RLS, chat content never goes to logs, and the crisis filter runs before the model. They also apply to the Sala.
 *   **No provider can switch off the crisis response.** Layer 1 (local patterns) answers first and depends on nothing external.
 *   **Money is a runtime limit, not a plan on paper.** Every model and transcription call goes through the spend governor, which records its cost under a fixed use tag, and the caps are enforced in code.
 *   **The phone can answer a crisis without the backend.** The app carries a copy of the crisis layer 1 patterns and the crisis response (section 3.3).
@@ -255,7 +255,7 @@ v0.2 adds to the existing system. It does not replace the backend, the schema or
 
 | Environment | Hosting | Database | Purpose |
 |---|---|---|---|
-| Production | Render free plan, kept awake by an uptime monitor on `/health` (`docs/monitoring.md`); later behind `api.<domain>` if the host allows a custom domain | Supabase Free project 1 | The real service. |
+| Production | Render free plan, kept awake by an uptime monitor on `/health` (`docs/operations/monitoring.md`); later behind `api.<domain>` if the host allows a custom domain | Supabase Free project 1 | The real service. |
 | Staging | A second Render service with automatic deploys off; the author deploys a branch or commit by hand from the Render dashboard before merging | Supabase Free project 2 | Email acceptance test, restore drill, migration rehearsal, Sala rehearsal. Sleeps when idle. |
 | Local | Docker Compose (existing) | Local Postgres | Development and the database tests. |
 
@@ -275,14 +275,14 @@ v0.2 adds to the existing system. It does not replace the backend, the schema or
 
 Why: a provider's spending limit covers a whole account, has no per-use control and, when reached, blocks every key, including the crisis classifier's. The governor is the per-use control and the first barrier; the provider's limit is a second barrier set above it. The governor is a requirement for launch.
 
-*   **Where:** at the service boundary, as two decorators: `governLlm(provider, { use, … })` wraps an `LlmProvider` and `governTranscriber(transcriber, { … })` wraps the transcriber. `createLlmProvider` (`api/src/shared/infrastructure/ai/index.ts`) gains a `governance` option (`{ use, ledger, monitor, prices }`) and builds `withRetry(governLlm(base, governance))`, so the governor sits below the retry and each attempt reserves on its own. `api/src/server.ts` builds five provider instances, each with a fixed tag (`chat`, `classifier_chat`, `classifier_room`, `extractor_auto`, `extractor_remember`), plus the transcriber wrapped with `governTranscriber` under `transcribe`. The private chat's crisis filter uses `classifier_chat`, and the Sala's own `createCrisisFilter(...)` uses `classifier_room` (section 3.6).
+*   **Where:** at the service boundary, as two decorators: `governLlm(provider, { use, … })` wraps an `LlmProvider` and `governTranscriber(transcriber, { … })` wraps the transcriber. `createLlmProvider` (`api/src/shared/infrastructure/ai/index.ts`) gains a `governance` option (`{ use, ledger, monitor, prices }`) and builds `withRetry(governLlm(base, governance))`, so the governor sits below the retry and each attempt reserves on its own. `api/src/bootstrap/container.ts` builds five provider instances, each with a fixed tag (`chat`, `classifier_chat`, `classifier_room`, `extractor_auto`, `extractor_remember`), plus the transcriber wrapped with `governTranscriber` under `transcribe`. The private chat's crisis filter uses `classifier_chat`, and the Sala's own `createCrisisFilter(...)` uses `classifier_room` (section 3.6).
 *   **Ledger:** a table `llm_spend` with one row per call: `at`, `use`, `model`, `input_tokens`, `cached_tokens`, `output_tokens`, `audio_seconds`, `state` (`held`, `settled` or `released`), `held_micros` (the maximum verifiable cost, in millionths of a USD, with tax), `settled_micros` (the real cost, once known) and `reconciled_at`. The ledger stores no message content and no user id, so it cannot become a second copy of conversations.
 *   **Prices and plan as reviewed data:** provider prices live in `api/config/llm-prices.json` and the monthly plan (sub-caps, minimum margin, tax multiplier and fixed charges) in `api/config/spend-plan.json`. Both are reviewed in pull requests, like `api/config/crisis.json`.
 *   **Sub-caps per use:** chat, memory extraction (with a share reserved for «Recordá esto»), the private chat's classifier, the Sala's classifier, voice transcription, and a margin. When chat reaches its sub-cap it switches to savings mode, then lowers the per-person daily limit and explains it in the app. When transcription reaches its sub-cap, `POST /v1/transcribe` answers HTTP 429 `VOICE_BUDGET_EXHAUSTED`; the app hides the voice button and text keeps working.
 *   **Classifier pools are protected.** Nothing draws from them. When the private chat's pool is used up, it borrows unused headroom of the other uses and then part of the margin; only when nothing is left does the classifier fail closed (an ambiguous message receives the crisis response with the help lines). The Sala's pool never draws from the private chat's pool and does not borrow during the beta.
 *   **Streams, retries and failures:** every attempt is counted, including retries and failed calls. Streaming replies report their usage (V2-09), because voice-mode replies stream and are billed even when the person interrupts.
 *   **Clock:** the governor's month and day use UTC. The per-person daily limit keeps using Costa Rica time (`daily_usage`).
-*   **Alerts and health.** `/health` keeps its current behavior (`docs/monitoring.md`). `/health/spend` reports `degraded` near the end of a classifier pool or the transcription sub-cap; `/health/safety` reports `degraded` when the classifier fails repeatedly or the provider reports that spending is blocked. Their state is kept in memory, so no health check reads the database.
+*   **Alerts and health.** `/health` keeps its current behavior (`docs/operations/monitoring.md`). `/health/spend` reports `degraded` near the end of a classifier pool or the transcription sub-cap; `/health/safety` reports `degraded` when the classifier fails repeatedly or the provider reports that spending is blocked. Their state is kept in memory, so no health check reads the database.
 
 **How the cap holds** with simultaneous calls, retries and interrupted voice replies:
 
@@ -330,7 +330,7 @@ Why: a provider's spending limit covers a whole account, has no per-use control 
 1.  Crisis layer 1 and, when its flag is on, the medical-urgency patterns. They are local code and configuration, make no model call and do not touch the ledger.
 2.  The help lines. `GET /v1/help-resources` is public and static, the app keeps an offline copy (added in S3-5), and the help screen and the 9-1-1 button open the phone's dialer with no network.
 3.  The crisis response text, which is configuration (`api/config/crisis.json`) and not model output.
-4.  **Crisis layer 1 on the phone (V2-37).** The build generates an app asset from the signal lists in `api/src/modules/safety/domain/signals.ts` (including the figurative-death exceptions) and the reply text in `api/config/crisis.json`; the Dart check reproduces the matching logic of `normalize.ts` and `filter.ts`. If the call to the API fails, the app runs the check on the device and, on a match, shows the reply text with the help lines it already caches from `GET /v1/help-resources` (`help_resources.dart`, with its fallback emergency line), so there is a single copy of the help lines on the phone. The patterns are already public in the repository, so shipping them in the APK exposes nothing new. The app never calls a model, and follows the [engineering rules](../architecture.md#engineering-rules).
+4.  **Crisis layer 1 on the phone (V2-37).** The build generates an app asset from the signal lists in `api/src/modules/safety/domain/signals.ts` (including the figurative-death exceptions) and the reply text in `api/config/crisis.json`; the Dart check reproduces the matching logic of `normalize.ts` and `filter.ts`. If the call to the API fails, the app runs the check on the device and, on a match, shows the reply text with the help lines it already caches from `GET /v1/help-resources` (`help_resources.dart`, with its fallback emergency line), so there is a single copy of the help lines on the phone. The patterns are already public in the repository, so shipping them in the APK exposes nothing new. The app never calls a model, and follows the [engineering rules](architecture.md#engineering-rules).
 5.  The crisis classifier's own protected pools: one for the private chat and a separate one for the Sala. Nothing draws from them, and neither draws from the other. When the private chat's pool is used up it borrows unused chat, memory or Whisper headroom, then at most half of the margin (section 3.2); only if that is gone does its classifier fail closed (the person receives the crisis response with the help lines, never silence). The Sala's pool does not borrow during the beta; when it is used up, the Sala's ambiguous messages are held and their authors receive the help lines in private (section 3.2). Layer 1 still checks every Sala message, and the help button is visible on the Sala screen.
 
 What stops when its sub-cap runs out: chat replies (after savings mode and the step-down of the daily limit), automatic memory extraction, and voice transcription.
@@ -346,14 +346,14 @@ What stops when its sub-cap runs out: chat replies (after savings mode and the s
     *   Automatic extraction pauses first, until the next month.
     *   If the reserved part is also used up, «Recordá esto» does not call a model. It saves the text of the chosen message as the person wrote it, up to 200 characters, after the local sensitive-data patterns (`sensitive.ts`), and the notice reads «Marlix lo guardó tal como lo escribiste · Deshacer». If the text is longer, or matches a sensitive pattern, the app asks the person to shorten it or explains that it cannot be saved. Viewing, editing and deleting keep working.
     *   Alternatives considered for this case: refuse until next month (the feature disappears at the moment it is used most), or queue the request and extract it later (a memory the person asked for appears days late). The verbatim fallback is the only behavior built.
-*   **Why memories appear late today:** the job runs when a conversation has been idle for 30 minutes, started by a timer inside the process or by the next message. The 30-minute rule explains most of the delay. If the service is asleep, the timer does not run either; the uptime monitor in `docs/monitoring.md` keeps it awake.
+*   **Why memories appear late today:** the job runs when a conversation has been idle for 30 minutes, started by a timer inside the process or by the next message. The 30-minute rule explains most of the delay. If the service is asleep, the timer does not run either; the uptime monitor in `docs/operations/monitoring.md` keeps it awake.
 
 #### 3.5 Medical-urgency layer
 
 *   A new set of deterministic patterns, next to `signals.ts`, for chest pain, shortness of breath, signs of a stroke, fainting, poisoning and heavy bleeding. A match answers with guidance to call 9-1-1 and the same help section as the crisis response.
 *   Configured in `api/config/` (like `crisis.json`) so the text and the list are reviewed as data.
 *   Behind the `medical_urgency` flag, backend-only.
-*   **It does not ship until a health professional has reviewed the list and the texts** (C7), and the review is recorded in `docs/decisions.md`.
+*   **It does not ship until a health professional has reviewed the list and the texts** (C7), and the review is recorded in `docs/adr/decisions.md`.
 *   Scope stays at orientation: it never diagnoses, grades severity or suggests medication.
 *   The 9-1-1 number assumes Costa Rica. If testers from other countries join, the beta is limited to Costa Rica or a regional notice is added.
 
@@ -396,12 +396,12 @@ App -- POST /v1/room/messages --> API
 *   **Read path (polling).** While the Sala screen is open, the app calls `GET /v1/room/messages?after=<id>` every 3 seconds, and stops when the screen closes or the app goes to the background. One server-side query applies blocks, removals and the reporter's own hides, so there is no client subscription and no Realtime RLS edge case (for example, a removal sent as an UPDATE that a filtered subscriber never receives). With 10 beta members this is about 3 requests per second. Realtime is reconsidered before opening (opening criterion 4).
 *   **Access on every request.** `access.ts` checks the Sala flag, `expelled_at`, `muted_until` (for writing) and the role on each request, so a revoked or expelled person loses access at their next poll.
 *   **Rate limit.** `POST /v1/room/messages` has a per-person limit (starting values: 6 messages per minute and 200 per day) on the existing `usage-limiter` pattern. A per-person share of the Sala's pool is added before the Open stage, together with `room_bans`.
-*   **Endpoints (names fixed in `docs/api-contract.md` by the Sala tasks):** `GET /v1/room/messages`, `POST /v1/room/messages`, `POST /v1/room/blocks`, `DELETE /v1/room/blocks/{user_id}`, `POST /v1/room/reports`, `GET /v1/room/reports/mine`, `POST /v1/room/help-requests` (the person's yes), and for moderators `GET /v1/room/moderation/reports`, `POST /v1/room/moderation/actions` and `GET /v1/room/moderation/help`. Every Sala endpoint answers `404` when the flag is off for the account.
+*   **Endpoints (names fixed in `docs/design/api-contract.md` by the Sala tasks):** `GET /v1/room/messages`, `POST /v1/room/messages`, `POST /v1/room/blocks`, `DELETE /v1/room/blocks/{user_id}`, `POST /v1/room/reports`, `GET /v1/room/reports/mine`, `POST /v1/room/help-requests` (the person's yes), and for moderators `GET /v1/room/moderation/reports`, `POST /v1/room/moderation/actions` and `GET /v1/room/moderation/help`. Every Sala endpoint answers `404` when the flag is off for the account.
 *   **Moderator view (V2-36).** A "Reports" view inside the Sala screen, shown only to the `host` and `moderator` roles, lists reports with two-report cases first, the help requests, and the anonymous counts of completed days (never the current day's, which in a small group could point to the author of a message that was just held). v0.2 sends no push or email for moderation.
 *   **What a report does:** it hides the reported message from the reporter's own view at once and sends it to moderation with a snapshot of its text. Two reports from two different accounts about the same message raise the case's priority: it is shown first in the moderator view. Only an authorized moderator removes a message for the whole room, so two people cannot remove a message from everyone's view by agreeing.
 *   **Moderation is immediate.** A moderator acts as soon as they review a case; nothing delays an action. Each action is recorded in `room_actions`, and the penalized person sees which rule was applied.
 *   **Reporter privacy.** The reported person and the other members never see who reported or when: the penalized person sees the rule, never the time of the report, and the API never returns the report time to anyone but moderators. Moderators see the reporter only in the moderator view, and only the minimum needed to ask a follow-up question. The reporter sees the status of their own report through `GET /v1/room/reports/mine`, and a resolution becomes visible to them only in the next daily batch (`reporter_visible_at`, the next 09:00 Costa Rica time after the resolution), so the timing of the notice does not point to them.
-*   **Help requests and the host.** A clear risk signal never leaves the backend ([engineering rules](../architecture.md#engineering-rules)). The host learns about a person only when that person answers yes, and then sees a help request without the message text. Otherwise the host sees only the anonymous counts of completed days. This holds for every Q16 option.
+*   **Help requests and the host.** A clear risk signal never leaves the backend ([engineering rules](architecture.md#engineering-rules)). The host learns about a person only when that person answers yes, and then sees a help request without the message text. Otherwise the host sees only the anonymous counts of completed days. This holds for every Q16 option.
 *   **Separation from Marlix:** the Sala tables are not joined to `messages`, `memories` or the extraction job. A test checks that a Sala message never enters the chat history, the prompt or the extractor.
 *   **Costs:** the Sala's classifier calls use the `classifier_room` provider instance and its own crisis filter, so they are charged to the Sala's pool and never to the private chat's pool; the two are separate rows in `spend_counters`. Near the end of the Sala's pool the author is alerted (`/health/spend`).
 *   **Terms and rules:** the app shows the rules and terms and records `rules_version_accepted`. Writing is blocked until the current version is accepted.
@@ -423,7 +423,7 @@ In every option the person receives the private help response and the consent qu
 
 | Option | Mechanism | Trade-off | Fails when |
 |---|---|---|---|
-| A. Published, plus private help | The message appears in the channel. | The conversation is not interrupted and the person is not silenced. A sensitive message is visible to everyone, which does not follow the rule that a clear risk signal never leaves the backend ([engineering rules](../architecture.md#engineering-rules)). | The text includes details others should not read, or people reply without knowing how. |
+| A. Published, plus private help | The message appears in the channel. | The conversation is not interrupted and the person is not silenced. A sensitive message is visible to everyone, which does not follow the rule that a clear risk signal never leaves the backend ([engineering rules](architecture.md#engineering-rules)). | The text includes details others should not read, or people reply without knowing how. |
 | B. Held, plus private help | A clear-risk message is not published; an ambiguous message that classifies as safe is published. The private reply explains why it did not appear. | Consistent with the existing crisis protocol. The person who reached out sees their message not appear. | A false positive silences someone who only wanted to talk. |
 | C. Visible only to the person and the host | The message is not shown to the channel; the host decides whether to release it. | A human decides, and the channel is protected. The person sees a message as sent that others cannot see, which is a transparency problem, and it depends on the host being present. It also shows the text to the host without consent, so it would need the person's yes first. | The host is absent, so the message never gets handled. |
 
@@ -435,7 +435,7 @@ In every option the person receives the private help response and the consent qu
 | First use | The AI notice, account (18+), consent, a 30-second personalization of the avatar, voice choice with samples, first conversation with a greeting by local time. Each permission is requested when it is needed. |
 | Accessibility | TalkBack labels, text up to 200%, contrast, reduced motion, and a text equivalent for everything that is voice. |
 | Living avatar | New expressions for listening, thinking, speaking and reacting in `avatar_marlix.dart`. Tilt, fall and recovery from `sensors_plus` (accelerometer and gyroscope; no permission on Android) with spring physics in Dart, and secondary motion in the ears and tail. A reduced-motion switch that also honors the system's `disableAnimations`. |
-| Customization | A palette, pattern and accessory picker over the existing SVG layers (`docs/avatar.md`). The `photo_skin` experiment is behind its flag. |
+| Customization | A palette, pattern and accessory picker over the existing SVG layers (`docs/design/avatar.md`). The `photo_skin` experiment is behind its flag. |
 | Voice | The ten Supertonic voices (F1 to F5, M1 to M5) with pre-recorded samples; the system voice (`flutter_tts`) while the ~398 MB model downloads and on low-end phones. The microphone permission is requested when the person taps the voice button; if denied, the app keeps working with text. When the API answers `VOICE_BUDGET_EXHAUSTED`, the voice button is hidden until the next day and text keeps working. |
 | Crisis without the backend | A generated asset with the layer 1 patterns and the crisis response; used only when the API call fails (section 3.3, V2-37). |
 | Memory | «Recordá esto» button and phrase, the notice «Marlix recordó: … · Deshacer», and the existing «Lo que Marlix sabe de mí» screen with view, edit and delete. |
@@ -451,7 +451,7 @@ In every option the person receives the private help response and the consent qu
 
 **Email.** Supabase Auth sends the sign-up and recovery codes through a custom SMTP provider with an own-domain sender. The templates in `infra/auth/` and the six-digit code flow (S7-9) do not change. **Acceptance test in staging:** (1) a full sign-up and a full password recovery in the app; (2) delivery to the main inbox in Gmail and in Outlook, with the domain sender visible and SPF, DKIM and DMARC at `pass` in the headers; (3) resending works after 60 seconds; (4) an expired code is rejected with the neutral message. The email provider is added to the privacy policy as a processor.
 
-**Database.** Supabase stays for production and staging. A restore drill against a real project is a launch criterion: it passes if row counts match, RLS is on in all tables, and the app signs in (`docs/backups.md`). A weekly ping from GitHub Actions keeps the staging project from pausing.
+**Database.** Supabase stays for production and staging. A restore drill against a real project is a launch criterion: it passes if row counts match, RLS is on in all tables, and the app signs in (`docs/operations/backups.md`). A weekly ping from GitHub Actions keeps the staging project from pausing.
 
 **Google Play.**
 
@@ -525,7 +525,7 @@ The dependencies in the [Work order](#work-order) are mandatory; the milestone s
 
 ## Alternatives Considered
 
-The alternatives weighed for product scope, models, hosting, email, the avatar, the Sala and the process are recorded with their reasons in the maintainer's private notes. Lasting technical choices that the code depends on are recorded in [`docs/decisions.md`](../decisions.md).
+The alternatives weighed for product scope, models, hosting, email, the avatar, the Sala and the process are recorded with their reasons in the maintainer's private notes. Lasting technical choices that the code depends on are recorded in [`docs/adr/decisions.md`](../adr/decisions.md).
 
 ## Future Improvements
 
@@ -548,15 +548,15 @@ The work is split into tasks named `V2-NN`. Before C10 this list is the v0.2 bac
 
 **Conventions that apply to every task** (not repeated in each one):
 
-*   **Migrations** follow the [development guide](../development.md#database-migrations): a file `docs/migrations/YYYY-MM-DD-<what-it-does>.sql` that runs once in a transaction, mirrored in `docs/schema.sql`, with its checks added to `docs/verify-migrations.sql` in the same pull request. A privilege or RLS change also adds cases to `docs/schema-test.sql` and updates `docs/erd.md`. The owner runs the migration in the Supabase SQL Editor before the merge, then runs `docs/verify-migrations.sql` (every row must say `ok`).
-*   **Endpoints** update `docs/api-contract.md` in the same pull request, and extend `api/test/legacy-clients.test.ts` (V2-07) when a response a v0.1 client reads changes.
-*   **Lasting decisions** are added to `docs/decisions.md` in the pull request that makes them.
+*   **Migrations** follow the [development guide](../operations/development.md#database-migrations): a file `docs/migrations/YYYY-MM-DD-<what-it-does>.sql` that runs once in a transaction, mirrored in `docs/schema.sql`, with its checks added to `docs/verify-migrations.sql` in the same pull request. A privilege or RLS change also adds cases to `docs/schema-test.sql` and updates `docs/design/erd.md`. The owner runs the migration in the Supabase SQL Editor before the merge, then runs `docs/verify-migrations.sql` (every row must say `ok`).
+*   **Endpoints** update `docs/design/api-contract.md` in the same pull request, and extend `api/test/legacy-clients.test.ts` (V2-07) when a response a v0.1 client reads changes.
+*   **Lasting decisions** are added to `docs/adr/decisions.md` in the pull request that makes them.
 *   **`CHANGELOG.md`** is updated at release (V2-31) and when a milestone closes, not in each task.
 *   **Tests** for the backend are `api/test/*.test.ts` (run by `tsx --test`); tests for the app are under `app/test/`.
 *   **UI tasks** listed in section 4 ("UI and UX method") attach the `ui-ux-pro-max` deliverables to their pull request.
-*   **Every task** ends with the checks and evidence in the [execution plan](../plans/next-release-execution-plan.md#6-phase-tracking).
+*   **Every task** ends with the checks and evidence in the [execution plan](../plans/execution-plan.md#phase-status).
 *   **Roles:** the owner (the author of this design) and the assistant, as defined in the Overview. The plan uses "owner" throughout.
-*   **Low-end AVD:** the profile in G3, written into `docs/development.md` by V2-05a; a task that measures on it before V2-05a merges uses the profile in G3.
+*   **Low-end AVD:** the profile in G3, written into `docs/operations/development.md` by V2-05a; a task that measures on it before V2-05a merges uses the profile in G3.
 *   **Not applicable:** a task closed as not applicable is removed from the launch count and counts as met for its dependents.
 *   **Worked examples:** a task may reference the numbered criteria of a worked example instead of repeating them (V2-17).
 

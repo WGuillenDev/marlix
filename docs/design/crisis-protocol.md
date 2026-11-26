@@ -38,7 +38,7 @@ Figurative uses of death that are part of everyday speech are removed before com
 
 ## The signals
 
-The lists are in [`api/src/modules/safety/domain/signals.ts`](../api/src/modules/safety/domain/signals.ts). The repository is public, so **the filter does not rely on the signals being secret**: knowing them does not help anyone avoid help, and anyone can propose additions.
+The lists are in [`api/src/modules/safety/domain/signals.ts`](../../api/src/modules/safety/domain/signals.ts). The repository is public, so **the filter does not rely on the signals being secret**: knowing them does not help anyone avoid help, and anyone can propose additions.
 
 To change them:
 
@@ -52,10 +52,10 @@ Messages marked `ambiguous` get an isolated classification by an LLM (S2-2), so 
 
 - **Only ambiguous messages.** A clear risk never goes to the classifier, and normal messages skip it.
 - **Only the current message.** The request carries the classification policy and that one message: no history, no memory and no personality prompt. A message that would go to Groq anyway if it were normal is not exposed further.
-- **A fixed answer.** The policy ([`api/src/modules/safety/infrastructure/crisis-classifier-prompt.ts`](../api/src/modules/safety/infrastructure/crisis-classifier-prompt.ts)) asks for one word, `RISK` or `SAFE`. Only an exact `SAFE` lets the message through.
+- **A fixed answer.** The policy ([`api/src/modules/safety/infrastructure/crisis-classifier-prompt.ts`](../../api/src/modules/safety/infrastructure/crisis-classifier-prompt.ts)) asks for one word, `RISK` or `SAFE`. Only an exact `SAFE` lets the message through.
 - **Repeatable.** The classifier is called with temperature 0, so the same message always gets the same answer.
 - **Conservative on failure.** An error, a quota error or a timeout counts as a crisis. The timeout is short (`CRISIS_CLASSIFIER_TIMEOUT_MS`, 5 seconds by default) and there is no retry.
-- **Its own model.** It uses `CRISIS_CLASSIFIER_MODEL` (`openai/gpt-oss-20b` by default), not the chat model, so it does not spend the conversation's quota. Why this model is in [decisions.md](decisions.md).
+- **Its own model.** It uses `CRISIS_CLASSIFIER_MODEL` (`openai/gpt-oss-20b` by default), not the chat model, so it does not spend the conversation's quota. Why this model is in [decisions.md](../adr/decisions.md).
 
 How well it classifies is measured with the [test suite](#tests).
 
@@ -67,14 +67,14 @@ The text acknowledges the person and points to 9-1-1. It gives no advice or tech
 
 ### Text and resources live in configuration
 
-The reply text and the help resources are in [`api/config/crisis.json`](../api/config/crisis.json), not in code. The same resources are served to the app by the public [`GET /v1/help-resources`](api-contract.md#get-v1help-resources), so the help screen and the crisis reply always show the same numbers, and **changing a number never requires a new app build**: edit the file, open a pull request and Render deploys it.
+The reply text and the help resources are in [`api/config/crisis.json`](../../api/config/crisis.json), not in code. The same resources are served to the app by the public [`GET /v1/help-resources`](api-contract.md#get-v1help-resources), so the help screen and the crisis reply always show the same numbers, and **changing a number never requires a new app build**: edit the file, open a pull request and Render deploys it.
 
 | Resource | Phone | Service | Hours |
 |---|---|---|---|
 | 9-1-1 (**main option**) | 911 | Immediate attention for emergencies or situations of risk | 24 hours, 7 days a week |
 | Línea Aquí Estoy | 800-273-7869 | Free, confidential psychological care from the Colegio de Psicólogos de Costa Rica | Monday to Friday 2:00 p. m. to 10:00 p. m.; Saturday 9:00 a. m. to 4:00 p. m. |
 
-The app shows this copy in Spanish (`api/config/crisis.json`). Only these two lines are shown: a short list is easier to use in a hard moment. The reasons are in [decisions.md](decisions.md).
+The app shows this copy in Spanish (`api/config/crisis.json`). Only these two lines are shown: a short list is easier to use in a hard moment. The reasons are in [decisions.md](../adr/decisions.md).
 
 The server validates the file when it starts and **refuses to start** if it would break the protocol:
 
@@ -87,7 +87,7 @@ When a number changes, also update `updatedAt`, so the app knows its cached copy
 
 ### Verifying the help resources
 
-**Numbers can change**, and an outdated one in a crisis reply is worse than none: it gives a false sense of safety. They are verified every 3 months. The [`verify-help-resources` workflow](../.github/workflows/verify-help-resources.yml) opens an issue with the checklist on the 3rd of February, May, August and November; it only reminds, the check is manual.
+**Numbers can change**, and an outdated one in a crisis reply is worse than none: it gives a false sense of safety. They are verified every 3 months. The [`verify-help-resources` workflow](../../.github/workflows/verify-help-resources.yml) opens an issue with the checklist on the 3rd of February, May, August and November; it only reminds, the check is manual.
 
 1. Check each line against its official source: for Línea Aquí Estoy, <https://aquiestoy.cr/> (number, hours, whether it is free); for 9-1-1, the national emergency number.
 2. If something changed, edit `api/config/crisis.json` and the table above in a pull request. Render deploys it and the app picks it up from `GET /v1/help-resources`: no new build.
@@ -98,7 +98,7 @@ Last verification: **2026-11-03**. The number, the hours and "free" match aquies
 
 ### In the app
 
-The app shows the crisis reply as a card that stands out from the conversation, with a button that opens the dialer with 9-1-1 loaded and a way to the help screen (S3-4, S3-5). It never offers a retry. The help screen is one tap away from the chat at all times and works offline: it keeps the last list from `GET /v1/help-resources`, and 9-1-1 is always there ([decision](decisions.md)). The app never places a call by itself; the person confirms on the dialer.
+The app shows the crisis reply as a card that stands out from the conversation, with a button that opens the dialer with 9-1-1 loaded and a way to the help screen (S3-4, S3-5). It never offers a retry. The help screen is one tap away from the chat at all times and works offline: it keeps the last list from `GET /v1/help-resources`, and 9-1-1 is always there ([decision](../adr/decisions.md)). The app never places a call by itself; the person confirms on the dialer.
 
 ## Activation log
 
@@ -122,7 +122,7 @@ The backend has no database until S4-1, so the record lives in the logs, which R
 
 ## Tests
 
-This is the one part of marlix that cannot rely on manual tests: if it fails, it fails with someone vulnerable (S2-7). The suite is built on a shared set of **invented** messages in [`api/test/fixtures/crisis-cases.ts`](../api/test/fixtures/crisis-cases.ts); never add a real conversation to it. Each case says what the whole filter should decide and what the keyword layer alone should find.
+This is the one part of marlix that cannot rely on manual tests: if it fails, it fails with someone vulnerable (S2-7). The suite is built on a shared set of **invented** messages in [`api/test/fixtures/crisis-cases.ts`](../../api/test/fixtures/crisis-cases.ts); never add a real conversation to it. Each case says what the whole filter should decide and what the keyword layer alone should find.
 
 | Group | Cases | Expected |
 |---|---|---|

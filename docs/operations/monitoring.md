@@ -4,7 +4,7 @@ What watches marlix, what each alert means and what to do. Everything is free an
 
 ## The health endpoint
 
-`GET /health` ([contract](api-contract.md#get-health)) never touches the database or Groq. It reports what the last real requests found:
+`GET /health` ([contract](../design/api-contract.md#get-health)) never touches the database or Groq. It reports what the last real requests found:
 
 | Body | Meaning | What to do |
 |---|---|---|
@@ -32,7 +32,7 @@ To test it (the card's check): in the Render dashboard, **marlix-api → Suspend
 
 ## Staging
 
-Staging (`marlix-api-staging`, see [development.md](development.md#staging)) sleeps when idle and has no uptime monitor, on purpose: a monitor would keep it awake and use the workspace's 750 free instance hours. `GET /health` on it answers after a cold start of up to a minute. The Supabase staging project is kept from pausing by the [staging keepalive](../.github/workflows/staging-keepalive.yml) workflow (Mondays and Thursdays); if its run fails, check the `STAGING_DATABASE_URL` secret and whether Supabase paused the project.
+Staging (`marlix-api-staging`, see [development.md](development.md#staging)) sleeps when idle and has no uptime monitor, on purpose: a monitor would keep it awake and use the workspace's 750 free instance hours. `GET /health` on it answers after a cold start of up to a minute. The Supabase staging project is kept from pausing by the [staging keepalive](../../.github/workflows/staging-keepalive.yml) workflow (Mondays and Thursdays); if its run fails, check the `STAGING_DATABASE_URL` secret and whether Supabase paused the project.
 
 ## Groq quota
 

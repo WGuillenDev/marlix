@@ -4,7 +4,7 @@
 -- Supabase provides (`auth.users`, `auth.uid()`) and on its `authenticated`
 -- role, so it does not run on plain PostgreSQL.
 --
--- Run it once on a clean project. See docs/erd.md for the data model and the
+-- Run it once on a clean project. See docs/design/erd.md for the data model and the
 -- reasoning behind each table.
 --
 -- Access model:
@@ -154,7 +154,7 @@ security definer
 set search_path = ''
 as $$
 declare
-  -- Decided on 2026-10-15 (docs/decisions.md). The app checks the same age.
+  -- Decided on 2026-10-15 (docs/adr/decisions.md). The app checks the same age.
   minimum_age constant integer := 18;
   birth_date_text text := new.raw_user_meta_data ->> 'birth_date';
   given_birth_date date;

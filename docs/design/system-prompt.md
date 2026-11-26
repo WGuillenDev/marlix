@@ -1,6 +1,6 @@
 # System prompt — marlix personality
 
-The system prompt defines who marlix is and how it talks. It lives in [`api/src/modules/conversation/application/system-prompt.ts`](../api/src/modules/conversation/application/system-prompt.ts) and the backend sends it on every call to the model.
+The system prompt defines who marlix is and how it talks. It lives in [`api/src/modules/conversation/application/system-prompt.ts`](../../api/src/modules/conversation/application/system-prompt.ts) and the backend sends it on every call to the model.
 
 The prompt text is in Spanish, because it is what the model reads and imitates. Code and comments around it are in English.
 
@@ -39,7 +39,7 @@ Memories come from what the user said, so the section tells the model they are d
 
 ## Prompt cache
 
-Groq caches the beginning of a prompt that repeats across calls ([Prompt caching](https://console.groq.com/docs/prompt-caching)). Cached tokens are half price and **do not count toward the rate limits**, which matters with the 8,000 tokens per minute of the free plan (see [decisions](decisions.md)).
+Groq caches the beginning of a prompt that repeats across calls ([Prompt caching](https://console.groq.com/docs/prompt-caching)). Cached tokens are half price and **do not count toward the rate limits**, which matters with the 8,000 tokens per minute of the free plan (see [decisions](../adr/decisions.md)).
 
 To get cache hits:
 

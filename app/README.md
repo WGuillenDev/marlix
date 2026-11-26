@@ -1,6 +1,6 @@
 # marlix app
 
-The Flutter app (Android first). Setup and commands are in the [development guide](../docs/development.md#app).
+The Flutter app (Android first). Setup and commands are in the [development guide](../docs/operations/development.md#app).
 
 | Folder | Contents |
 |---|---|
@@ -15,7 +15,7 @@ The Flutter app (Android first). Setup and commands are in the [development guid
 | `integration_test/` | Tests that call the real backend from a device or emulator. |
 | `assets/` | The header avatar (S0-5 prototype until S5-2), the SVG layers of the final avatar (S5-1), the time and texts of the daily reminders (`config/reminders.json`) and the fonts. |
 
-State is managed with [Riverpod](https://riverpod.dev); see the [decision](../docs/decisions.md).
+State is managed with [Riverpod](https://riverpod.dev); see the [decision](../docs/adr/decisions.md).
 
 ## Fonts
 
