@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { EnvValidationError, parseEnv } from '../src/config/env.js';
+import { EnvValidationError, parseEnv } from '../src/shared/infrastructure/config/env.js';
 
 const validEnv = {
   GROQ_API_KEY: 'test-key',

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, it } from 'node:test';
 
-import { SAFE_REPLY } from '../src/services/review/reply-review.js';
+import { SAFE_REPLY } from '../src/modules/safety/domain/reply-review.js';
 import { captureConsole, createFakeLlm, startApp } from './helpers.js';
 import { createMemoryMessageStore } from './memory-message-store.js';
 

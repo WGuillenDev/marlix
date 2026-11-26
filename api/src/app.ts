@@ -1,69 +1,64 @@
 import express from 'express';
 
-import { loadCrisisConfig, type CrisisConfig } from './config/crisis-config.js';
-import { DEFAULT_CONTEXT_MESSAGES, DEFAULT_MEMORY_FACTS } from './config/env.js';
-import { loadPlansConfig, type PlansConfig } from './config/plans.js';
-import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
-import { requireSession, type SessionCheck } from './middleware/require-session.js';
-import { noStore, securityHeaders } from './middleware/security-headers.js';
-import { createChatRouter } from './routes/chat.js';
-import { createHealthRouter } from './routes/health.js';
-import { createHelpResourcesRouter } from './routes/help-resources.js';
-import { createAccountRouter } from './routes/account.js';
-import { createHistoryRouter } from './routes/history.js';
-import { createMemoriesRouter } from './routes/memories.js';
-import { createProfileRouter } from './routes/profile.js';
-import { createTranscribeRouter } from './routes/transcribe.js';
-import { createUsageRouter } from './routes/usage.js';
-import { createChatService } from './services/chat-service.js';
-import {
-  createConsoleActivationLog,
-  type ActivationLog,
-} from './services/crisis/activation-log.js';
-import { createAmbiguousClassifier } from './services/crisis/classifier.js';
-import { createCrisisFilter } from './services/crisis/filter.js';
-import type { AccountStore } from './services/account/account-store.js';
-import type { MessageStore } from './services/history/message-store.js';
-import type { MemoryJob } from './services/memory/memory-job.js';
-import type { MemoryStore } from './services/memory/memory-store.js';
-import type { ProfileStore } from './services/profile/profile-store.js';
-import { selectForPrompt } from './services/memory/prompt-memories.js';
-import type { LlmProvider, QuotaMonitor } from './services/llm/index.js';
-import type { Transcriber } from './services/transcription/transcriber.js';
-import { createUsageLimiter } from './services/usage/usage-limiter.js';
-import type { UsageStore } from './services/usage/usage-store.js';
+import { createChatService } from './modules/conversation/application/chat-service.js';
+import type { MessageStore } from './modules/conversation/application/message-store.js';
+import type { Transcriber } from './modules/conversation/application/transcriber.js';
+import { createChatRouter } from './modules/conversation/presentation/chat.js';
+import { createHistoryRouter } from './modules/conversation/presentation/history.js';
+import { createTranscribeRouter } from './modules/conversation/presentation/transcribe.js';
+
+import type { AccountStore } from './modules/identity/application/account-store.js';
+import type { ProfileStore } from './modules/identity/application/profile-store.js';
+import type { SessionVerifier } from './modules/identity/application/session-verifier.js';
+import { createAccountRouter } from './modules/identity/presentation/account.js';
+import { createProfileRouter } from './modules/identity/presentation/profile.js';
+
+import { createMemoryManagement } from './modules/memory/application/manage-memories.js';
+import type { MemoryJob } from './modules/memory/application/memory-job.js';
+import type { MemoryStore } from './modules/memory/application/memory-store.js';
+import { selectForPrompt } from './modules/memory/domain/prompt-memories.js';
+import { createMemoriesRouter } from './modules/memory/presentation/memories.js';
+
+import type { ActivationLog } from './modules/safety/application/activation-log.js';
+import { createCrisisFilter } from './modules/safety/application/crisis-filter.js';
+import type { CrisisConfig } from './modules/safety/domain/crisis-config.js';
+import { createAmbiguousClassifier } from './modules/safety/infrastructure/classifier.js';
+import { createConsoleActivationLog } from './modules/safety/infrastructure/console-activation-log.js';
+import { loadCrisisConfig } from './modules/safety/infrastructure/crisis-config.js';
+import { createHelpResourcesRouter } from './modules/safety/presentation/help-resources.js';
+
+import type { QuotaStatus } from './shared/application/ai/quota-status.js';
+import type { LlmProvider } from './shared/application/ai/types.js';
+import { DEFAULT_CONTEXT_MESSAGES, DEFAULT_MEMORY_FACTS } from './shared/infrastructure/config/env.js';
+import { errorHandler, notFoundHandler } from './shared/presentation/error-handler.js';
+import { createHealthRouter } from './shared/presentation/health.js';
+import { requireSession } from './shared/presentation/require-session.js';
+import { noStore, securityHeaders } from './shared/presentation/security-headers.js';
+
+import { createUsageLimiter } from './modules/usage/application/usage-limiter.js';
+import type { UsageStore } from './modules/usage/application/usage-store.js';
+import type { PlansConfig } from './modules/usage/domain/plans.js';
+import { loadPlansConfig } from './modules/usage/infrastructure/plans.js';
+import { createUsageRouter } from './modules/usage/presentation/usage.js';
 
 export interface AppDependencies {
   llm: LlmProvider;
-  /** Classifies ambiguous messages (S2-2). Without it, they are a crisis. */
+  /** Ambiguous messages trigger the crisis protocol if no classifier is configured. */
   crisisClassifier?: LlmProvider;
-  /** How /v1 requests are checked for a Supabase session (S4-3). */
-  session: SessionCheck;
-  /** Where the chat history is saved (S4-4). */
+  session: SessionVerifier;
   messages: MessageStore;
-  /** How many messages of the conversation the model sees (S4-5). */
   contextMessages?: number;
-  /** The distilled memory: the prompt is built from it (S4-7) and the person manages it (S4-8). */
   memories: MemoryStore;
-  /** How many memories go into the prompt (S4-7). */
   memoryFacts?: number;
-  /** Ends idle conversations and extracts their memory (S4-6). Without it, nothing ends. */
+  /** Without this job, idle conversations stay open. */
   memoryJob?: Pick<MemoryJob, 'endIdleConversation'>;
-  /** Deletes the person's account and, in cascade, all their data (S4-9). */
   accounts: AccountStore;
-  /** Where the daily counters and caps are (S4-13). */
   usage: UsageStore;
-  /** The profile and the onboarding state (S5-5). */
   profiles: ProfileStore;
-  /** Turns the voice mode's audio into text (S6-9). */
   transcriber: Transcriber;
-  /** Tells /health when the Groq daily quota is nearly used (S7-6). */
-  quota?: Pick<QuotaMonitor, 'isLow'>;
-  /** Crisis text and help resources; read from api/config/crisis.json by default. */
+  quota?: QuotaStatus;
   crisisConfig?: CrisisConfig;
-  /** Where crisis activations are recorded (S2-5); the logs by default. */
   activationLog?: ActivationLog;
-  /** Burst limits per plan (S2-6); read from api/config/plans.json by default. */
   plans?: PlansConfig;
 }
 
@@ -88,39 +83,36 @@ export function createApp({
 }: AppDependencies) {
   const app = express();
 
-  // Do not advertise the framework in every response.
   app.disable('x-powered-by');
   app.use(securityHeaders);
-  // A chat message is at most 2,000 characters; anything far bigger is rejected.
   app.use(express.json({ limit: '16kb' }));
 
   const usageLimiter = createUsageLimiter(plans, usage);
 
-  // Public: the uptime monitor calls it.
   app.use(createHealthRouter(usageLimiter, quota));
-  // Public: the help screen must work without a session or token.
+  // Help resources are available before sign-in.
   app.use('/v1', noStore, createHelpResourcesRouter(crisisConfig));
 
   const crisisFilter = createCrisisFilter(
     crisisClassifier ? createAmbiguousClassifier(crisisClassifier) : undefined,
   );
-  const chatService = createChatService(
+  const chatService = createChatService({
     llm,
     crisisFilter,
     activationLog,
     usageLimiter,
     messages,
-    crisisConfig.reply,
+    crisisReply: crisisConfig.reply,
     contextMessages,
-    (userId) => memoryJob?.endIdleConversation(userId) ?? Promise.resolve(),
-    async (userId) => selectForPrompt(await memories.list(userId), memoryFacts),
-  );
+    endIdleConversation: (userId) => memoryJob?.endIdleConversation(userId) ?? Promise.resolve(),
+    promptMemories: async (userId) => selectForPrompt(await memories.list(userId), memoryFacts),
+  });
   app.use(
     '/v1',
     requireSession(session),
     createChatRouter(chatService, crisisConfig),
     createHistoryRouter(messages),
-    createMemoriesRouter(memories),
+    createMemoriesRouter(createMemoryManagement(memories)),
     createAccountRouter(accounts),
     createProfileRouter(profiles),
     createUsageRouter(usageLimiter),

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { createMemoryJob } from '../src/services/memory/memory-job.js';
+import { createMemoryJob } from '../src/modules/memory/application/memory-job.js';
 import { createFakeLlm, startApp } from './helpers.js';
 import {
   createFakeConversations,

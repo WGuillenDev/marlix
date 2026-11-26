@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, it } from 'node:test';
 
-import { decodeCursor, encodeCursor } from '../src/services/history/message-store.js';
-import { LlmError } from '../src/services/llm/index.js';
+import { decodeCursor, encodeCursor } from '../src/modules/conversation/application/message-store.js';
+import { LlmError } from '../src/shared/infrastructure/ai/index.js';
 import { captureConsole, createFakeLlm, failingLlm, signSession, startApp } from './helpers.js';
 import { createMemoryMessageStore } from './memory-message-store.js';
 

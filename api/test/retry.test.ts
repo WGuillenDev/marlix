@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { LlmError, type LlmErrorKind } from '../src/services/llm/errors.js';
-import { withRetry } from '../src/services/llm/retry.js';
-import type { LlmProvider } from '../src/services/llm/types.js';
+import { LlmError, type LlmErrorKind } from '../src/shared/application/ai/errors.js';
+import { withRetry } from '../src/shared/infrastructure/ai/retry.js';
+import type { LlmProvider } from '../src/shared/application/ai/types.js';
 import { captureConsole } from './helpers.js';
 
 const request = { messages: [{ role: 'user' as const, content: 'Hola' }] };

@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { decodeCursor, HistoryStoreError } from '../src/services/history/message-store.js';
-import { createSupabaseMessageStore } from '../src/services/history/supabase-message-store.js';
+import { decodeCursor, HistoryStoreError } from '../src/modules/conversation/application/message-store.js';
+import { createSupabaseMessageStore } from '../src/modules/conversation/infrastructure/supabase-message-store.js';
 import { fakeSupabaseClient } from './fake-supabase.js';
 import { captureConsole } from './helpers.js';
 

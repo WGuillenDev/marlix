@@ -6,7 +6,7 @@ import {
   reviewSentence,
   SAFE_REPLY,
   splitIntoSentences,
-} from '../src/services/review/reply-review.js';
+} from '../src/modules/safety/domain/reply-review.js';
 import { captureConsole, createFakeLlm, startApp } from './helpers.js';
 
 describe('splitIntoSentences', () => {

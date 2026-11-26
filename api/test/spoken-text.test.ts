@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { toSpokenText } from '../src/services/speech/spoken-text.js';
+import { toSpokenText } from '../src/modules/conversation/domain/spoken-text.js';
 
 describe('toSpokenText', () => {
   it('leaves a plain spoken reply exactly as it is', () => {

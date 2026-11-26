@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { createFakeLlm, startApp } from './helpers.js';
-import { GroqProvider, readQuota } from '../src/services/llm/groq-provider.js';
-import { createQuotaMonitor } from '../src/services/llm/quota-monitor.js';
+import { GroqProvider, readQuota } from '../src/shared/infrastructure/ai/groq-provider.js';
+import { createQuotaMonitor } from '../src/shared/infrastructure/ai/quota-monitor.js';
 
 const reading = { limit: 1000, remaining: 500, resetsInSeconds: 3600 };
 

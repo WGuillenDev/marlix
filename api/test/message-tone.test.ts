@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { detectTone } from '../src/services/tone/message-tone.js';
+import { detectTone } from '../src/modules/conversation/domain/message-tone.js';
 
 describe('detectTone', () => {
   it('is positive for a clearly happy message', () => {

@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { DatabaseError } from '../src/services/database-error.js';
-import { OnboardingAlreadyCompletedError } from '../src/services/profile/profile-store.js';
-import { createSupabaseProfileStore } from '../src/services/profile/supabase-profile-store.js';
+import { DatabaseError } from '../src/shared/infrastructure/persistence/database-error.js';
+import { OnboardingAlreadyCompletedError } from '../src/modules/identity/application/profile-store.js';
+import { createSupabaseProfileStore } from '../src/modules/identity/infrastructure/supabase-profile-store.js';
 import { fakeSupabaseClient } from './fake-supabase.js';
 import { captureConsole } from './helpers.js';
 

@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { parseEnv } from '../src/config/env.js';
-import { CRISIS_CLASSIFIER_PROMPT } from '../src/config/crisis-classifier-prompt.js';
-import { createAmbiguousClassifier } from '../src/services/crisis/classifier.js';
-import { createCrisisFilter } from '../src/services/crisis/filter.js';
-import { LlmError } from '../src/services/llm/index.js';
+import { parseEnv } from '../src/shared/infrastructure/config/env.js';
+import { CRISIS_CLASSIFIER_PROMPT } from '../src/modules/safety/infrastructure/crisis-classifier-prompt.js';
+import { createAmbiguousClassifier } from '../src/modules/safety/infrastructure/classifier.js';
+import { createCrisisFilter } from '../src/modules/safety/application/crisis-filter.js';
+import { LlmError } from '../src/shared/infrastructure/ai/index.js';
 import { createFakeLlm, failingLlm, startApp } from './helpers.js';
 
 describe('createAmbiguousClassifier', () => {

@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
+import type { CrisisConfig } from '../src/modules/safety/domain/crisis-config.js';
 import { describe, it } from 'node:test';
 
 import {
   CrisisConfigError,
   loadCrisisConfig,
   parseCrisisConfig,
-  type CrisisConfig,
-} from '../src/config/crisis-config.js';
-import { STATIC_SYSTEM_PROMPT } from '../src/config/system-prompt.js';
+} from '../src/modules/safety/infrastructure/crisis-config.js';
+import { STATIC_SYSTEM_PROMPT } from '../src/modules/conversation/application/system-prompt.js';
 import { createFakeLlm, startApp } from './helpers.js';
 
 const shipped = loadCrisisConfig();

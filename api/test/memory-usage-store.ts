@@ -1,5 +1,5 @@
-import type { UsageStore } from '../src/services/usage/usage-store.js';
-import { UsageStoreError } from '../src/services/usage/usage-store.js';
+import type { UsageStore } from '../src/modules/usage/application/usage-store.js';
+import { UsageStoreError } from '../src/modules/usage/application/usage-store.js';
 
 /** A UsageStore that keeps the counters and caps in memory, like the two tables. */
 export function createMemoryUsageStore(caps: Record<string, number> = { personal: 1000 }) {

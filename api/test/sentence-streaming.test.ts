@@ -3,10 +3,10 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, it } from 'node:test';
 
-import { LlmError } from '../src/services/llm/index.js';
-import type { LlmProvider } from '../src/services/llm/index.js';
-import { SentenceStream } from '../src/services/speech/sentence-stream.js';
-import { SAFE_REPLY } from '../src/services/review/reply-review.js';
+import { LlmError } from '../src/shared/infrastructure/ai/index.js';
+import type { LlmProvider } from '../src/shared/infrastructure/ai/index.js';
+import { SentenceStream } from '../src/modules/conversation/domain/sentence-stream.js';
+import { SAFE_REPLY } from '../src/modules/safety/domain/reply-review.js';
 import { captureConsole, createFakeLlm, failingLlm, startApp } from './helpers.js';
 import { createMemoryMessageStore } from './memory-message-store.js';
 import { createMemoryUsageStore } from './memory-usage-store.js';

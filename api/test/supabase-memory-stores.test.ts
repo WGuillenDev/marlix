@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { createSupabaseConversationStore } from '../src/services/conversations/supabase-conversation-store.js';
-import { DatabaseError } from '../src/services/database-error.js';
-import { createSupabaseMemoryStore } from '../src/services/memory/supabase-memory-store.js';
+import { createSupabaseConversationStore } from '../src/modules/conversation/infrastructure/supabase-conversation-store.js';
+import { DatabaseError } from '../src/shared/infrastructure/persistence/database-error.js';
+import { createSupabaseMemoryStore } from '../src/modules/memory/infrastructure/supabase-memory-store.js';
 import { fakeSupabaseClient } from './fake-supabase.js';
 import { captureConsole } from './helpers.js';
 

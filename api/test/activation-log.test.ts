@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
+import { createConsoleActivationLog } from '../src/modules/safety/infrastructure/console-activation-log.js';
 import { describe, it } from 'node:test';
 
 import {
-  createConsoleActivationLog,
   type CrisisActivation,
-} from '../src/services/crisis/activation-log.js';
-import { LlmError } from '../src/services/llm/index.js';
+} from '../src/modules/safety/application/activation-log.js';
+import { LlmError } from '../src/shared/infrastructure/ai/index.js';
 import { captureConsole, createFakeLlm, failingLlm, startApp } from './helpers.js';
-import type { LlmProvider } from '../src/services/llm/index.js';
+import type { LlmProvider } from '../src/shared/infrastructure/ai/index.js';
 
 const MESSAGES = {
   risk: 'me quiero morir esta noche',

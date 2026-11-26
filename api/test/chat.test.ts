@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, it } from 'node:test';
 
-import { LlmError } from '../src/services/llm/index.js';
+import { LlmError } from '../src/shared/infrastructure/ai/index.js';
 import { captureConsole, createFakeLlm, failingLlm, startApp } from './helpers.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;

@@ -3,17 +3,17 @@ import type { AddressInfo } from 'node:net';
 import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT, type JWTPayload } from 'jose';
 
 import { createApp, type AppDependencies } from '../src/app.js';
-import type { CrisisConfig } from '../src/config/crisis-config.js';
-import type { PlansConfig } from '../src/config/plans.js';
-import type { SessionCheck } from '../src/middleware/require-session.js';
-import type { ActivationLog } from '../src/services/crisis/activation-log.js';
-import type { MessageStore } from '../src/services/history/message-store.js';
-import { LlmError } from '../src/services/llm/index.js';
-import type { LlmCompletionRequest, LlmProvider } from '../src/services/llm/index.js';
+import type { CrisisConfig } from '../src/modules/safety/domain/crisis-config.js';
+import type { PlansConfig } from '../src/modules/usage/domain/plans.js';
+import { verifySupabaseSession, type SessionCheck } from '../src/modules/identity/infrastructure/supabase-session.js';
+import type { ActivationLog } from '../src/modules/safety/application/activation-log.js';
+import type { MessageStore } from '../src/modules/conversation/application/message-store.js';
+import { LlmError } from '../src/shared/infrastructure/ai/index.js';
+import type { LlmCompletionRequest, LlmProvider } from '../src/shared/infrastructure/ai/index.js';
 import { createFakeAccounts, createFakeMemories } from './memory-fakes.js';
 import { createMemoryMessageStore } from './memory-message-store.js';
 import { createFakeProfiles } from './memory-profiles.js';
-import type { Transcriber } from '../src/services/transcription/transcriber.js';
+import type { Transcriber } from '../src/modules/conversation/application/transcriber.js';
 import { createMemoryUsageStore } from './memory-usage-store.js';
 
 const STREAM_PIECE = 7;
@@ -141,7 +141,7 @@ export async function startApp({
     ...(crisisConfig ? { crisisConfig } : {}),
     activationLog,
     plans,
-    session,
+    session: verifySupabaseSession(session),
     messages,
     ...(contextMessages ? { contextMessages } : {}),
     memories,

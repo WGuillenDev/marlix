@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, describe, it } from 'node:test';
 
-import { RECENT_SIGN_IN_SECONDS } from '../src/routes/account.js';
-import { DatabaseError } from '../src/services/database-error.js';
-import { createSupabaseAccountStore } from '../src/services/account/supabase-account-store.js';
+import { RECENT_SIGN_IN_SECONDS } from '../src/modules/identity/domain/recent-sign-in.js';
+import { DatabaseError } from '../src/shared/infrastructure/persistence/database-error.js';
+import { createSupabaseAccountStore } from '../src/modules/identity/infrastructure/supabase-account-store.js';
 import { fakeSupabaseClient } from './fake-supabase.js';
 import { captureConsole, createFakeLlm, signSession, startApp } from './helpers.js';
 import { createFakeAccounts } from './memory-fakes.js';

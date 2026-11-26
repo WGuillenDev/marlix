@@ -3,7 +3,7 @@
 // decide (`crisis`) and what the keyword layer alone should find (`keywords`);
 // ambiguous cases are decided by the second layer (S2-2).
 
-import type { CrisisLevel } from '../../src/services/crisis/filter.js';
+import type { CrisisLevel } from '../../src/modules/safety/domain/filter.js';
 
 export interface CrisisCase {
   message: string;

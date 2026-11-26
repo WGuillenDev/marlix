@@ -1,15 +1,11 @@
-// Measures the whole crisis filter with the real second layer (S2-7), using
-// api/.env:  npm run crisis:eval
-//
-// Runs every invented case of test/fixtures/crisis-cases.ts. Only ambiguous
-// messages reach the classifier, one every ~2 seconds to stay under the free
-// plan's 30 requests per minute; it spends real quota.
+// Uses synthetic fixtures and spends real provider quota on ambiguous cases.
 import 'dotenv/config';
 
-import { loadEnv } from '../src/config/env.js';
-import { createAmbiguousClassifier } from '../src/services/crisis/classifier.js';
-import { createCrisisFilter, detectCrisisSignal } from '../src/services/crisis/filter.js';
-import { createLlmProvider } from '../src/services/llm/index.js';
+import { loadEnv } from '../src/shared/infrastructure/config/env.js';
+import { createAmbiguousClassifier } from '../src/modules/safety/infrastructure/classifier.js';
+import { detectCrisisSignal } from '../src/modules/safety/domain/filter.js';
+import { createCrisisFilter } from '../src/modules/safety/application/crisis-filter.js';
+import { createLlmProvider } from '../src/shared/infrastructure/ai/index.js';
 import { ALL_CASES } from '../test/fixtures/crisis-cases.js';
 
 const env = loadEnv();

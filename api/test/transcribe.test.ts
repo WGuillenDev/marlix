@@ -2,10 +2,11 @@ import assert from 'node:assert/strict';
 import { after, before, describe, it } from 'node:test';
 import { gzipSync } from 'node:zlib';
 
-import { LlmError } from '../src/services/llm/errors.js';
-import { GroqTranscriber, TRANSCRIPTION_PROMPT } from '../src/services/llm/index.js';
-import { cleanTranscript, type Transcriber } from '../src/services/transcription/transcriber.js';
-import { TRANSCRIBE_RATE_LIMIT, wavSeconds } from '../src/routes/transcribe.js';
+import { LlmError } from '../src/shared/application/ai/errors.js';
+import { GroqTranscriber, TRANSCRIPTION_PROMPT } from '../src/shared/infrastructure/ai/index.js';
+import { cleanTranscript, type Transcriber } from '../src/modules/conversation/application/transcriber.js';
+import { TRANSCRIBE_RATE_LIMIT } from '../src/modules/conversation/application/transcribe-audio.js';
+import { wavSeconds } from '../src/modules/conversation/domain/wav.js';
 import { captureConsole, createFakeLlm, startApp } from './helpers.js';
 import { createMemoryUsageStore } from './memory-usage-store.js';
 

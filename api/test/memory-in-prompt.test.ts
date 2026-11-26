@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { STATIC_SYSTEM_PROMPT } from '../src/config/system-prompt.js';
-import type { Memory } from '../src/services/memory/memory-store.js';
-import { selectForPrompt } from '../src/services/memory/prompt-memories.js';
+import { STATIC_SYSTEM_PROMPT } from '../src/modules/conversation/application/system-prompt.js';
+import type { Memory } from '../src/modules/memory/domain/memory.js';
+import { selectForPrompt } from '../src/modules/memory/domain/prompt-memories.js';
 import { captureConsole, createFakeLlm, signSession, startApp } from './helpers.js';
 import { createFakeMemories } from './memory-fakes.js';
 

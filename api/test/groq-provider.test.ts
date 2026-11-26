@@ -3,8 +3,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { LlmError } from '../src/services/llm/errors.js';
-import { GroqProvider, parseRetryAfterSeconds } from '../src/services/llm/groq-provider.js';
+import { LlmError } from '../src/shared/application/ai/errors.js';
+import { GroqProvider, parseRetryAfterSeconds } from '../src/shared/infrastructure/ai/groq-provider.js';
 
 const API_KEY = 'gsk_test_secret_key';
 const messages = [

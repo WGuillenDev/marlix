@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
-import { join, relative, sep } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-// S1-3: provider SDKs may only be imported inside src/services/llm/.
+// S1-3: provider SDKs may only be imported inside src/shared/infrastructure/ai/.
 const PROVIDER_SDKS = ['openai', 'groq-sdk', '@anthropic-ai/sdk', '@google/genai'];
 
 const srcDir = fileURLToPath(new URL('../src', import.meta.url));
-const llmDir = join(srcDir, 'services', 'llm');
+const llmDir = join(srcDir, 'shared', 'infrastructure', 'ai');
 
 function listSourceFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -31,7 +31,7 @@ describe('LLM layer boundary', () => {
     assert.ok(!importsSdk("import { x } from './openai-like.js';", 'openai'));
   });
 
-  it('no file outside services/llm/ imports a provider SDK', () => {
+  it('no file outside shared/infrastructure/ai/ imports a provider SDK', () => {
     const offenders = listSourceFiles(srcDir)
       .filter((file) => !file.startsWith(llmDir + sep))
       .flatMap((file) => {
@@ -43,4 +43,35 @@ describe('LLM layer boundary', () => {
 
     assert.deepEqual(offenders, []);
   });
+});
+
+it('keeps module dependencies pointing inward', () => {
+  const offenders: string[] = [];
+  const imports = /(?:\bfrom\s+|\bimport\s*(?:\(\s*)?)['"]([^'"]+)['"]/g;
+
+  for (const file of listSourceFiles(srcDir)) {
+    const source = relative(srcDir, file).split(sep);
+    if (source[0] !== 'modules' && source[0] !== 'shared') continue;
+    const layer = source[source[0] === 'modules' ? 2 : 1];
+    if (layer !== 'domain' && layer !== 'application' && layer !== 'presentation') continue;
+
+    for (const [, reference] of readFileSync(file, 'utf8').matchAll(imports)) {
+      if (!reference) continue;
+      const target = reference.startsWith('.')
+        ? relative(srcDir, resolve(dirname(file), reference)).split(sep)
+        : undefined;
+      const targetLayer = target?.[target[0] === 'modules' ? 2 : 1];
+      const outer = targetLayer === 'infrastructure' ||
+        (layer !== 'presentation' && targetLayer === 'presentation');
+      const invalid =
+        (target === undefined && layer === 'domain') ||
+        (target === undefined && layer === 'application' && !reference.startsWith('node:')) ||
+        (target !== undefined && targetLayer === undefined) ||
+        (layer === 'domain' && targetLayer === 'application') ||
+        outer;
+      if (invalid) offenders.push(source.join('/') + ' imports ' + reference);
+    }
+  }
+
+  assert.deepEqual(offenders, []);
 });

@@ -1,16 +1,16 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { loadPlansConfig, parsePlansConfig, PlansConfigError } from '../src/config/plans.js';
-import type { PlansConfig } from '../src/config/plans.js';
-import { costaRicaDay, nextCostaRicaMidnight } from '../src/services/usage/costa-rica-day.js';
+import { loadPlansConfig, parsePlansConfig, PlansConfigError } from '../src/modules/usage/infrastructure/plans.js';
+import type { PlansConfig } from '../src/modules/usage/domain/plans.js';
+import { costaRicaDay, nextCostaRicaMidnight } from '../src/modules/usage/domain/costa-rica-day.js';
 import {
   createUsageLimiter,
   UsageLimitExceededError,
   type UsageLimitError,
-} from '../src/services/usage/usage-limiter.js';
-import { LlmError } from '../src/services/llm/index.js';
-import { UsageStoreError } from '../src/services/usage/usage-store.js';
+} from '../src/modules/usage/application/usage-limiter.js';
+import { LlmError } from '../src/shared/infrastructure/ai/index.js';
+import { UsageStoreError } from '../src/modules/usage/application/usage-store.js';
 import { captureConsole, createFakeLlm, failingLlm, startApp } from './helpers.js';
 import { createMemoryUsageStore } from './memory-usage-store.js';
 

@@ -3,11 +3,12 @@ import { randomUUID } from 'node:crypto';
 import type {
   ConversationStore,
   PendingConversation,
-} from '../src/services/conversations/conversation-store.js';
-import type { ContextMessage } from '../src/services/history/message-store.js';
-import type { MemoryChange, MemoryExtractor } from '../src/services/memory/extractor.js';
-import type { AccountStore } from '../src/services/account/account-store.js';
-import type { Memory, MemoryStore } from '../src/services/memory/memory-store.js';
+} from '../src/modules/conversation/application/conversation-store.js';
+import type { ContextMessage } from '../src/modules/conversation/application/message-store.js';
+import type { MemoryChange, Memory } from '../src/modules/memory/domain/memory.js';
+import type { MemoryExtractor } from '../src/modules/memory/application/memory-extractor.js';
+import type { AccountStore } from '../src/modules/identity/application/account-store.js';
+import type { MemoryStore } from '../src/modules/memory/application/memory-store.js';
 
 interface FakeConversation extends PendingConversation {
   messages: ContextMessage[];

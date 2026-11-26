@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { createSupabaseUsageStore } from '../src/services/usage/supabase-usage-store.js';
-import { UsageStoreError } from '../src/services/usage/usage-store.js';
+import { createSupabaseUsageStore } from '../src/modules/usage/infrastructure/supabase-usage-store.js';
+import { UsageStoreError } from '../src/modules/usage/application/usage-store.js';
 import { fakeSupabaseClient } from './fake-supabase.js';
 import { captureConsole } from './helpers.js';
 

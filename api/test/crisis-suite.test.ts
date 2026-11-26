@@ -5,7 +5,8 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, it } from 'node:test';
 
-import { createCrisisFilter, detectCrisisSignal } from '../src/services/crisis/filter.js';
+import { detectCrisisSignal } from '../src/modules/safety/domain/filter.js';
+import { createCrisisFilter } from '../src/modules/safety/application/crisis-filter.js';
 import {
   ALL_CASES,
   AMBIGUOUS_RISK_CASES,

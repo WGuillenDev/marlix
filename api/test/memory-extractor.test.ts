@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { MEMORY_EXTRACTOR_PROMPT } from '../src/config/memory-extractor-prompt.js';
-import { MEMORY_CATEGORIES } from '../src/services/memory/categories.js';
+import { MEMORY_EXTRACTOR_PROMPT } from '../src/modules/memory/infrastructure/memory-extractor-prompt.js';
+import { MEMORY_CATEGORIES } from '../src/modules/memory/domain/categories.js';
 import {
   createMemoryExtractor,
   MemoryExtractionError,
   parseChanges,
-} from '../src/services/memory/extractor.js';
-import { isSensitive, sameFact } from '../src/services/memory/sensitive.js';
+} from '../src/modules/memory/infrastructure/extractor.js';
+import { isSensitive, sameFact } from '../src/modules/memory/domain/sensitive.js';
 import { createFakeLlm } from './helpers.js';
 import { said } from './memory-fakes.js';
 

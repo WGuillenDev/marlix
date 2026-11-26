@@ -1,16 +1,11 @@
-// Manual check of the configured LLM provider (S1-4), using api/.env.
-//
-//   npm run llm:smoke              one message, prints the reply
-//   npm run llm:smoke -- --burst 6 several calls at once, to force a 429
-//
-// It spends real quota: the burst uses a few thousand tokens.
+// This check uses the configured provider and spends real quota.
 import 'dotenv/config';
 
 import { parseArgs } from 'node:util';
 
-import { buildSystemPrompt } from '../src/config/system-prompt.js';
-import { loadEnv } from '../src/config/env.js';
-import { createLlmProvider, LlmError, type LlmMessage } from '../src/services/llm/index.js';
+import { buildSystemPrompt } from '../src/modules/conversation/application/system-prompt.js';
+import { loadEnv } from '../src/shared/infrastructure/config/env.js';
+import { createLlmProvider, LlmError, type LlmMessage } from '../src/shared/infrastructure/ai/index.js';
 
 const { values } = parseArgs({ options: { burst: { type: 'string', default: '1' } } });
 const calls = Math.max(1, Number(values.burst) || 1);
@@ -42,7 +37,7 @@ results.forEach((result, index) => {
   }
 });
 
-// A call right after the burst shows the adapter waiting instead of calling Groq.
+// Check whether the adapter honors the provider's retry window.
 if (calls > 1) {
   try {
     await provider.complete({ messages, maxOutputTokens: 512 });

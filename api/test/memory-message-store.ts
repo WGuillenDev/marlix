@@ -4,7 +4,7 @@ import {
   encodeCursor,
   type MessageStore,
   type StoredMessage,
-} from '../src/services/history/message-store.js';
+} from '../src/modules/conversation/application/message-store.js';
 
 /** A MessageStore that keeps everything in memory, with the database's ordering rules. */
 export function createMemoryMessageStore() {

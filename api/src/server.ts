@@ -1,30 +1,27 @@
-// Loads api/.env into process.env before anything reads it.
 import 'dotenv/config';
 
 import { createClient } from '@supabase/supabase-js';
 
 import { createApp } from './app.js';
-import { loadEnv } from './config/env.js';
-import { supabaseSessionCheck } from './middleware/require-session.js';
-import { createSupabaseAccountStore } from './services/account/supabase-account-store.js';
-import { createSupabaseConversationStore } from './services/conversations/supabase-conversation-store.js';
-import { createSupabaseMessageStore } from './services/history/supabase-message-store.js';
-import { createLlmProvider, createQuotaMonitor, GroqTranscriber } from './services/llm/index.js';
-import { createMemoryExtractor } from './services/memory/extractor.js';
-import { createMemoryJob } from './services/memory/memory-job.js';
-import { createSupabaseMemoryStore } from './services/memory/supabase-memory-store.js';
-import { createSupabaseProfileStore } from './services/profile/supabase-profile-store.js';
-import { createRetentionJob } from './services/retention/retention-job.js';
-import { createSupabaseUsageStore } from './services/usage/supabase-usage-store.js';
+import { loadEnv } from './shared/infrastructure/config/env.js';
+import { supabaseSessionCheck, verifySupabaseSession } from './modules/identity/infrastructure/supabase-session.js';
+import { createSupabaseAccountStore } from './modules/identity/infrastructure/supabase-account-store.js';
+import { createSupabaseConversationStore } from './modules/conversation/infrastructure/supabase-conversation-store.js';
+import { createSupabaseMessageStore } from './modules/conversation/infrastructure/supabase-message-store.js';
+import { createLlmProvider, createQuotaMonitor, GroqTranscriber } from './shared/infrastructure/ai/index.js';
+import { createMemoryExtractor } from './modules/memory/infrastructure/extractor.js';
+import { createMemoryJob } from './modules/memory/application/memory-job.js';
+import { createSupabaseMemoryStore } from './modules/memory/infrastructure/supabase-memory-store.js';
+import { createSupabaseProfileStore } from './modules/identity/infrastructure/supabase-profile-store.js';
+import { createRetentionJob } from './modules/conversation/application/retention-job.js';
+import { createSupabaseUsageStore } from './modules/usage/infrastructure/supabase-usage-store.js';
 
 const env = loadEnv();
 
-// No session to keep: the key identifies the backend on every call.
 const database = createClient(env.SUPABASE_URL, env.SUPABASE_SECRET_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
-// Every model shares the Groq account, so one monitor sees all of them.
 const quota = createQuotaMonitor();
 
 const memories = createSupabaseMemoryStore(database);
@@ -56,7 +53,7 @@ const app = createApp({
     quota,
   }),
   quota,
-  session: supabaseSessionCheck(env.SUPABASE_URL),
+  session: verifySupabaseSession(supabaseSessionCheck(env.SUPABASE_URL)),
   contextMessages: env.CHAT_CONTEXT_MESSAGES,
   messages,
   memories,
@@ -79,8 +76,7 @@ const server = app.listen(env.PORT, () => {
   retentionJob.start();
 });
 
-// Render sends SIGTERM before replacing the instance on each deploy: finish
-// the requests in flight instead of cutting them.
+// Drain in-flight requests before Render replaces this instance.
 process.on('SIGTERM', () => {
   memoryJob.stop();
   retentionJob.stop();

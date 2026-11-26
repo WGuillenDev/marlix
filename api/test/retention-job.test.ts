@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { createRetentionJob } from '../src/services/retention/retention-job.js';
+import { createRetentionJob } from '../src/modules/conversation/application/retention-job.js';
 import { captureConsole } from './helpers.js';
 import { createMemoryMessageStore } from './memory-message-store.js';
 

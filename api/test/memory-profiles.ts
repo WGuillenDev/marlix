@@ -1,8 +1,5 @@
-import {
-  OnboardingAlreadyCompletedError,
-  type Profile,
-  type ProfileStore,
-} from '../src/services/profile/profile-store.js';
+import type { Profile } from '../src/modules/identity/domain/profile.js';
+import { OnboardingAlreadyCompletedError, type ProfileStore } from '../src/modules/identity/application/profile-store.js';
 
 const MARLIX = {
   id: '0b8e5d2a-7c41-4f0e-8d2b-3a9c1e7f6b54',

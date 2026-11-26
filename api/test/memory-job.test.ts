@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { LlmError } from '../src/services/llm/index.js';
-import { createMemoryExtractor } from '../src/services/memory/extractor.js';
-import { createMemoryJob, MAX_MEMORIES_PER_USER } from '../src/services/memory/memory-job.js';
+import { LlmError } from '../src/shared/infrastructure/ai/index.js';
+import { createMemoryExtractor } from '../src/modules/memory/infrastructure/extractor.js';
+import { createMemoryJob, MAX_MEMORIES_PER_USER } from '../src/modules/memory/application/memory-job.js';
 import { captureConsole, createFakeLlm } from './helpers.js';
 import {
   createFakeConversations,
