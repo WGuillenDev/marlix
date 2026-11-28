@@ -7,7 +7,7 @@ This plan is the source of truth for the v0.2 release scope, phase order, status
 | Phase | Status | Evidence |
 | --- | --- | --- |
 | [0. Plan consolidation](#phase-0-plan-consolidation) | `[x]` Complete | Plan and documentation in `a379210` through `47aa03f` |
-| [A0. Architecture move](#phase-a0-architecture-move) | `[ ]` On `main`. Production deployment unverified | [A0 evidence](../qa/phase-a0-evidence.md) |
+| [A0. Architecture move](#phase-a0-architecture-move) | `[x]` Complete. Staging validation of `9ecf7d2` ran after its production deploy | [A0 evidence](../qa/phase-a0-evidence.md) |
 | [1. UX audit and bug fixes](#phase-1-ux-audit-and-bug-fixes) | `[ ]` 1a authorized. Real delivery awaits staging email. 1b–1d pending | — |
 | [2. DeepSeek evaluation](#phase-2-deepseek-evaluation) | `[ ]` Pending | — |
 | [3. Android voice spike](#phase-3-android-voice-spike) | `[ ]` Pending | — |
@@ -29,16 +29,15 @@ This plan is the source of truth for the v0.2 release scope, phase order, status
 
 ### Where to resume
 
-1. **A0.** The last recorded production check found the earlier build serving healthy. Confirm the intended A0 deployment in Render and verify its commit and `GET /health` before closing A0. GitHub `main` is at `47aa03f`, which includes the verified architecture move. CI passed and CodeQL failed at analysis. The [A0 evidence](../qa/phase-a0-evidence.md#main-and-production-follow-up) records the checks from 2026-11-26.
-2. **Phase 1a.** The maintainer completes staging SMTP setup ([D13](#9-decisions-that-need-the-owner)). Configure the six-digit templates, then verify sign-up and password recovery. Record findings in `docs/qa/phase-1-evidence.md`. Phase 1a was authorized on 2026-11-25. Deliveries 1b through 1d await their own instruction.
+1. **Phase 1a.** The maintainer completes staging SMTP setup ([D13](#9-decisions-that-need-the-owner)). Configure the six-digit templates, then verify sign-up and password recovery. Record findings in `docs/qa/phase-1-evidence.md`. Phase 1a was authorized on 2026-11-25. Deliveries 1b through 1d await their own instruction.
 
 ## 1. Verified initial state
 
 | Area | Recorded baseline |
 | --- | --- |
-| Repository | The A0 architecture move is on main at 47aa03f. The A0 evidence records the CI result and the pending production confirmation. |
-| Local and staging verification | The A0 evidence records the tested revisions, the API and Flutter test results, and the staging checks from 2026-11-26. See the [A0 evidence](../qa/phase-a0-evidence.md). |
-| Deployment | Render serves the API, Supabase provides the database and auth, and Google Play distributes the Android app. See the [development guide](../operations/development.md). |
+| Repository | `main` is at `9ecf7d2`, which includes the A0 architecture move. CI and CodeQL passed for that commit. See the [A0 evidence](../qa/phase-a0-evidence.md#production-confirmation). |
+| Local and staging verification | Staging checks cover `a379210` and, after its production deploy, `9ecf7d2`. See the [A0 evidence](../qa/phase-a0-evidence.md#post-deployment-staging-verification-of-9ecf7d2). |
+| Deployment | Render serves the API from `9ecf7d2` in production, Supabase provides the database and auth, and Google Play distributes the Android app. See the [development guide](../operations/development.md). |
 
 ### Release scope
 
@@ -118,11 +117,11 @@ Run A0 and Phase 1 before the three experiments in Phases 2, 3 and 4. The experi
 
 - **Deliverables:** Group backend and app code by capability, add dependency-direction checks and update documentation paths.
 - **Exit gate.** API and app checks pass on the moved code, the candidate passes staging, the verified code is on `main`, and the production deployment and health check are confirmed.
-- **Evidence:** API and app moves are in `c3099a3` and `9390079`. Staging ran `a379210`. See [A0 evidence](../qa/phase-a0-evidence.md) and the [local composition follow-up](../qa/phase-a0-evidence.md#local-composition-follow-up).
+- **Evidence:** API and app moves are in `c3099a3` and `9390079`. Production serves `9ecf7d2`. Staging ran `a379210` before the push to `main` and `9ecf7d2` after its production deploy, although [D12](#9-decisions-that-need-the-owner) required staging first. See [A0 evidence](../qa/phase-a0-evidence.md) and the [post-deployment staging verification](../qa/phase-a0-evidence.md#post-deployment-staging-verification-of-9ecf7d2).
 
 ### Phase 1. UX audit and bug fixes
 
-- **Depends on:** the integrated A0 candidate for local and staging checks. Production verification remains an A0 exit gate.
+- **Depends on:** A0, which is complete.
 - **Method:** a heuristic and functional audit guided by `ui-ux-pro-max`. It runs on the `Pixel_8` emulator against staging: the release APK, and a debug build when a step needs it. Each flow is a list of steps, and each step has an expected result and an observed result.
 - **Account emails:** test delivery with the dedicated Gmail sender and the Marlix code templates in staging ([decision D13](#9-decisions-that-need-the-owner)). If a code does not arrive, record the affected step and continue the remaining audit. Phase 14 verifies the existing production sender.
 - **Flows:**
@@ -343,7 +342,7 @@ Adapted from the eleven v0.2 launch criteria. Apply the spend, privacy and safet
 
 ### Execution order when an external check is pending
 
-Within the authorized phase or queue, implement and test each independent delivery first. For 1a, start with help, offline behavior, accessibility and sign-in using a staging test account. Mark real email delivery pending until the sender is ready. Track the A0 production confirmation separately. A missing key blocks the paid evaluation only. A missing phone blocks hardware measurements only. Use synthetic fixtures, emulator sensors and the existing provider adapters for independent work. Record the command, result, blocker and next action in the phase evidence. Keep a phase open until its exit gate passes. Owner actions are limited to credentials, spend, physical-device access, visual selection and deployment or publication approvals under the existing workflow.
+Within the authorized phase or queue, implement and test each independent delivery first. For 1a, start with help, offline behavior, accessibility and sign-in using a staging test account. Mark real email delivery pending until the sender is ready. A missing key blocks the paid evaluation only. A missing phone blocks hardware measurements only. Use synthetic fixtures, emulator sensors and the existing provider adapters for independent work. Record the command, result, blocker and next action in the phase evidence. Keep a phase open until its exit gate passes. Owner actions are limited to credentials, spend, physical-device access, visual selection and deployment or publication approvals under the existing workflow.
 
 ### Budget and privacy contract for v0.2
 
