@@ -1,6 +1,6 @@
 # A0 evidence: Clean Architecture and DDD move
 
-Local checks ran on 2026-11-25 and staging checks ran on 2026-11-26. The candidate `a379210` passed both. The verified code is on `main`. A0 stays open until the production deploy is confirmed ([decision D12](../plans/execution-plan.md#9-decisions-that-need-the-owner)).
+A0 is complete. Local checks ran on 2026-11-25 and staging checks ran on 2026-11-26, and the candidate `a379210` passed both. Production serves the later commit `9ecf7d2` ([production confirmation](#production-confirmation)). That commit passed its [staging verification](#post-deployment-staging-verification-of-9ecf7d2) on 2026-11-28 UTC, after it was already in production.
 
 ## Candidate
 
@@ -48,7 +48,8 @@ Follow-ups it raised, none blocking:
 
 ## Limits and pending
 
-- The new backend passed staging checks. Production deployment is still unverified.
+- `9ecf7d2` reached production before its staging verification, which does not meet the order that [decision D12](../plans/execution-plan.md#9-decisions-that-need-the-owner) required.
+- The crisis classifier and memory extraction checks ran on `a379210` only. `9ecf7d2` moved the code that wires both, and they were not repeated.
 - The message retention job found nothing old enough to delete, so its deletion path did not run in staging. Unit tests cover it.
 - The transcription check sent a synthetic tone. It shows the route and the provider answer, not recognition quality.
 - Voice mode, chat screens and signed-in screens were not driven by hand.
@@ -66,6 +67,8 @@ Checked on 2026-11-26.
 | GitHub production deployment records | No record for the A0 candidate or the current `main` was visible among the latest production entries. Confirm the live commit in Render and check `GET /health` before closing A0. |
 
 ## Staging verification
+
+This section covers `a379210` only. The later startup changes in `api/src/bootstrap/` and `app/lib/bootstrap/` are covered by the [local](#local-composition-follow-up) checks, [CI](#production-confirmation) and the [staging verification of `9ecf7d2`](#post-deployment-staging-verification-of-9ecf7d2).
 
 `marlix-api-staging` was deployed by hand with the commit `a379210104c88437f13e9e4ddf427ac331dd63f8`, using the staging database and credentials already configured.
 
@@ -90,3 +93,38 @@ Checked on 2026-11-26 after moving API assembly to `api/src/bootstrap/` and Flut
 | Compiled API startup | `dist/server.js` with stubbed external requests returned 200 for health and help resources and 401 for `/v1/me` without a session. Startup invoked the background jobs and the shutdown handler exited successfully. |
 | App format and analysis | `dart format --output=none --set-exit-if-changed lib` reported zero changes. `flutter analyze --no-pub` reported no issues. |
 | App tests | `flutter test --no-pub --reporter expanded` passed all 437 tests. |
+
+## Production confirmation
+
+Dated 2026-11-28 UTC. The Render and health results come from an independent read-only check. The workflow results and the remote branch were also read from GitHub by the session that wrote this section.
+
+| Check | Result |
+| --- | --- |
+| Commit served by Render in production | `9ecf7d28b5871fcf560b209d922da77f9e53f47a` |
+| `GET /health` in production | HTTP 200, twice |
+| `git ls-remote --heads origin main` | `9ecf7d28b5871fcf560b209d922da77f9e53f47a` |
+| GitHub Actions for that commit | [CI passed](https://github.com/WGuillenDev/marlix/actions/runs/45893691482). [CodeQL passed](https://github.com/WGuillenDev/marlix/actions/runs/45893691464) |
+
+## Post-deployment staging verification of `9ecf7d2`
+
+This validation ran after the production deploy. Production served `9ecf7d2` from 2026-11-26 20:52:14 UTC. Staging received the same commit on 2026-11-28 at 02:52:09 UTC, by a manual deploy that the owner approved. [Decision D12](../plans/execution-plan.md#9-decisions-that-need-the-owner) required staging verification before the push to `main`.
+
+The checks below ran on 2026-11-28 between 03:56 and 04:02 UTC.
+
+| Check | Result |
+| --- | --- |
+| Deployed commit | The Render build log reads `Checking out commit 9ecf7d28b5871fcf560b209d922da77f9e53f47a`. Before the checks, it was still the latest staging deploy |
+| `GET /health` in staging | HTTP 200 with `{"status":"ok"}` after the deploy, before the checks and after them |
+| Staging script, the same one used for `a379210` | 26 of 26 checks passed: the unauthenticated routes, and the throwaway account flow from sign-up to deletion |
+| `node tool/verify-integration.mjs staging` on `Pixel_8` | 12 of 12 passed |
+| Release APK built with `flutter build apk --release --no-pub --dart-define-from-file=config/staging.json` | Built, version 0.1.2, SHA-256 `92c2f1a674332383ad0666b1b2d6a5ade6208e28a153596c79d5cef3056a7f62` |
+| Release APK on `Pixel_8`, with app data cleared | It started on the sign-in screen and opened the help screen. No call button was pressed. The log showed no Flutter error and no crash |
+| Staging application logs, last hour at 04:01 UTC | No error. They show a server start and two crisis activations from the keyword layer, with no message text |
+| API checks | `npm run typecheck` and `npm run build` passed. `npm test` passed all 581 tests |
+| App checks | `dart format` reported 147 files and 0 changes. `flutter analyze --no-pub` reported no issues. `flutter test --no-pub` passed all 437 tests |
+
+The app and API builds and tests ran on a checkout whose files outside `docs/` match `9ecf7d2`, except for the uncommitted `app/pubspec.lock` rewrite described under [Limits and pending](#limits-and-pending).
+
+![Release build of 9ecf7d2, sign-in screen](phase-a0/release-sign-in-9ecf7d2.png)
+
+![Release build of 9ecf7d2, help screen](phase-a0/release-help-9ecf7d2.png)
